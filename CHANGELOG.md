@@ -1,0 +1,390 @@
+# Twitter Network Layer Change Log
+
+## Info
+
+**Document version:** 2.0.0
+
+**Last updated:** 06/08/2018
+
+**Author:** Nolan O'Brien
+
+## History
+
+### 2.0.0
+
+- Open source *TNL*!!!
+
+### 1.20.0
+
+- Make *TNL* protocols adopt `tnl_` method prefixes
+
+### 1.19.0
+
+- Add support to have `TNLRequestOperation` instances' underlying network operations have dependencies set as the network operation(s) enqueue.
+- See `requestOperation:readyToEnqueueUnderlyingNetworkingOperation:`
+- Clean up retry policy provider code and event callbacks for disambiguity, and reduced coupling.
+
+### 1.18.0
+
+- Improve auth challenge support
+- Create `TNLAuthenticationChallengeHandler`
+- Add registration/unregistration on global config for auth challenge handler(s)
+- Remove `TNLTLSTrustEvaluator` protocol and property from global config
+- Remove auth challenge callback to `TNLRequestAuthorizer` (part of `TNLRequestDelegate`)
+- Auth challenges are a shared concept and not associated with any given request specifically
+- Handling challenges on a per request basis made for complex code and cascading handling that was unnecessary
+- A concrete implementation of a `TNLAuthenticationChallengeHandler` can behave just like a TLS trust evaluator or any number of auth challenge behaviors now.
+
+### 1.17.0
+
+- Elevate `NSNumber` to be a first class object within `TNLParameterCollection`
+- Default will encode as a number always.
+- URL encoder option to encode Boolean `NSNumber` objects as `true` or `false` instead of `1` and `0`
+- Persists the `NSNumber` when creating an encodable dictionary from a `TNLParameterCollection` instead of converting to a string
+- This helps with JSON serialization which will want the NSNumber serialized as a number or boolean, instead of a string
+- _Twitter Network Layer_ has been stable without revision for 12 months!
+- 15 months if you exclude the removal of `CocoaSPDY` which was just removing a plugin feature.
+
+### 1.16.0
+
+- Remove CocoaSPDY support
+
+### 1.15.0
+
+- Add auth hydration step to `TNLRequestAuthorizer`
+- this helps decouple things so consumers can hydrate the request in one step and authorize in another
+- since TNL has host sanitization, it is often necessary to authorize a request with whatever the sanitized host is.  This decoupling enables that flow very simply.
+
+### 1.14.0
+
+- Add `TNLCommunicationAgent` for communication trait support in __TNL__
+- monitors reachability, carrier info and WWAN radio access tech
+
+### 1.13.0
+
+- Add support for custom encoders and decoders for additional `Content-Encoding` types
+- Useful for supporting compressed uploads
+- Useful for using different compression codecs on responses that could have higher compression ratios than `gzip`
+
+### 1.12.5
+
+- Add `[TNLGlobalConfiguration operationAutomaticDependencyPriorityThreshold]` to support having higher priority requests preventing lower priority requests from running
+- The value of this feature is to gate all other network interference when a critical request that much be executed as fast as possible is being run
+- This feature takes advantage of the `NSOperation` dependency support
+
+### 1.12.0
+
+- Revise `TNLPseudoURLProtocol` to take a `TNLPseudoURLResponseConfig`
+- Offers easier control over the canned responses behavior
+- Does change the pattern from the request owning the behavior via headers to the response owning behavior when registered (with a config)
+- this is an improvement since it moves the ownership so that the user of `TNLPseudoURLProtocol` doesn't need to control the request being sent
+
+### 1.11.4
+
+- Add `NSURLSessionTaskMetrics` support for iOS 10 and macOS 10.12
+- Just tacked onto `TNLAttemptMetrics` for now
+
+### 1.11.3
+
+- Remove long standing workaround in **TNL** to get the `NSURLResponse` of an `NSURLSessionTask` via KVO instead of the delegate callback due to significant problems on iOS 8 & Mac OS X 10.10
+
+### 1.11.2
+
+Author:            Zhen Ma
+- Do not call didCompleteAttempt with TNLAttemptCompleteDispositionCompleting when the state is TNLRequestOperationStateWaitingToRetry.
+
+### 1.11.1
+
+Author:            Feng Yun
+- Allow multiple global header providers to apply to all requests.
+
+### 1.11.0
+
+- Expose `TNLTiming.h` for timing helper functions
+- Fix bug failing to detect Auth Challenge Cancellations
+- Add support for global configurable `TNLTLSTrustEvaluator`
+- This is placeholder while _CocoaSPDY_ continutes to use a trust evaluator instead of `NSURLAuthenticationChallenge` pattern
+
+### 1.10.1
+
+- Have `[TNLGlobalConfiguration requestOperationCallbackTimeout]` be used to enabled/disable callback clog detection too.  Set it to `0.0` or negative to disable the detection
+- Added a bug fix around clog detection when app becomes inactive too
+
+### 1.10.0
+
+- Remove Twitter specific logging framework dependency and expose hooks to provide any desired logger.  *CocoaSPDY* support has its own logger and doesn't share the *TwitterNetworkLayer* logger.
+
+### 1.9.4
+
+- Split callback clogging timeout from idle timeout
+- `TNLRequestOperation` instances can clog with the callback timeout, configured on `TNLGlobalConfiguration`
+- Callback timeout will _pause_ while an iOS app is in the background
+
+### 1.9.3
+
+- remove `requiresStrongReference` from `TNLRequestDelegate`
+- The responsibility of the delegate's lifecycle belongs to the owner of the delegate, not to the delegate itself
+- Simplest way to adapt is to make the delegate be the `context` of the operation
+
+### 1.9.2
+
+- Add `TNLAttemptCompleteDisposition` to our attempt completion callbacks in _TNL_.  This will aid in identifying if the attempt will yield additional work (Retry or Redirect) or not (Complete)
+
+### 1.9.1
+
+- iOS 9 has disabled support for subclassing empty `NSURLCache` (they now check the size ivars withouth accessing the property methods).  As such, we need to update our "cache hit detection" code so that it doesn't use a custom `NSURLCache` subclass.
+- This means our observing of responses is now more fragile in detecting cache hits.
+- `NSCachedURLResponse(TNLCacheAddtions)` and `NSURLResponse(TNLCacheAddtions)` are now exposed so that if cache hit detection is desired w/ an `NSURLCache` that is shared between _TNL_ and some other networking code it can be achieved, though admittedly with burden.
+- If networking is isolated to _TNL_, there won't be an issue.
+
+### 1.9.0
+
+- Increase NSURLSession reuse by improving the session identifier used for non-background URL sessions.
+
+### 1.8.5
+
+- Split out NSURLSession work from TNLRequestOperationQueue into a TNLURLSessionManager object.  This will prepare room for betture NSURLSession reuse and modularity in TNL.
+
+### 1.8.4
+
+- Rename TNLConnectionOperation to TNLURLSessionTaskOperation.  This improves naming cohesion for the operation and leaves room for us to add a TNLURLConnectionOperation which would wrap NSURLConnection if we choose to add that support.
+
+### 1.8.3
+
+- Persist NSURLSession instances to maximize reuse
+
+### 1.8.2
+
+Author:            John Zhang
+- Added optional idleTimeoutOfRetryForRequestOperation:withResponse: to TNLRequestRetryPolicyProvider protocol
+- Handled the return value of idleTimeoutOfRetryForRequestOperation:withResponse: in TNLRequestOperation
+
+### 1.8.1
+
+- Make TNLParameterCollection throw exception on zero length keys
+- Treat zero length keys in TNLDecodeDictionary and TNLEncodeDictionary as invalid and discard the key-value-pair when encountered
+
+### 1.8.0
+
+- Make __CocoaSPDY__ optional
+
+### 1.7.6
+
+- Add default TNLURLEncodableObject support to NSNumber
+
+### 1.7.5
+
+- Add valueForResponseHeaderField: to TNLResponseInfo
+
+### 1.7.4
+
+- Collapse TNLHTTPAttempMetaData and TNLSPDYAttemptMetaData into their superclass TNLAttemptMetaData.
+
+### 1.7.3
+
+- Default `TNLRequestConfiguration` to have `nil` for `URLCache`, `URLCredentialStore` and `cookieStore`
+- Add `TNLRequestConfiguration` constructor for different request anatomies (request vs response sizes)
+
+### 1.7.2
+
+- Change `requestOperation:didCompleteAttemptWithInfo:metrics:error:` to `requestOperation:didCompleteAttemptWithIntermediateResponse:disposition:`
+- This alleviates bugs with dealing with responseClass hydration when observing an attempt
+
+### 1.7.1
+
+- Remove `TNLResponseHydrater`
+- Add `Class` argument to `TNLRequestOperation` constructors so that we can provide the _responseClass_
+
+### 1.7.0
+
+- Refactor `TNLResponseHydrater` to provide a `Class` that is ingested by the `TNLRequestOperation` at init time.
+- This alleviates a complex surface area that was exposed where the `TNLRequestOperation` is in the `BuildingResponse` state.
+- Results in `BuildingResponse` value being removed from `TNLRequestOperationState`.
+
+### 1.6.1
+
+Author:            John Zhang
+- Updated TNLHTTPHeaderProvider to pass in a id<TNLRequest> parameter for context
+
+### 1.6.0
+
+- Add nullable/nonnull keywords for Swift interop and compiler optimizations
+
+### 1.5.14
+
+- Permit HTTP Status Codes 202, 203, 207, 208, and 226 to be retriable with a retry policy provider
+
+### 1.5.13
+
+- Add TNLURLEncodableDictionary to TNLURLCoding
+- Add encodableDictionaryValueWithOptions: to TNLParameterCollection
+
+### 1.5.12
+
+- Make default behavior for TNLURLEncodeDictionary to throw an exception when an unsupported value is encountered
+
+### 1.5.11
+
+- TNLParameterCollection will now remove the value when `nil` is set as the value
+
+### 1.5.10
+
+Author:            Kevin Goodier
+- Added additional CocoaSPDY fields to TNLSPDYAttemptMetadata for stream timings
+- Removed support externally for metadata dictionary
+
+### 1.5.9
+
+- Added `TNLHTTPHeaderProvider` support
+
+### 1.5.8
+
+- Provide operation to delegate callbacks that retrieve the background and completion queues
+
+### 1.5.7
+
+Author:            John Zhang
+- Added operationId to TNLRequestOperation
+- Added attemptId and startTime to TNLAttemptMetrics
+- Changed request:didStartAttemptRequest:withType to requestOperation:request:didStartAttemptRequest:metrics in TNLNetworkObserver
+- Changed request:didCompleteAttemptWithInfo:metrics:error to requestOperation:didCompleteAttemptWithInfo:metrics:error in TNLNetworkObserver
+
+### 1.5.6
+
+- Update docs
+- Change TNLNetwork functions to be class methods on a `TNLNetwork` static class
+- Rename `TNLNetworkGlobalExecutingNetworkConnections*` definitions to be `TNLNetworkExecutingNetworkConnections*`
+
+### 1.5.5
+
+- Rename `TNLHTTPRequest` protocol to `TNLRequest`
+- This will help disambiguate from the `TNLHTTPRequest` object
+- Make `URL` a required method on `TNLRequest`
+- Change _NSObject<TNLRequest>_ pattern to _id<TNLRequest>_
+- Add more documentation around `TNLRequest`s and hydration
+
+### 1.5.1
+
+- Ensure that the completion callback on the `TNLRequestDelegate` or the completion block is called before the `TNLRequestOperation` finishes
+- This will permit `waitUntilFinished` and `waitUntilFinishedWithoutBlockingRunLoop` to return after the callback has completed
+
+### 1.5.0
+
+- Increase compatibility with a more diverse set of requests.
+- Permit any request `HTTPMethod` to be an upload, provided it has a body.
+- Permit any request `HTTPMethod` to be a download, provided the response data consumption mode is `TNLResponseDataConsumptionModeSaveToDisk`
+- There are exceptions that can result in errors based on NSURL framework's restrictions
+
+### 1.4.3
+
+- Add `[TNLAttemptMetrics URLResponse]` and `[TNLAttemptMetrics operationError]`
+- This provides a nice trail of breadcrumbs for inspecting the details of how an operation executed
+
+### 1.4.2
+
+- Add support for configuring cookies in `TNLRequestConfiguration`
+- Cookies were off by default, now they follow `NSURLSessionConfiguration` defaults
+
+### 1.4.1
+
+- Add `TNLRedirectPolicyUseCallback` to redirect policies
+- This exposes additional control to the `TNLRequestRedirecter` protocol (on the `TNLRequestDelegate`) while keeping the simpler configs available
+
+### 1.4.0
+
+- Redefine `TNLNetworkObserver` for much greater utility
+- Have the `TNLGlobalConfiguration` support multiple network observers instead of just one
+
+### 1.3.12
+
+- Add `TNLAttemptMetrics` class and `TNLAttemptMetaData` classes for concrete access to metrics and meta-data
+
+### 1.3.11
+
+- Remove `state` property of `TNLRequestOperationQueue`.  It is unused and the backing logic is expensive.  If this functionality is needed in the future we can add it in a more efficient way.
+
+### 1.3.10
+
+- Add support for making in app request operations be background tasks with `TNLRequestExecutionModeInAppBackgroundTask`.  See `[TNLRequestConfiguration executionMode]`.
+
+### 1.3.9
+
+- Add redirect tracking in `TNLResponseMetrics`
+
+### 1.3.8
+
+- Rework `TNLResponseMetrics` to support `[TNLResponseMetrics attemptMetrics]` built of `TNLResponseAttemptMetrics`
+
+### 1.3.7
+
+- Add an optional method to `TNLRequestDelegate` to provide the `completionQueue` which will default to `dispatch_get_main_queue()`.  This will maintain the optimization of defaulting delegate callbacks to a backgroung queue while adding the safety of completing the execution on the main queue to avoid potential gotchas on completion.
+
+### 1.3.6
+
+- Change `[TNLResponse error]` to `[TNLResponse operationError]`
+
+### 1.3.5
+
+- Add `TNLResponseHydrater` protocol for optional response hydration
+
+### 1.3.0
+
+- Greatly improve robustness of `TNLParameterCollection`
+- Add encoding configurability with `TNLURLEncodingOptions`
+- Add decoding configurability with `TNLURLDecodingOptions`
+- Add dynamic support for encoding objects with the `TNLURLEncodableObject` protocol.
+- Add `TNLURLEncodeDictionary` function
+- Deprecate `TNLURLGenerateParameterString` function
+- Add `TNLURLDecodeDictionary` function
+- Deprecate `TNLURLGenerateParameterDictionary` function
+
+### 1.2.4
+
+- Add `[TNLRequestEventHandler requestOperation:didReceiveURLResponse:]` delegate callback
+
+### 1.2.3
+
+- Add proxy objects for `[NSURLCache tnl_shareURLCache]` and `[NSURLCredentialStorage tnl_shareCredentialStorage]`
+- Make proxy objects defaults of `TNLRequestConfiguration`
+
+### 1.2.2
+
+- Add convenience "Retry-After" header support to `TNLResponseInfo`
+
+### 1.2.1
+
+- Change default `TNLRequestRedirectPolicy` to be `TNLRequestRedirectPolicyDoRedirect`
+
+### 1.2.0
+
+- Completely encapsulate __CocoaSPDY__
+- `TNLGlobalConfiguration(CocoaSPDYAdditions)`
+- `[TNLRequestConfiguration protocolOptions]`
+- `TNLCocoaSPDYConfiguration`
+- `[TNLResponseMetrics cocoaSPDYMetaData]`
+- `TNLCocoaSPDY.h`
+
+### 1.1.1
+
+- Remove `NSCopying` requirement from `TNLHTTPRequest` protocol
+- Add `NSCopying` support to `TNLParameterCollection`
+
+### 1.1.0
+
+- Rework delegate pattern for `TNLRequestOperation`.  #simplify
+
+### 1.0.2
+
+- Add support for URL host sanitization
+
+### 1.0.1
+
+- Prevent `[TNLRequestOperationQueue defaultOperationQueue]` from being suspended
+
+### 1.0.0 (11/17/2014)
+
+- Initial release
+
+### beta (06/09/2014)
+
+- Inaugural beta
