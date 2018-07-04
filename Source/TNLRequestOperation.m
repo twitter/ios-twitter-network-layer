@@ -159,13 +159,13 @@ static void _network_complete(SELF_ARG,
 static void _network_attemptRetryDuringStateTransition(SELF_ARG,
                                                        TNLRequestOperationState oldState,
                                                        TNLRequestOperationState state,
-                                                       TNLResponse *attemptResponse);
+                                                       TNLResponse * __nullable attemptResponse);
 
 // Internal methods called by primary "attempt retry" method
 static BOOL _network_shouldAttemptRetryDuringStateTransition(SELF_ARG,
                                                              TNLRequestOperationState oldState,
                                                              TNLRequestOperationState state,
-                                                             TNLResponse *attemptResponse);
+                                                             TNLResponse * __nullable attemptResponse);
 static BOOL _network_shouldForciblyRetryInvalidatedURLSessionRequest(SELF_ARG,
                                                                      TNLResponse *attemptResponse);
 static void _network_forciblyRetryInvalidatedURLSessionRequest(SELF_ARG,
@@ -605,6 +605,32 @@ TNLStaticAssert(sizeof(TNLRequestOperationState_Unaligned_AtomicT) == sizeof(TNL
 }
 
 #pragma mark Project Methods
+
+- (void)network_URLSessionTaskOperationIsWaitingForConnectivity:(TNLURLSessionTaskOperation *)taskOp
+{
+    TNLAssertIsNetworkQueue();
+    if (!_network_getHasFailedOrFinished(self) && self.URLSessionTaskOperation == taskOp) {
+
+        // Invalidate timeout timer if configured to do so
+        if (TNL_BITMASK_INTERSECTS_FLAGS(_requestConfiguration.connectivityOptions, TNLRequestConnectivityOptionInvalidateAttemptTimeoutWhenWaitForConnectivityTriggered)) {
+            _network_invalidateAttemptTimeoutTimer(self);
+        }
+
+        // Send event
+        id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
+        SEL callback = @selector(tnl_requestOperartionIsWaitingForConnectivity:);
+        if ([eventHandler respondsToSelector:callback]) {
+            dispatch_barrier_async(_callbackQueue, ^{
+                @autoreleasepool {
+                    NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+                    _updateTag(self, tag);
+                    [eventHandler tnl_requestOperartionIsWaitingForConnectivity:self];
+                    _clearTag(self, tag);
+                }
+            });
+        }
+    }
+}
 
 - (void)network_URLSessionTaskOperation:(TNLURLSessionTaskOperation *)taskOp
                   didReceiveURLResponse:(NSURLResponse *)URLResponse
@@ -1315,7 +1341,9 @@ static void _network_convertHydratedRequestToScratchURLRequest(SELF_ARG, tnl_req
 
     NSError *error = nil;
     id<TNLRequest> request = self.hydratedRequest;
-    NSMutableURLRequest *mURLRequest = [TNLRequest mutableURLRequestForRequest:request error:&error];
+    NSMutableURLRequest *mURLRequest = [TNLRequest mutableURLRequestForRequest:request
+                                                                 configuration:self.requestConfiguration
+                                                                         error:&error];
     if (!mURLRequest) {
         _network_fail(self, error);
         return;
@@ -2012,10 +2040,12 @@ static void _network_transitionState(SELF_ARG,
         }
 
         if (TNLRequestOperationStateIsFinal(state)) {
-            // Finished the attempt, we are done with the attempt timer (for now)
+            // Finished the attempt
+            // we are done with the attempt timer (for now)
             _network_invalidateAttemptTimeoutTimer(self);
         }
 
+        // either start the retry or complete the state transition
         _network_attemptRetryDuringStateTransition(self,
                                                    oldState,
                                                    state,
@@ -2507,7 +2537,7 @@ static void _network_applyEncodingMetrics(SELF_ARG,
 static BOOL _network_shouldAttemptRetryDuringStateTransition(SELF_ARG,
                                                              TNLRequestOperationState oldState,
                                                              TNLRequestOperationState state,
-                                                             TNLResponse *attemptResponse)
+                                                             TNLResponse * __nullable attemptResponse)
 {
     if (!self) {
         return NO;
@@ -2515,11 +2545,22 @@ static BOOL _network_shouldAttemptRetryDuringStateTransition(SELF_ARG,
 
     if (!TNLRequestOperationStateIsFinal(state)) {
         return NO;
-    } else if (TNLRequestOperationStateCancelled == state) {
+    }
+
+    TNLAssert(attemptResponse != nil);
+    if (!attemptResponse) {
         return NO;
-    } else if (_network_getHasFailed(self)) {
+    }
+
+    if (TNLRequestOperationStateCancelled == state) {
         return NO;
-    } else if (TNLRequestOperationStateSucceeded == state) {
+    }
+
+    if (_network_getHasFailed(self)) {
+        return NO;
+    }
+
+    if (TNLRequestOperationStateSucceeded == state) {
         if (TNLHTTPStatusCodeIsSuccess(attemptResponse.info.statusCode)) {
             // Can retry on non-defitive HTTP 2xx
             return !TNLHTTPStatusCodeIsDefinitiveSuccess(attemptResponse.info.statusCode);
@@ -2613,7 +2654,7 @@ static void _network_forciblyRetryInvalidatedURLSessionRequest(SELF_ARG,
 static void _network_attemptRetryDuringStateTransition(SELF_ARG,
                                                        TNLRequestOperationState oldState,
                                                        TNLRequestOperationState state,
-                                                       TNLResponse *attemptResponse)
+                                                       TNLResponse * __nullable attemptResponse)
 {
     if (!self) {
         return;

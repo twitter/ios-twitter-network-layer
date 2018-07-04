@@ -17,6 +17,7 @@
 #import "TNLBackgroundURLSessionTaskOperationManager.h"
 #import "TNLGlobalConfiguration_Project.h"
 #import "TNLLRUCache.h"
+#import "TNLNetwork.h"
 #import "TNLRequestOperation_Project.h"
 #import "TNLRequestOperationQueue_Project.h"
 #import "TNLTimeoutOperation.h"
@@ -42,7 +43,9 @@ static NSString * const kManagerVersionKey = @"smv";
 static NSString *_GenerateReuseIdentifier(TNLRequestOperationQueue *requestOperationQueue, NSString *URLSessionConfigurationIdentificationString, TNLRequestExecutionMode executionmode);
 static void _ConfigureSessionConfigurationWithRequestConfiguration(NSURLSessionConfiguration * __nullable sessionConfig, TNLRequestConfiguration * requestConfig);
 static NSString * __nullable _ServiceUnavailableBackoffKeyFromURL(const TNLGlobalConfigurationServiceUnavailableBackoffMode mode, NSURL *URL);
-
+static void TNLMutableParametersStripNonURLSessionProperties(TNLMutableParameterCollection *params);
+static void TNLMutableParametersStripNonBackgroundURLSessionProperties(TNLMutableParameterCollection *params);
+static void TNLMutableParametersStripOverriddenURLSessionProperties(TNLMutableParameterCollection *params);
 
 #pragma mark - Global Session Management
 
@@ -490,9 +493,23 @@ static TNLURLSessionContext * __nullable _synchronize_getSessionContextWithQueue
 
     TNLAssert(requestConfiguration);
 
-    NSURLCache *canonicalCache = TNLUnwrappedURLCache(requestConfiguration.URLCache);
-    NSURLCredentialStorage *canonicalCredentialStorage = TNLUnwrappedURLCredentialStorage(requestConfiguration.URLCredentialStorage);
-    NSHTTPCookieStorage *canonicalCookieStorage = TNLUnwrappedCookieStorage(requestConfiguration.cookieStorage);
+
+    NSURLCache *canonicalCache = nil;
+    NSURLCredentialStorage *canonicalCredentialStorage = nil;
+    NSHTTPCookieStorage *canonicalCookieStorage = nil;
+
+    if (@available(macOS 10.10, iOS 8, tvOS 9, watchOS 2, *)) {
+        // Modern OS versions can use demuxers for increased NSURLSession reuse
+        canonicalCache = TNLGetURLCacheDemuxProxy();
+        canonicalCredentialStorage = TNLGetURLCredentialStorageDemuxProxy();
+        canonicalCookieStorage = TNLGetHTTPCookieStorageDemuxProxy();
+    } else {
+        // Legacy OS versions cannot use a demuxer, so we will live with extra NSURLSessions
+        canonicalCache = TNLUnwrappedURLCache(requestConfiguration.URLCache);
+        canonicalCredentialStorage = TNLUnwrappedURLCredentialStorage(requestConfiguration.URLCredentialStorage);
+        canonicalCookieStorage = TNLUnwrappedCookieStorage(requestConfiguration.cookieStorage);
+    }
+
     TNLMutableParameterCollection *params = TNLMutableParametersFromRequestConfiguration(requestConfiguration,
                                                                                          canonicalCache,
                                                                                          canonicalCredentialStorage,
@@ -500,7 +517,11 @@ static TNLURLSessionContext * __nullable _synchronize_getSessionContextWithQueue
     if (executionMode != TNLRequestExecutionModeBackground) {
         // Let's aim for higher reusability in our foreground sessions and strip out any information
         // that won't be relevant to identifying the session we wish to access
-        TNLMutableParametersStripNonURLSessionProperties(params, executionMode);
+        TNLMutableParametersStripNonURLSessionProperties(params);
+        if (executionMode != TNLRequestExecutionModeBackground) {
+            TNLMutableParametersStripNonBackgroundURLSessionProperties(params);
+        }
+        TNLMutableParametersStripOverriddenURLSessionProperties(params);
 
         // We DO however need to keep track of our manager version
         params[kManagerVersionKey] = @([[self class] version]);
@@ -820,6 +841,22 @@ static void _synchronize_serviceUnavailableEncountered(PRIVATE_SELF(TNLURLSessio
 #pragma mark NSURLSessionTaskDelegate
 
 - (void)URLSession:(NSURLSession *)session
+        taskIsWaitingForConnectivity:(NSURLSessionTask *)task
+{
+    METHOD_LOG();
+    _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
+        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionTaskOperation *op = [context operationForTask:task];
+
+        if (op) {
+            if (@available(macos 10.13, ios 11.0, watchos 4.0, tvos 11.0, *)) {
+                [op URLSession:session taskIsWaitingForConnectivity:task];
+            }
+        }
+    });
+}
+
+- (void)URLSession:(NSURLSession *)session
         task:(NSURLSessionTask *)task
         willPerformHTTPRedirection:(NSHTTPURLResponse *)response
         newRequest:(NSURLRequest *)request
@@ -1078,12 +1115,20 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
         if (previousCount > 12-1) {
             TNLLogWarning(@"We now have %i %@ instances!", previousCount+1, NSStringFromClass([self class]));
         }
+
+        [[NSNotificationCenter defaultCenter] postNotificationName:TNLNetworkDidSpinUpSessionNotification
+                                                            object:nil
+                                                          userInfo:@{ TNLNetworkSessionIdentifierKey: _reuseId }];
     }
     return self;
 }
 
 - (void)dealloc
 {
+    [[NSNotificationCenter defaultCenter] postNotificationName:TNLNetworkWillWindDownSessionNotification
+                                                        object:nil
+                                                      userInfo:@{ TNLNetworkSessionIdentifierKey: _reuseId }];
+
     const int32_t previousCount = atomic_fetch_sub(&sSessionContextCount, 1);
     TNLLogInformation(@"-%@ (%i): %@", NSStringFromClass([self class]), previousCount, _reuseId);
     // TNLLogDebug(@"Destroy %@", _URLSession);
@@ -1186,6 +1231,11 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
         _ivars.networkServiceType = config.networkServiceType;
         _ivars.cookieAcceptPolicy = config.HTTPCookieAcceptPolicy;
         _ivars.allowsCellularAccess = (config.allowsCellularAccess != NO);
+        if (@available(macos 10.13, ios 11.0, watchos 4.0, tvos 11.0, *)) {
+            _ivars.connectivityOptions = (config.waitsForConnectivity != NO) ? TNLRequestConnectivityOptionWaitForConnectivity : TNLRequestConnectivityOptionsNone;
+        } else {
+            _ivars.connectivityOptions = TNLRequestConnectivityOptionsNone;
+        }
         _ivars.discretionary = (config.isDiscretionary != NO);
         _ivars.shouldSetCookies = (config.HTTPShouldSetCookies != NO);
 #if TARGET_OS_IPHONE || TARGET_OS_WATCH || TARGET_OS_TV
@@ -1246,6 +1296,11 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
     // Apply settings
     [self applySettingsToSessionConfiguration:config];
 
+    // Cement the config
+    [NSURLSessionConfiguration tnl_cementConfiguration:config];
+
+    // Update the containers
+
     // URL Cache
     config.URLCache = canonicalCache ?: TNLUnwrappedURLCache(config.URLCache);
 
@@ -1255,16 +1310,16 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
     // Cookie Storage
     config.HTTPCookieStorage = canonicalCookieStorage ?: TNLUnwrappedCookieStorage(config.HTTPCookieStorage);
 
-    // Cement the config
-    [NSURLSessionConfiguration tnl_cementConfiguration:config];
-
     return config;
 }
 
 - (void)applySettingsToSessionConfiguration:(nullable NSURLSessionConfiguration *)config
 {
     // Transfer configuration
+
     _ConfigureSessionConfigurationWithRequestConfiguration(config, self);
+
+    /// Overrides -- keep TNLMutableParametersStrip* functions up to date as things change in this method
 
     // Override the timeouts so that TNL owns the timeouts instead of the NSURLSession
 
@@ -1277,6 +1332,20 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
     if (self.executionMode != TNLRequestExecutionModeBackground) {
         config.timeoutIntervalForResource = NSTimeIntervalSince1970;
     }
+
+    // TNL will control when to fail early if waiting for connectivity
+
+    if (@available(macos 10.13, ios 11.0, watchos 4.0, tvos 11.0, *)) {
+        config.waitsForConnectivity = YES;
+    }
+
+    // TNL will have the NSURLRequest control some configurations,
+    // so have them be "unrestricted" on the session.
+    // This will further reduce the number of NSURLSession instances TNL needs to spin up.
+
+    config.requestCachePolicy = NSURLRequestUseProtocolCachePolicy;
+    config.allowsCellularAccess = YES;
+    config.networkServiceType = NSURLNetworkServiceTypeDefault;
 }
 
 @end
@@ -1305,6 +1374,8 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
     config.URLCache = nil;
     config.URLCredentialStorage = nil;
     config.HTTPCookieStorage = nil;
+    config.HTTPCookieAcceptPolicy = NSHTTPCookieAcceptPolicyNever;
+    config.HTTPShouldSetCookies = NO;
     return config;
 }
 
@@ -1408,6 +1479,9 @@ TNLMutableParameterCollection *TNLMutableParametersFromURLSessionConfiguration(N
     params[TNLSessionConfigurationPropertyKeyNetworkServiceType] = @(config.networkServiceType);
     params[TNLSessionConfigurationPropertyKeyAllowsCellularAccess] = @(config.allowsCellularAccess);
     params[TNLSessionConfigurationPropertyKeyDiscretionary] = @(config.isDiscretionary);
+    if (@available(macos 10.13, ios 11.0, watchos 4.0, tvos 11.0, *)) {
+        params[TNLSessionConfigurationPropertyKeyWaitsForConnectivity] = @(config.waitsForConnectivity);
+    }
 #if TARGET_OS_IPHONE || TARGET_OS_WATCH || TARGET_OS_TV
     params[TNLSessionConfigurationPropertyKeySessionSendsLaunchEvents] = @(config.sessionSendsLaunchEvents);
 #endif
@@ -1468,23 +1542,30 @@ TNLMutableParameterCollection *TNLMutableParametersFromURLSessionConfiguration(N
     return params;
 }
 
-void TNLMutableParametersStripNonURLSessionProperties(TNLMutableParameterCollection *params, TNLRequestExecutionMode mode)
+static void TNLMutableParametersStripNonURLSessionProperties(TNLMutableParameterCollection *params)
 {
     // Only for TNL layer (not NSURLSession)
     params[TNLRequestConfigurationPropertyKeyRedirectPolicy] = nil;
     params[TNLRequestConfigurationPropertyKeyResponseDataConsumptionMode] = nil;
     params[TNLRequestConfigurationPropertyKeyOperationTimeout] = nil;
     params[TNLRequestConfigurationPropertyKeyDeferrableInterval] = nil;
+    params[TNLRequestConfigurationPropertyKeyConnectivityOptions] = nil;
+}
 
-    if (mode != TNLRequestExecutionModeBackground) {
-        // Strip properties background NSURLSession only properties
-        params[TNLRequestConfigurationPropertyKeyIdleTimeout] = nil;
-        params[TNLRequestConfigurationPropertyKeyAttemptTimeout] = nil;
-        params[TNLRequestConfigurationPropertyKeyShouldLaunchAppForBackgroundEvents] = nil;
-    } else {
-        // Strip properties foreground NSURLSession only properties
-        // Nothing
-    }
+static void TNLMutableParametersStripNonBackgroundURLSessionProperties(TNLMutableParameterCollection *params)
+{
+    // Strip properties background NSURLSession only properties
+    params[TNLRequestConfigurationPropertyKeyIdleTimeout] = nil;
+    params[TNLRequestConfigurationPropertyKeyAttemptTimeout] = nil;
+    params[TNLRequestConfigurationPropertyKeyShouldLaunchAppForBackgroundEvents] = nil;
+}
+
+static void TNLMutableParametersStripOverriddenURLSessionProperties(TNLMutableParameterCollection *params)
+{
+    // Strip properties that are overridden in order to coalesce more NSURLSession instances
+    params[TNLRequestConfigurationPropertyKeyCachePolicy] = nil;
+    params[TNLRequestConfigurationPropertyKeyAllowsCellularAccess] = nil;
+    params[TNLRequestConfigurationPropertyKeyNetworkServiceType] = nil;
 }
 
 BOOL TNLURLSessionIdentifierIsTaggedForTNL(NSString *identifier)
@@ -1534,6 +1615,16 @@ static void _ConfigureSessionConfigurationWithRequestConfiguration(NSURLSessionC
     sessionConfig.discretionary = requestConfig.isDiscretionary;
     sessionConfig.networkServiceType = requestConfig.networkServiceType;
     sessionConfig.requestCachePolicy = requestConfig.cachePolicy;
+    if (@available(macos 10.13, ios 11.0, watchos 4.0, tvos 11.0, *)) {
+        const TNLRequestConnectivityOptions connectivityOptions = requestConfig.connectivityOptions;
+        if (TNL_BITMASK_INTERSECTS_FLAGS(connectivityOptions, TNLRequestConnectivityOptionWaitForConnectivity)) {
+            sessionConfig.waitsForConnectivity = YES;
+        } else if (TNL_BITMASK_INTERSECTS_FLAGS(connectivityOptions, TNLRequestConnectivityOptionWaitForConnectivityWhenRetryPolicyProvided) && requestConfig.retryPolicyProvider != nil) {
+            sessionConfig.waitsForConnectivity = YES;
+        } else {
+            sessionConfig.waitsForConnectivity = NO;
+        }
+    }
 #if TARGET_OS_IPHONE || TARGET_OS_WATCH || TARGET_OS_TV
     sessionConfig.sessionSendsLaunchEvents = requestConfig.shouldLaunchAppForBackgroundEvents;
 #endif

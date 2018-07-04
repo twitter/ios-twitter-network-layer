@@ -148,7 +148,9 @@ static void _network_finalizeDidCompleteTask(SELF_ARG,
 #pragma mark NSURLSessionTask Methods
 
 static void _network_willResumeSessionTask(SELF_ARG,
-                                           NSURLRequest * resumeRequest);
+                                           NSURLRequest *resumeRequest);
+static void _network_resumeSessionTask(SELF_ARG,
+                                       NSURLSessionTask *task);
 static void _network_createTask(SELF_ARG,
                                 NSURLRequest *request,
                                 id<TNLRequest> requestPrototype,
@@ -587,7 +589,7 @@ static BOOL _currentRequestHasBody(SELF_ARG)
                     }
                 }
                 _network_willResumeSessionTask(self, currentURLRequest);
-                [createdTask resume];
+                _network_resumeSessionTask(self, createdTask);
                 if (TNLRequestExecutionModeBackground == self->_executionMode) {
                     _network_didStartBackgroundTask(self);
                 }
@@ -694,6 +696,33 @@ static void _handleTaskResponseObservation(SELF_ARG,
 #pragma mark NSURLSessionTaskDelegate
 
 - (void)URLSession:(NSURLSession *)session
+        taskIsWaitingForConnectivity:(NSURLSessionTask *)task
+{
+    tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
+        _network_restartIdleTimer(self);
+
+        const TNLRequestConnectivityOptions options = self->_requestConfiguration.connectivityOptions;
+        if (TNL_BITMASK_INTERSECTS_FLAGS(options, TNLRequestConnectivityOptionWaitForConnectivity)) {
+            // continue
+        } else if (TNL_BITMASK_INTERSECTS_FLAGS(options, TNLRequestConnectivityOptionWaitForConnectivityWhenRetryPolicyProvided) && self->_requestConfiguration.retryPolicyProvider != nil) {
+            // continue
+        } else {
+            // force failure - not waiting for connectivity
+            // this is the same error that would trigger if we didn't have waitsForConnectivity set
+            _network_fail(self, [NSError errorWithDomain:NSURLErrorDomain
+                                                    code:NSURLErrorNotConnectedToInternet
+                                                userInfo:nil]);
+            return;
+        }
+
+        TNLRequestOperation *requestOperation = self->_requestOperation;
+        if (requestOperation) {
+            [requestOperation network_URLSessionTaskOperationIsWaitingForConnectivity:self];
+        }
+    });
+}
+
+- (void)URLSession:(NSURLSession *)session
         task:(NSURLSessionTask *)task
         willPerformHTTPRedirection:(NSHTTPURLResponse *)response
         newRequest:(NSURLRequest *)toRequest
@@ -783,7 +812,7 @@ static void _network_handleRedirect(SELF_ARG,
     block = ^void(NSURLRequest * __nullable sanitizedRequest, NSError * __nullable sanitiziationError) {
 
         TNLAssertIsNetworkQueue();
-        NSURLRequest *finalToRequest = (sanitiziationError) ? nil : sanitizedRequest;
+        NSURLRequest *finalToRequest = (sanitiziationError) ? nil : [sanitizedRequest copy];
 
         if (!finalToRequest) {
 
@@ -804,6 +833,9 @@ static void _network_handleRedirect(SELF_ARG,
             self->_cancelledRedirectResponse = response;
             [self.URLSessionTask cancel]; // will trigger the completion callback
             return;
+        } else {
+            // associate the request config with the new request we redirected to
+            TNLRequestConfigurationAssociateWithRequest(self.requestConfiguration, finalToRequest);
         }
 
         completionHandler(finalToRequest);
@@ -1482,7 +1514,7 @@ static BOOL _network_shouldCancel(SELF_ARG)
 #pragma mark Methods
 
 static void _network_willResumeSessionTask(SELF_ARG,
-                                           NSURLRequest * resumeRequest)
+                                           NSURLRequest *resumeRequest)
 {
     if (!self) {
         return;
@@ -1490,6 +1522,27 @@ static void _network_willResumeSessionTask(SELF_ARG,
 
     [self->_requestOperation network_URLSessionTaskOperation:self
                               didStartSessionTaskWithRequest:resumeRequest];
+}
+
+static void _network_resumeSessionTask(SELF_ARG,
+                                       NSURLSessionTask *task)
+{
+    if (!self) {
+        return;
+    }
+
+    // NSURLSessionTask's `resume` will capture the QOS of the calling queue for
+    // reusing the same QOS for the execution of the task
+
+    long gcdIdentifier = DISPATCH_QUEUE_PRIORITY_DEFAULT;
+    if (@available(iOS 8, macOS 10.10, *)) {
+        gcdIdentifier = TNLConvertTNLPriorityToGCDQOS(self.requestPriority);
+    } else {
+        gcdIdentifier = TNLConvertTNLPriorityToGCDPriority(self.requestPriority);
+    }
+    dispatch_sync(dispatch_get_global_queue(gcdIdentifier, 0), ^{
+        [task resume];
+    });
 }
 
 static void _network_didStartBackgroundTask(SELF_ARG)
@@ -2165,6 +2218,8 @@ static void _network_createTask(SELF_ARG,
         if ([task respondsToSelector:@selector(setPriority:)]) {
             task.priority = TNLConvertTNLPriorityToURLSessionTaskPriority(self->_requestPriority);
         }
+
+        TNLRequestConfigurationAssociateWithRequest(self.requestConfiguration, task.originalRequest);
     }
 
     TNLAssert((error == nil) ^ (task == nil));

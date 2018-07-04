@@ -23,10 +23,6 @@ NS_ASSUME_NONNULL_BEGIN
 FOUNDATION_EXTERN TNLMutableParameterCollection * __nullable
 TNLMutableParametersFromURLSessionConfiguration(NSURLSessionConfiguration * __nullable config);
 
-FOUNDATION_EXTERN void
-TNLMutableParametersStripNonURLSessionProperties(TNLMutableParameterCollection *params,
-                                                 TNLRequestExecutionMode mode);
-
 FOUNDATION_EXTERN BOOL
 TNLURLSessionIdentifierIsTaggedForTNL(NSString *identifier);
 
@@ -83,8 +79,13 @@ NS_ROOT_CLASS
 - (NSURLSessionConfiguration *)generateCanonicalSessionConfiguration;
 - (NSURLSessionConfiguration *)generateCanonicalSessionConfigurationWithExecutionMode:(TNLRequestExecutionMode)mode;
 - (NSURLSessionConfiguration *)generateCanonicalSessionConfigurationForBackgroundModeWithIdentifier:(nullable NSString *)identifier;
-- (NSURLSessionConfiguration *)generateCanonicalSessionConfigurationWithExecutionMode:(TNLRequestExecutionMode)mode identifier:(nullable NSString *)identifier;
-- (NSURLSessionConfiguration *)generateCanonicalSessionConfigurationWithExecutionMode:(TNLRequestExecutionMode)mode identifier:(nullable NSString *)identifier canonicalURLCache:(nullable NSURLCache *)canonicalCache canonicalURLCredentialStorage:(nullable NSURLCredentialStorage *)canonicalCredentialStorage canonicalCookieStorage:(nullable NSHTTPCookieStorage *)canonicalCookieStorage;
+- (NSURLSessionConfiguration *)generateCanonicalSessionConfigurationWithExecutionMode:(TNLRequestExecutionMode)mode
+                                                                           identifier:(nullable NSString *)identifier;
+- (NSURLSessionConfiguration *)generateCanonicalSessionConfigurationWithExecutionMode:(TNLRequestExecutionMode)mode
+                                                                           identifier:(nullable NSString *)identifier
+                                                                    canonicalURLCache:(nullable NSURLCache *)canonicalCache
+                                                        canonicalURLCredentialStorage:(nullable NSURLCredentialStorage *)canonicalCredentialStorage
+                                                               canonicalCookieStorage:(nullable NSHTTPCookieStorage *)canonicalCookieStorage;
 
 - (void)applySettingsToSessionConfiguration:(nullable NSURLSessionConfiguration *)config;
 
@@ -104,29 +105,5 @@ NS_ROOT_CLASS
 + (instancetype)tnl_backgroundSessionConfigurationWithTaggedIdentifier:(NSString *)identifier;
 
 @end
-
-#pragma mark Keys for URL Sessions Configs
-
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyRequestCachePolicy;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyTimeoutIntervalForRequest;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyTimeoutIntervalForResource;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyNetworkServiceType;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyAllowsCellularAccess;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyDiscretionary;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeySessionSendsLaunchEvents;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyConnectionProxyDictionary;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyTLSMinimumSupportedProtocol;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyTLSMaximumSupportedProtocol;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyHTTPShouldUsePipelining;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyHTTPShouldSetCookies;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyHTTPCookieAcceptPolicy;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyHTTPAdditionalHeaders;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyHTTPMaximumConnectionsPerHost;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyHTTPCookieStorage;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyURLCredentialStorage;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyURLCache;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeySharedContainerIdentifier;
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyProtocolClassPrefix; // key will be this prefix concatenated with an index
-FOUNDATION_EXTERN NSString * const TNLSessionConfigurationPropertyKeyMultipathServiceType;
 
 NS_ASSUME_NONNULL_END

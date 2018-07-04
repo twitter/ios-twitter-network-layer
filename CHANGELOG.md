@@ -2,13 +2,22 @@
 
 ## Info
 
-**Document version:** 2.0.0
+**Document version:** 2.0.2
 
-**Last updated:** 06/08/2018
+**Last updated:** 07/01/2018
 
 **Author:** Nolan O'Brien
 
 ## History
+
+### 2.0.2
+
+- add demuxing support for `URLCache`, `URLCredentialStorage`, and `cookieStorage` on `TNLRequestConfiguration`
+  - reduces the number of `NSURLSession` instances that need to be spun up
+
+### 2.0.1
+
+- add `waitsForConnectivity` support via `connectivityOptions` for `TNLRequestConfiguration`
 
 ### 2.0.0
 

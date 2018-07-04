@@ -47,9 +47,13 @@ typedef NS_ENUM(NSInteger, TNLFeaturePriority) {
 FOUNDATION_EXTERN TNLPriority TNLConvertQueuePriorityToTNLPriority(NSOperationQueuePriority pri) __attribute__((const));
 FOUNDATION_EXTERN TNLPriority TNLConvertURLSessionTaskPriorityToTNLPriority(float pri) __attribute__((const));
 FOUNDATION_EXTERN TNLPriority TNLConvertQualityOfServiceToTNLPriority(NSQualityOfService qos) __attribute__((const));
+FOUNDATION_EXTERN TNLPriority TNLConvertGCDPriorityToTNLPriority(dispatch_queue_priority_t priority) __attribute((const));
+FOUNDATION_EXTERN TNLPriority TNLConvertGCDQOSToTNLPriority(qos_class_t gcdQOS) NS_AVAILABLE(10.10, 8.0) __attribute((const));
 
 FOUNDATION_EXTERN NSOperationQueuePriority TNLConvertTNLPriorityToQueuePriority(TNLPriority pri) __attribute__((const));
 FOUNDATION_EXTERN float TNLConvertTNLPriorityToURLSessionTaskPriority(TNLPriority pri) __attribute__((const));
 FOUNDATION_EXTERN NSQualityOfService TNLConvertTNLPriorityToQualityOfService(TNLPriority pri) __attribute__((const));
+FOUNDATION_EXTERN dispatch_queue_priority_t TNLConvertTNLPriorityToGCDPriority(TNLPriority pri) __attribute__((const));
+FOUNDATION_EXTERN qos_class_t TNLConvertTNLPriorityToGCDQOS(TNLPriority pri) NS_AVAILABLE(10.10, 8.0) __attribute__((const));
 
 NS_ASSUME_NONNULL_END

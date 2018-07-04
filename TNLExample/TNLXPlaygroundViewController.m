@@ -10,6 +10,7 @@
 
 #import "TAPI.h"
 
+#import "TNLXAppDelegate.h"
 #import "TNLXMultipartFormData.h"
 #import "TNLXPlaygroundViewController.h"
 
@@ -69,6 +70,7 @@ typedef NS_ENUM(NSInteger, TNLXRedirectTestPolicy)
     IBOutlet UIProgressView *_fileProgressView;
     IBOutlet UITextField *_httpTestField;
     IBOutlet UITextField *_customURLField;
+    IBOutlet UILabel *_commsStatusField;
 
     TNLRequestOperationQueue *_queue;
     TNLRequestOperation *_currentOperation;
@@ -159,6 +161,18 @@ typedef NS_ENUM(NSInteger, TNLXRedirectTestPolicy)
         _loadFileButton.enabled = YES;
         _cancelFileButton.enabled = NO;
     }
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(_communicationStatusDidUpdate:)
+                                                 name:TNLXCommunicationStatusUpdatedNotification
+                                               object:nil];
+    _commsStatusField.text = APP_DELEGATE.communicationStatusDescription;
+}
+
+- (void)_communicationStatusDidUpdate:(NSNotification *)note
+{
+    NSString *status = note.userInfo[@"description"] ?: APP_DELEGATE.communicationStatusDescription;
+    _commsStatusField.text = status;
 }
 
 - (IBAction)goWithRedirects:(id)sender
@@ -241,6 +255,7 @@ typedef NS_ENUM(NSInteger, TNLXRedirectTestPolicy)
     config.operationTimeout = NSTimeIntervalSince1970;
 //    config.executionMode = TNLRequestExecutionModeBackground;
 //    config.responseDataConsumptionMode = TNLResponseDataConsumptionModeSaveToDisk;
+//    config.allowsCellularAccess = NO;
 
     _fileDownloadOp = [TNLRequestOperation operationWithURL:[NSURL URLWithString:DOWNLOAD_URL]
                                               configuration:config
@@ -393,6 +408,24 @@ typedef NS_ENUM(NSInteger, TNLXRedirectTestPolicy)
 {
     _httpsTwitterTestButton.enabled = NO;
     TNLMutableRequestConfiguration *config = [TNLMutableRequestConfiguration defaultConfiguration];
+
+//    static NSInteger swap = 0;
+//    swap++;
+//    switch (swap % 4) {
+//        case 1:
+//            config.URLCache = [NSURLCache tnl_sharedURLCacheProxy];
+//            break;
+//        case 2:
+//            config.URLCache = [NSURLCache tnl_impotentURLCache];
+//            break;
+//        case 3:
+//            config.URLCache = [NSURLCache sharedURLCache];
+//            break;
+//        case 0:
+//        default:
+//            config.URLCache = nil;
+//            break;
+//    }
 
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://www.twitter.com"]];
 

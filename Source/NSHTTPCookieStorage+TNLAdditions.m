@@ -7,15 +7,34 @@
 //
 
 #import "NSHTTPCookieStorage+TNLAdditions.h"
+#import "TNL_Project.h"
+#import "TNLRequestConfiguration_Project.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface TNLSharedCookieStorageProxy : NSProxy
 @end
 
+@interface TNLHTTPCookieStorageDemuxProxy : TNLSharedCookieStorageProxy
+@end
+
+NSHTTPCookieStorage *TNLGetHTTPCookieStorageDemuxProxy()
+{
+    static TNLHTTPCookieStorageDemuxProxy *sProxy;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        if (@available(macOS 10.10, iOS 8, tvOS 9, watchOS 2, *)) {
+            sProxy = [TNLHTTPCookieStorageDemuxProxy alloc];
+        } else {
+            TNLAssertNever();
+        }
+    });
+    return (id)sProxy;
+}
+
 @implementation NSHTTPCookieStorage (TNLAdditions)
 
-+ (NSHTTPCookieStorage *)tnl_sharedHTTPCookieStorage
++ (NSHTTPCookieStorage *)tnl_sharedHTTPCookieStorageProxy
 {
     static TNLSharedCookieStorageProxy *sProxy;
     static dispatch_once_t onceToken;
@@ -45,6 +64,38 @@ NS_ASSUME_NONNULL_BEGIN
     // Let's avoid this in our proxy by overriding it
     // TODO:[nobrien] - investigate swizzling out the description method of NSHTTPCookieStorage for safety
     return [NSString stringWithFormat:@"<%@ %p>", NSStringFromClass([self class]), self];
+}
+
+@end
+
+@implementation TNLHTTPCookieStorageDemuxProxy
+
+// Legacy is not supported since there isn't a good place to associate the request config with the URL
+
+// Modern - API_AVAILABLE(macos(10.10), ios(8.0), watchos(2.0), tvos(9.0))
+
+- (void)storeCookies:(NSArray<NSHTTPCookie *> *)cookies
+             forTask:(NSURLSessionTask *)task
+{
+    TNLRequestConfiguration *config = TNLRequestConfigurationGetAssociatedWithRequest(task.originalRequest);
+    NSHTTPCookieStorage *store = TNLUnwrappedCookieStorage(config.cookieStorage);
+    if (store) {
+        [store storeCookies:cookies
+                    forTask:task];
+    }
+}
+
+- (void)getCookiesForTask:(NSURLSessionTask *)task
+        completionHandler:(void (^) (NSArray<NSHTTPCookie *> * _Nullable cookies))completionHandler
+{
+    TNLRequestConfiguration *config = TNLRequestConfigurationGetAssociatedWithRequest(task.originalRequest);
+    NSHTTPCookieStorage *store = TNLUnwrappedCookieStorage(config.cookieStorage);
+    if (store) {
+        [store getCookiesForTask:task
+               completionHandler:completionHandler];
+    } else {
+        completionHandler(nil);
+    }
 }
 
 @end

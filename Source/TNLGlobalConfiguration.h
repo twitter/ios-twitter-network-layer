@@ -218,6 +218,7 @@ typedef NS_ENUM(NSInteger, TNLGlobalConfigurationServiceUnavailableBackoffMode)
 
  Default == `0.0`
  */
+// TODO: have this be on the configuration!
 @property (nonatomic, readwrite) NSTimeInterval timeoutIntervalBetweenDataTransfer;
 
 #pragma mark Runtime Config

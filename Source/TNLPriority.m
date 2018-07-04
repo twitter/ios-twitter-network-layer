@@ -111,6 +111,78 @@ TNLPriority TNLConvertQualityOfServiceToTNLPriority(NSQualityOfService qos)
     return TNLPriorityHigh;
 }
 
+TNLPriority TNLConvertGCDQOSToTNLPriority(qos_class_t gcdQOS)
+{
+    if (gcdQOS == QOS_CLASS_DEFAULT) {
+        return (QOS_CLASS_USER_INITIATED + QOS_CLASS_UTILITY) / 2;
+    }
+
+    // Below I will denote how much of the range of possibilities remain with comments
+    // [] == bounded inclusive
+    // () == bounded exclusive
+    // Example:
+    //    [Val1...Val2) == "from Val1 inclusive to Val2 exclusive"
+
+
+    // [INF...INF]
+
+    if (gcdQOS > QOS_CLASS_USER_INITIATED) {
+        return TNLPriorityVeryHigh + 1;
+    }
+
+    // [INF...UserInitiated]
+
+    if (gcdQOS < QOS_CLASS_BACKGROUND) {
+        return TNLPriorityVeryLow - 1;
+    }
+
+    // [Background...UserInitiated]
+
+    if (gcdQOS < QOS_CLASS_UTILITY) {
+        return TNLPriorityVeryLow;
+    }
+
+    // [Utility...UserInitiated]
+
+    if (gcdQOS == QOS_CLASS_UTILITY) {
+        return TNLPriorityLow;
+    }
+
+    // (Utility...UserInitiated]
+
+    if (gcdQOS <= ((QOS_CLASS_USER_INITIATED + QOS_CLASS_UTILITY) / 2)) {
+        return TNLPriorityNormal;
+    }
+
+    // (Default...UserInitiated]
+
+    return TNLPriorityHigh;
+}
+
+TNLPriority TNLConvertGCDPriorityToTNLPriority(dispatch_queue_priority_t priority)
+{
+    if (priority == DISPATCH_QUEUE_PRIORITY_DEFAULT) {
+        return TNLPriorityNormal;
+    }
+
+    if (priority > DISPATCH_QUEUE_PRIORITY_HIGH) {
+        return TNLPriorityVeryHigh;
+    }
+    if (priority > DISPATCH_QUEUE_PRIORITY_DEFAULT) {
+        return TNLPriorityHigh;
+    }
+
+    if (priority < DISPATCH_QUEUE_PRIORITY_LOW) {
+        return TNLPriorityVeryLow;
+    }
+    if (priority < DISPATCH_QUEUE_PRIORITY_DEFAULT) {
+        return TNLPriorityLow;
+    }
+
+    TNLAssertNever();
+    return TNLPriorityNormal;
+}
+
 NSOperationQueuePriority TNLConvertTNLPriorityToQueuePriority(TNLPriority pri)
 {
     switch (pri) {
@@ -137,6 +209,34 @@ NSOperationQueuePriority TNLConvertTNLPriorityToQueuePriority(TNLPriority pri)
 
     TNLAssertNever();
     return NSOperationQueuePriorityNormal;
+}
+
+dispatch_queue_priority_t TNLConvertTNLPriorityToGCDPriority(TNLPriority pri)
+{
+    switch (pri) {
+        case TNLPriorityVeryHigh:
+            return DISPATCH_QUEUE_PRIORITY_HIGH + 1;
+        case TNLPriorityHigh:
+            return DISPATCH_QUEUE_PRIORITY_HIGH;
+        case TNLPriorityNormal:
+            return DISPATCH_QUEUE_PRIORITY_DEFAULT;
+        case TNLPriorityLow:
+            return DISPATCH_QUEUE_PRIORITY_LOW;
+        case TNLPriorityVeryLow:
+            return DISPATCH_QUEUE_PRIORITY_BACKGROUND;
+        default:
+            break;
+    }
+
+    if (pri > TNLPriorityVeryHigh) {
+        return DISPATCH_QUEUE_PRIORITY_HIGH + 2;
+    }
+    if (pri < TNLPriorityVeryLow) {
+        return DISPATCH_QUEUE_PRIORITY_BACKGROUND;
+    }
+
+    TNLAssertNever();
+    return DISPATCH_QUEUE_PRIORITY_DEFAULT;
 }
 
 float TNLConvertTNLPriorityToURLSessionTaskPriority(TNLPriority pri)
@@ -209,6 +309,33 @@ NSQualityOfService TNLConvertTNLPriorityToQualityOfService(TNLPriority pri)
 
     TNLAssertNever();
     return NSQualityOfServiceDefault;
+}
+
+qos_class_t TNLConvertTNLPriorityToGCDQOS(TNLPriority pri)
+{
+    switch (pri) {
+        case TNLPriorityVeryLow:
+            return QOS_CLASS_BACKGROUND;
+        case TNLPriorityLow:
+            return QOS_CLASS_UTILITY;
+        case TNLPriorityHigh:
+            return QOS_CLASS_USER_INITIATED;
+        case TNLPriorityVeryHigh:
+            return QOS_CLASS_USER_INTERACTIVE;
+        case TNLPriorityNormal:
+            return QOS_CLASS_DEFAULT;
+        default:
+            break;
+    }
+
+    if (pri < TNLPriorityVeryLow) {
+        return QOS_CLASS_BACKGROUND;
+    } else if (pri > TNLPriorityVeryHigh) {
+        return QOS_CLASS_USER_INTERACTIVE;
+    }
+
+    TNLAssertNever();
+    return QOS_CLASS_DEFAULT;
 }
 
 NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pri)

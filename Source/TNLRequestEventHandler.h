@@ -56,7 +56,7 @@ typedef void(^TNLRequestOperationEnqueueNetworkingOperationBlock)(NSArray<NSOper
 
 /**
  The operation did have its URL's host sanitized.
- Could be for the initial request, a redirec or a retry.
+ Could be for the initial request, a redirect or a retry.
  */
 - (void)tnl_requestOperation:(TNLRequestOperation *)op
          didSanitizeFromHost:(NSString *)oldHost
@@ -107,6 +107,12 @@ typedef void(^TNLRequestOperationEnqueueNetworkingOperationBlock)(NSArray<NSOper
 - (void)tnl_requestOperation:(TNLRequestOperation *)op
         readyToEnqueueUnderlyingNetworkingOperation:(BOOL)isRetry
         enqueueBlock:(TNLRequestOperationEnqueueNetworkingOperationBlock)enqueueBlock;
+
+/**
+ The operation is waiting for connnectivity.
+ Only called if `[TNLRequestConfiguration connectivityOptions]` is set to yield waiting for connectivity.
+ */
+- (void)tnl_requestOperartionIsWaitingForConnectivity:(TNLRequestOperation *)op;
 
 /**
  The operation did complete.

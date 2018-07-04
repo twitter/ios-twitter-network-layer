@@ -79,16 +79,30 @@ static NSUInteger const kMaxBytesToCompare = 1024;
 + (nullable NSURLRequest *)URLRequestForRequest:(nullable id<TNLRequest>)request
                                           error:(out NSError **)error
 {
+    return [self URLRequestForRequest:request configuration:nil error:error];
+}
+
++ (nullable NSURLRequest *)URLRequestForRequest:(nullable id<TNLRequest>)request
+                                  configuration:(nullable TNLRequestConfiguration *)config
+                                          error:(out NSError **)error
+{
     NSURLRequest *URLRequest;
-    if ([request isKindOfClass:[NSURLRequest class]]) {
+    if ([request isKindOfClass:[NSURLRequest class]] && !config) {
         URLRequest = (NSURLRequest *)request;
     } else {
-        URLRequest = [self mutableURLRequestForRequest:request error:error];
+        URLRequest = [self mutableURLRequestForRequest:request configuration:config error:error];
     }
     return [URLRequest copy];
 }
 
 + (nullable NSMutableURLRequest *)mutableURLRequestForRequest:(nullable id<TNLRequest>)request
+                                                        error:(out NSError **)error
+{
+    return [self mutableURLRequestForRequest:request configuration:nil error:error];
+}
+
++ (nullable NSMutableURLRequest *)mutableURLRequestForRequest:(nullable id<TNLRequest>)request
+                                                configuration:(nullable TNLRequestConfiguration *)config
                                                         error:(out NSError **)error
 {
     if (![request respondsToSelector:@selector(URL)]) {
@@ -114,6 +128,15 @@ static NSUInteger const kMaxBytesToCompare = 1024;
 
     if ([request respondsToSelector:@selector(allHTTPHeaderFields)]) {
         urlRequest.allHTTPHeaderFields = [request allHTTPHeaderFields];
+    }
+
+    if (config) {
+        urlRequest.cachePolicy = config.cachePolicy;
+        urlRequest.allowsCellularAccess = config.allowsCellularAccess;
+        urlRequest.networkServiceType = config.networkServiceType;
+        urlRequest.HTTPShouldHandleCookies = config.shouldSetCookies;
+        // urlRequest.HTTPShouldUsePipelining -- move to HTTP/2 instead of worrying about pipelining
+        // urlRequest.timeoutInterval -- TNL controls timeout intervals
     }
 
     return urlRequest;

@@ -12,12 +12,21 @@
 #import "TNLXImageSupport.h"
 #import "TNLXNetworkHeuristicObserver.h"
 
-@interface TNLXAppDelegate () <TNLNetworkObserver, TNLLogger>
+NSString *TNLXCommunicationStatusUpdatedNotification = @"TNLXCommunicationStatusUpdatedNotification";
+
+@interface TNLXAppDelegate () <TNLNetworkObserver, TNLLogger, TNLCommunicationAgentObserver>
 @end
 
 @implementation TNLXAppDelegate
 {
     IBOutlet UITabBarController *_tabBarController;
+
+    TNLCommunicationAgent *_commAgent;
+    NSString *_communicationStatusDescription;
+    NSString *_SCFlagsString;
+    NSString *_statusString;
+    NSString *_carrierName;
+    NSString *_radioTech;
 }
 
 - (BOOL)tnl_canLogWithLevel:(TNLLogLevel)level context:(id)context
@@ -63,10 +72,13 @@
                                                  name:TNLNetworkExecutingNetworkConnectionsDidUpdateNotification
                                                object:nil];
 
-    // Prepare global network observer
+    // Prepare global settings
+    _commAgent = [[TNLCommunicationAgent alloc] initWithInternetReachabilityHost:@"api.twitter.com"];
     (void)[TNLXNetworkHeuristicObserver sharedInstance];
     [[TNLGlobalConfiguration sharedInstance] addNetworkObserver:self];
     [[TNLGlobalConfiguration sharedInstance] setAssertsEnabled:YES];
+    [[TNLGlobalConfiguration sharedInstance] setMetricProvidingCommunicationAgent:_commAgent];
+    [_commAgent addObserver:self];
 
     // Prepare Twitter API
     TAPIClient *client = [TAPIClient sharedInstance];
@@ -189,6 +201,89 @@
                                               style:UIAlertActionStyleDefault
                                             handler:NULL]];
     [self.window.rootViewController presentViewController:alert animated:YES completion:NULL];
+}
+
+#pragma mark TNLCommunicationAgentObserver
+
+- (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
+        didRegisterObserverWithInitialReachabilityFlags:(SCNetworkReachabilityFlags)flags
+        status:(TNLNetworkReachabilityStatus)status
+        carrierInfo:(nullable id<TNLCarrierInfo>)info
+        WWANRadioAccessTechnology:(nullable NSString *)radioTech
+{
+    _SCFlagsString = TNLDebugStringFromNetworkReachabilityFlags(flags);
+    _statusString = TNLNetworkReachabilityStatusToString(status) ?: @"<null>";
+    _carrierName = info.carrierName ?: @"<null>";
+    _radioTech = [radioTech stringByReplacingOccurrencesOfString:@"CTRadioAccessTechnology" withString:@""] ?: @"<null>";
+
+    NSDictionary *logInfo = @{
+                              @"SC_flags" : _SCFlagsString,
+                              @"status" : _statusString,
+                              @"carrier" : info ?: (id)@"<null>",
+                              @"radioTech" : _radioTech,
+                              };
+    NSLog(@"did register: %@", logInfo);
+    [self _updateCommunicationStatusDescription];
+}
+
+- (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
+        didUpdateReachabilityFromPreviousFlags:(SCNetworkReachabilityFlags)oldFlags
+        previousStatus:(TNLNetworkReachabilityStatus)oldStatus
+        toCurrentFlags:(SCNetworkReachabilityFlags)newFlags
+        currentStatus:(TNLNetworkReachabilityStatus)newStatus
+{
+    _SCFlagsString = TNLDebugStringFromNetworkReachabilityFlags(newFlags);
+    _statusString = TNLNetworkReachabilityStatusToString(newStatus) ?: @"<null>";
+
+    NSDictionary *logInfo = @{
+                              @"SC_flags_old" : TNLDebugStringFromNetworkReachabilityFlags(oldFlags),
+                              @"SC_flags_new" : _SCFlagsString,
+                              @"status_old" : TNLNetworkReachabilityStatusToString(oldStatus) ?: @"<null>",
+                              @"status_new" : _statusString,
+                              };
+    NSLog(@"did update reachability: %@", logInfo);
+    [self _updateCommunicationStatusDescription];
+}
+
+- (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
+        didUpdateCarrierFromPreviousInfo:(nullable id<TNLCarrierInfo>)oldInfo
+        toCurrentInfo:(nullable id<TNLCarrierInfo>)newInfo
+{
+    _carrierName = newInfo.carrierName ?: @"<null>";
+
+    NSDictionary *logInfo = @{
+                              @"carrier_old" : oldInfo ?: (id)@"<null>",
+                              @"carrier_new" : newInfo ?: (id)@"<null>",
+                              };
+    NSLog(@"did update carrier: %@", logInfo);
+    [self _updateCommunicationStatusDescription];
+}
+
+- (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
+        didUpdateWWANRadioAccessTechnologyFromPreviousTech:(nullable NSString *)oldTech
+        toCurrentTech:(nullable NSString *)newTech
+{
+    _radioTech = [newTech stringByReplacingOccurrencesOfString:@"CTRadioAccessTechnology" withString:@""] ?: @"<null>";
+
+    NSDictionary *logInfo = @{
+                              @"radioTech_old" : oldTech ?: @"null",
+                              @"radioTech_new" : newTech ?: @"null",
+                              };
+    NSLog(@"did update radio tech: %@", logInfo);
+    [self _updateCommunicationStatusDescription];
+}
+
+- (void)_updateCommunicationStatusDescription
+{
+    _communicationStatusDescription = [NSString stringWithFormat:@"%@, %@, %@,\n%@", _radioTech, _carrierName, _statusString, _SCFlagsString];
+    [[NSNotificationCenter defaultCenter] postNotificationName:TNLXCommunicationStatusUpdatedNotification
+                                                        object:_commAgent
+                                                      userInfo:@{ @"description" : _communicationStatusDescription }];
+}
+
+- (NSString *)communicationStatusDescription
+{
+    return _communicationStatusDescription;
 }
 
 @end

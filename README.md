@@ -508,7 +508,6 @@ APPRetrieveBlobRequest *request = [[APPRetrieveBlobRequest alloc] initWithBlobId
  // APISendMessageResponse's implementation for messageId is just:
  //    return self.result[@"newMessageId"];
 ```
-
 # License
 
 Copyright 2014-2018 Twitter, Inc.

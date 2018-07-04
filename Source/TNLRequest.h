@@ -459,11 +459,17 @@ NS_ASSUME_NONNULL_BEGIN
  Useful for request hydration, see `TNLRequestHydrater`.
 
  @param request The request to convert
+ @param config  The (optional) configuration to apply the `NSURLRequest` (applies what is possible)
  @param error   If an `NSURLRequest` cannot be created from the provided _request_,
  `NO` will be returned and _error_ will be populated (if provided)
 
  @return The new `NSURLRequest` or `nil`.  If `nil`, then _error_ (if provided) will be populated.
  */
++ (nullable NSURLRequest *)URLRequestForRequest:(nullable id<TNLRequest>)request
+                                  configuration:(nullable TNLRequestConfiguration *)config
+                                          error:(out NSError * __nullable * __nullable)error;
+
+/** See `URLRequestForRequest:configuration:error:` */
 + (nullable NSURLRequest *)URLRequestForRequest:(nullable id<TNLRequest>)request
                                           error:(out NSError * __nullable * __nullable)error;
 
@@ -472,11 +478,17 @@ NS_ASSUME_NONNULL_BEGIN
  Useful for request hydration, see `TNLRequestHydrater`.
 
  @param request The request to convert
+ @param config  The (optional) configuration to apply the `NSURLRequest` (applies what is possible)
  @param error   If an `NSMutableURLRequest` cannot be created from the provided _request_,
  `NO` will be returned and _error_ will be populated (if provided)
 
  @return The new `NSMutableURLRequest` or `nil`.  If `nil`, then _error_ (if provided) will be populated.
  */
++ (nullable NSMutableURLRequest *)mutableURLRequestForRequest:(nullable id<TNLRequest>)request
+                                                configuration:(nullable TNLRequestConfiguration *)config
+                                                        error:(out NSError * __nullable * __nullable)error;
+
+/** See `mutableURLRequestForRequest:configuration:error:` */
 + (nullable NSMutableURLRequest *)mutableURLRequestForRequest:(nullable id<TNLRequest>)request
                                                         error:(out NSError * __nullable * __nullable)error;
 

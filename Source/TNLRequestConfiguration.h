@@ -119,6 +119,43 @@ typedef NS_OPTIONS(NSInteger, TNLRequestProtocolOptions) {
 };
 
 /**
+ Options for how a request operation should behave when waiting for connectivity.
+ Does not apply to background request operations.
+ Waiting for connectivity will wait indefinitely until connectivity or a timeout occurs.
+ See `[NSURLSessionConfiguration waitsForConnectivity]`.
+ */
+typedef NS_OPTIONS(NSInteger, TNLRequestConnectivityOptions) {
+    /** No options.  Fail if no connectivity and depend on retry policy. */
+    TNLRequestConnectivityOptionsNone = 0,
+
+    /** Wait for connectivity always */
+    TNLRequestConnectivityOptionWaitForConnectivity = (1 << 0),
+
+    /**
+     Wait for connectivity if retry policy is present.
+     No-op if `TNLRequestConnectivityOptionWaitForConnectivity` is also set.
+     */
+    TNLRequestConnectivityOptionWaitForConnectivityWhenRetryPolicyProvided = (1 << 1),
+
+    /**
+     Invalidate attempt timeout when waiting for connectivity encountered.
+     No-op if the other options don't enable waiting for connectivity.
+     */
+    TNLRequestConnectivityOptionInvalidateAttemptTimeoutWhenWaitForConnectivityTriggered = (1 << 2),
+
+    /**
+     Suspend the attempt timeout while waiting for connectivity, resuming when connectivity returns.
+     No-op if `TNLRequestConnectivityOptionInvalidateAttemptTimeoutWhenWaitForConnectivityTriggered` is also set.
+     TODO: there is no event from NSURLSession when a task continues upon connectivity, so this is
+           feature is out of reach right now.
+     */
+    // TNLRequestConnectivityOptionSuspendAttemptTimeoutDuringWaitForConnectivity = (1 << 3),
+
+    /** Default */
+    TNLRequestConnectivityOptionsDefault = TNLRequestConnectivityOptionsNone,
+};
+
+/**
  The expected anatomy of how a request will break down
  */
 typedef NS_ENUM(NSInteger, TNLRequestAnatomy) {
@@ -175,6 +212,7 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
         TNLRequestRedirectPolicy redirectPolicy:8;
         TNLResponseDataConsumptionMode responseDataConsumptionMode:8;
         TNLRequestProtocolOptions protocolOptions:8;
+        TNLRequestConnectivityOptions connectivityOptions:8;
 
         // Timeout settings
         NSTimeInterval idleTimeout;
@@ -233,6 +271,14 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
  @discussion __See Also__ `TNLRequestProtocolOptions`
  */
 @property (nonatomic, readonly) TNLRequestProtocolOptions protocolOptions;
+
+/**
+ The options for how to handle waiting for connectivity.
+
+ Default is `TNLRequestConnectivityOptionsDefault` (fail instead of waiting for connectivity)
+ Requires iOS 11, macOS 10.13
+ */
+@property (nonatomic, readonly) TNLRequestConnectivityOptions connectivityOptions;
 
 /**
  Whether the request operation should contribute to the
@@ -365,6 +411,7 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
  how to handle cookies provided by a response
 
  See `[NSURLSessionConfiguration HTTPCookieAcceptPolicy]`
+ Default is `NSHTTPCookieAcceptPolicyNever` in TNL, must explicitely enable cookies
  */
 @property (nonatomic, readonly) NSHTTPCookieAcceptPolicy cookieAcceptPolicy;
 
@@ -372,6 +419,7 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
  whether cookies should be set in the request's headers
 
  See `[NSURLSessionConfiguration HTTPShouldSetCookies]`
+ Default is `NO` in TNL, must explicitely enable cookies
  */
 @property (nonatomic, readonly) BOOL shouldSetCookies;
 
@@ -471,6 +519,7 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
 @property (nonatomic, readwrite) TNLRequestRedirectPolicy redirectPolicy;
 @property (nonatomic, readwrite) TNLResponseDataConsumptionMode responseDataConsumptionMode;
 @property (nonatomic, readwrite) TNLRequestProtocolOptions protocolOptions;
+@property (nonatomic, readwrite) TNLRequestConnectivityOptions connectivityOptions;
 
 @property (nonatomic, strong, readwrite, nullable) id<TNLRequestRetryPolicyProvider> retryPolicyProvider;
 @property (nonatomic, readwrite, nullable) id<TNLContentEncoder> contentEncoder;

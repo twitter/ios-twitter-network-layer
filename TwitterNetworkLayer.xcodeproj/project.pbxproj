@@ -68,6 +68,7 @@
 		8B5141241CE530E100830987 /* TNLTiming.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B5141221CE530E000830987 /* TNLTiming.m */; };
 		8B52983620B74EAF00326E1F /* TAPIFavoriteRequests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B52983520B74EAF00326E1F /* TAPIFavoriteRequests.m */; };
 		8B52983920B7878200326E1F /* TAPISearchRequests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B52983820B7878200326E1F /* TAPISearchRequests.m */; };
+		8B5849E520D4454500FA8C84 /* TNLInternalKeys.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B5849E320D4454500FA8C84 /* TNLInternalKeys.h */; };
 		8B5DBBFE206D8F9D007EF65B /* TNLCommunicationAgent_Project.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B5DBBFD206D8F9C007EF65B /* TNLCommunicationAgent_Project.h */; };
 		8B5DBBFF206D8F9D007EF65B /* TNLCommunicationAgent_Project.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B5DBBFD206D8F9C007EF65B /* TNLCommunicationAgent_Project.h */; };
 		8B5F44851A1903A100720DEA /* TNLXImageSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BC1AC3C19A27559008687EE /* TNLXImageSupport.m */; };
@@ -464,10 +465,11 @@
 		8B4EC7F71D46DD6500DDEAF3 /* NSURLSessionTaskMetrics+TNLAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSURLSessionTaskMetrics+TNLAdditions.m"; sourceTree = "<group>"; };
 		8B5141211CE530E000830987 /* TNLTiming.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLTiming.h; sourceTree = "<group>"; };
 		8B5141221CE530E000830987 /* TNLTiming.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLTiming.m; sourceTree = "<group>"; };
-		8B52983420B74EAF00326E1F /* TAPIFavoriteRequests.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TAPIFavoriteRequests.h; sourceTree = "<group>"; };
-		8B52983520B74EAF00326E1F /* TAPIFavoriteRequests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TAPIFavoriteRequests.m; sourceTree = "<group>"; };
-		8B52983720B7878200326E1F /* TAPISearchRequests.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TAPISearchRequests.h; sourceTree = "<group>"; };
-		8B52983820B7878200326E1F /* TAPISearchRequests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TAPISearchRequests.m; sourceTree = "<group>"; };
+		8B52983420B74EAF00326E1F /* TAPIFavoriteRequests.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = TAPIFavoriteRequests.h; path = TAPI/TAPIFavoriteRequests.h; sourceTree = "<group>"; };
+		8B52983520B74EAF00326E1F /* TAPIFavoriteRequests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = TAPIFavoriteRequests.m; path = TAPI/TAPIFavoriteRequests.m; sourceTree = "<group>"; };
+		8B52983720B7878200326E1F /* TAPISearchRequests.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = TAPISearchRequests.h; path = TAPI/TAPISearchRequests.h; sourceTree = "<group>"; };
+		8B52983820B7878200326E1F /* TAPISearchRequests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = TAPISearchRequests.m; path = TAPI/TAPISearchRequests.m; sourceTree = "<group>"; };
+		8B5849E320D4454500FA8C84 /* TNLInternalKeys.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TNLInternalKeys.h; sourceTree = "<group>"; };
 		8B5DBBFD206D8F9C007EF65B /* TNLCommunicationAgent_Project.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLCommunicationAgent_Project.h; sourceTree = "<group>"; };
 		8B68AA5C1D95BF2E00AFD0C8 /* TNLAutoDependencyTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLAutoDependencyTest.m; sourceTree = "<group>"; };
 		8B6CB1A5199BE234009A09CE /* TNLRequestConfiguration_Project.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLRequestConfiguration_Project.h; sourceTree = "<group>"; };
@@ -481,8 +483,8 @@
 		8B7106E920B99DF300A78535 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		8B79ACD51975E4BD00FA8D1E /* TNLRequestConfiguration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLRequestConfiguration.h; sourceTree = "<group>"; };
 		8B79ACD61975E4BD00FA8D1E /* TNLRequestConfiguration.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLRequestConfiguration.m; sourceTree = "<group>"; };
-		8B81295120BF4CA5003B72C2 /* TAPIUploadMediaRequest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TAPIUploadMediaRequest.h; sourceTree = "<group>"; };
-		8B81295220BF4CA5003B72C2 /* TAPIUploadMediaRequest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TAPIUploadMediaRequest.m; sourceTree = "<group>"; };
+		8B81295120BF4CA5003B72C2 /* TAPIUploadMediaRequest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = TAPIUploadMediaRequest.h; path = TAPI/TAPIUploadMediaRequest.h; sourceTree = "<group>"; };
+		8B81295220BF4CA5003B72C2 /* TAPIUploadMediaRequest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = TAPIUploadMediaRequest.m; path = TAPI/TAPIUploadMediaRequest.m; sourceTree = "<group>"; };
 		8B82A5A61948D3E900A16237 /* TNLNetworkObserver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLNetworkObserver.h; sourceTree = "<group>"; };
 		8B82A5A91948D63100A16237 /* TNLURLSessionTaskOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLURLSessionTaskOperation.h; sourceTree = "<group>"; };
 		8B82A5AA1948D63100A16237 /* TNLURLSessionTaskOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLURLSessionTaskOperation.m; sourceTree = "<group>"; };
@@ -595,7 +597,7 @@
 		8BEE98C11ADC5E3100A58A92 /* TNLHTTPHeaderProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLHTTPHeaderProvider.h; sourceTree = "<group>"; };
 		8BF3D2B51A76EAF700DABD9D /* TNLXNetworkHeuristicObserver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLXNetworkHeuristicObserver.h; sourceTree = "<group>"; };
 		8BF3D2B61A76EAF700DABD9D /* TNLXNetworkHeuristicObserver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLXNetworkHeuristicObserver.m; sourceTree = "<group>"; };
-		8BF6B52920B866890008CB75 /* TAPI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TAPI.h; sourceTree = "<group>"; };
+		8BF6B52920B866890008CB75 /* TAPI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = TAPI.h; path = TAPI/TAPI.h; sourceTree = "<group>"; };
 		8BF953DB1A67DD3F00E9C1AA /* TNLAttemptMetrics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLAttemptMetrics.h; sourceTree = "<group>"; };
 		8BF953DC1A67DD3F00E9C1AA /* TNLAttemptMetrics.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLAttemptMetrics.m; sourceTree = "<group>"; };
 		8BF953E11A67E73E00E9C1AA /* TNLAttemptMetrics_Project.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLAttemptMetrics_Project.h; sourceTree = "<group>"; };
@@ -733,6 +735,7 @@
 				8B2924BB1992E42900AC139A /* TNLBackgroundURLSessionTaskOperationManager.h */,
 				8B5DBBFD206D8F9C007EF65B /* TNLCommunicationAgent_Project.h */,
 				8B86BF381A2D0998005AE96B /* TNLGlobalConfiguration_Project.h */,
+				8B5849E320D4454500FA8C84 /* TNLInternalKeys.h */,
 				8B6CB1A5199BE234009A09CE /* TNLRequestConfiguration_Project.h */,
 				8BE403001946794300C7241E /* TNLRequestOperation_Project.h */,
 				8BE4030C1946794300C7241E /* TNLRequestOperationQueue_Project.h */,
@@ -991,6 +994,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8B79ACD71975E4BD00FA8D1E /* TNLRequestConfiguration.h in Headers */,
+				8B5849E520D4454500FA8C84 /* TNLInternalKeys.h in Headers */,
 				8B4E017119FB0632004D3CED /* TNLParameterCollection.h in Headers */,
 				8BE30EF41AA270750061FE99 /* TNLRequest+Utilities.h in Headers */,
 				8BE4031A1946794300C7241E /* TNLResponse.h in Headers */,
@@ -1237,7 +1241,7 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = TNL;
-				LastUpgradeCheck = 0930;
+				LastUpgradeCheck = 0940;
 				ORGANIZATIONNAME = Twitter;
 				TargetAttributes = {
 					8BE402C51946743D00C7241E = {

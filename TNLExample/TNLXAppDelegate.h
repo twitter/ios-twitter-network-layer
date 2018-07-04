@@ -8,8 +8,14 @@
 
 @import UIKit;
 
+FOUNDATION_EXTERN NSString *TNLXCommunicationStatusUpdatedNotification;
+
 @interface TNLXAppDelegate : UIResponder <UIApplicationDelegate>
 
 @property (strong, nonatomic) UIWindow *window;
 
+- (NSString *)communicationStatusDescription;
+
 @end
+
+#define APP_DELEGATE ((TNLXAppDelegate *)[[UIApplication sharedApplication] delegate])

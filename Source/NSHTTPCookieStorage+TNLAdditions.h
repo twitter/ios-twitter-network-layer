@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return the shared `NSURLCredentialStorage` proxy
  */
-+ (NSHTTPCookieStorage *)tnl_sharedHTTPCookieStorage;
++ (NSHTTPCookieStorage *)tnl_sharedHTTPCookieStorageProxy;
 
 @end
 

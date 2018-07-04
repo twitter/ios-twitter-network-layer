@@ -6,6 +6,8 @@
 //  Copyright (c) 2014 Twitter. All rights reserved.
 //
 
+#include <objc/message.h>
+
 #import "NSHTTPCookieStorage+TNLAdditions.h"
 #import "NSURLCache+TNLAdditions.h"
 #import "NSURLCredentialStorage+TNLAdditions.h"
@@ -17,6 +19,8 @@
 #import "TNLURLSessionManager.h"
 
 NS_ASSUME_NONNULL_BEGIN
+
+static const char kAssociatedConfigKey[] = "tnl.associated.config";
 
 typedef struct {
     const NSTimeInterval idleTimeout;
@@ -97,6 +101,11 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
 - (TNLRequestProtocolOptions)protocolOptions
 {
     return _ivars.protocolOptions;
+}
+
+- (TNLRequestConnectivityOptions)connectivityOptions
+{
+    return _ivars.connectivityOptions;
 }
 
 - (BOOL)contributeToExecutingNetworkConnectionsCount
@@ -216,6 +225,7 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
         if (@available(iOS 11, *)) {
             _ivars.multipathServiceType = NSURLSessionMultipathServiceTypeNone;
         }
+        _ivars.connectivityOptions = TNLRequestConnectivityOptionsDefault;
 
         memcpy(&_ivars, &(config->_ivars), sizeof(_ivars));
     }
@@ -273,6 +283,7 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
     D_SET(redirectPolicy);
     D_SET(responseDataConsumptionMode);
     D_SET(protocolOptions);
+    D_SET(connectivityOptions);
     D_SET(contributeToExecutingNetworkConnectionsCount);
     D_SET(skipHostSanitization);
     D_SET(computeMD5);
@@ -332,19 +343,37 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
         return YES;
     }
 
-    if ([object isKindOfClass:[TNLRequestConfiguration class]]) {
-        TNLRequestConfiguration *other = object;
-        return (0 == memcmp(&_ivars, &(other->_ivars), sizeof(_ivars))) &&
-               self.retryPolicyProvider == other.retryPolicyProvider &&
-               (self.sharedContainerIdentifier == other.sharedContainerIdentifier ||
-                [self.sharedContainerIdentifier isEqualToString:other.sharedContainerIdentifier]) &&
-               self.URLCredentialStorage == other.URLCredentialStorage &&
-               self.URLCache == other.URLCache &&
-               self.cookieStorage == other.cookieStorage;
-        // return other.executionMode == self.executionMode && other.contributeToExecutingNetworkConnectionsCount == self.contributeToExecutingNetworkConnectionsCount && other.skipHostSanitization == self.skipHostSanitization && other.retryPolicyProvider == self.retryPolicyProvider && [TNLParametersFromRequestConfiguration(self) isEqual:TNLParametersFromRequestConfiguration(other)];
+    if (![object isKindOfClass:[TNLRequestConfiguration class]]) {
+        return NO;
     }
 
-    return NO;
+    TNLRequestConfiguration *other = object;
+
+    if (0 != memcmp(&_ivars, &(other->_ivars), sizeof(_ivars))) {
+        return NO;
+    }
+
+    if (self.retryPolicyProvider != other.retryPolicyProvider) {
+        return NO;
+    }
+
+    if (self.sharedContainerIdentifier != other.sharedContainerIdentifier && ![self.sharedContainerIdentifier isEqualToString:other.sharedContainerIdentifier]) {
+        return NO;
+    }
+
+    if (self.URLCredentialStorage != other.URLCredentialStorage) {
+        return NO;
+    }
+
+    if (self.URLCache != other.URLCache) {
+        return NO;
+    }
+
+    if (self.cookieStorage != other.cookieStorage) {
+        return NO;
+    }
+
+    return YES;
 }
 
 @end
@@ -361,6 +390,7 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
 @dynamic redirectPolicy;
 @dynamic responseDataConsumptionMode;
 @dynamic protocolOptions;
+@dynamic connectivityOptions;
 
 @dynamic retryPolicyProvider;
 @dynamic contentEncoder;
@@ -408,6 +438,11 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
 - (void)setProtocolOptions:(TNLRequestProtocolOptions)protocolOptions
 {
     _ivars.protocolOptions = protocolOptions;
+}
+
+- (void)setConnectivityOptions:(TNLRequestConnectivityOptions)connectivityOptions
+{
+    _ivars.connectivityOptions = (connectivityOptions & 0xf);
 }
 
 - (void)setContributeToExecutingNetworkConnectionsCount:(BOOL)contributeToExecutingNetworkConnectionsCount
@@ -586,6 +621,8 @@ PROP_RETAIN_ASSIGN_IMP(cookieStorage);
 
     PULL_VALUE(TNLRequestConfigurationPropertyKeyProtocolOptions, protocolOptions, integerValue, TNLRequestProtocolOptions);
 
+    PULL_VALUE(TNLRequestConfigurationPropertyKeyConnectivityOptions, connectivityOptions, integerValue, TNLRequestConnectivityOptions);
+
     PULL_VALUE(TNLRequestConfigurationPropertyKeyIdleTimeout, idleTimeout, doubleValue, NSTimeInterval);
 
     PULL_VALUE(TNLRequestConfigurationPropertyKeyAttemptTimeout, attemptTimeout, doubleValue, NSTimeInterval);
@@ -659,7 +696,7 @@ NSURLCredentialStorage * __nullable TNLUnwrappedURLCredentialStorage(NSURLCreden
 
 NSHTTPCookieStorage * __nullable TNLUnwrappedCookieStorage(NSHTTPCookieStorage * __nullable storage)
 {
-    if (storage == [NSHTTPCookieStorage tnl_sharedHTTPCookieStorage]) {
+    if (storage == [NSHTTPCookieStorage tnl_sharedHTTPCookieStorageProxy]) {
         return [NSHTTPCookieStorage sharedHTTPCookieStorage];
     }
     return storage;
@@ -698,6 +735,7 @@ TNLMutableParameterCollection * __nullable TNLMutableParametersFromRequestConfig
     params[TNLRequestConfigurationPropertyKeyResponseDataConsumptionMode] = @(config.responseDataConsumptionMode);
     params[TNLRequestConfigurationPropertyKeyOperationTimeout] = @(config.operationTimeout);
     params[TNLRequestConfigurationPropertyKeyDeferrableInterval] = @(config.deferrableInterval);
+    params[TNLRequestConfigurationPropertyKeyConnectivityOptions] = @(config.connectivityOptions);
 
     // For NSURLSession layer in the background
     params[TNLRequestConfigurationPropertyKeyIdleTimeout] = @(config.idleTimeout);
@@ -713,6 +751,7 @@ TNLMutableParameterCollection * __nullable TNLMutableParametersFromRequestConfig
     // Other properties
 
     params[TNLRequestConfigurationPropertyKeyProtocolOptions] = @(config.protocolOptions);
+    params[TNLRequestConfigurationPropertyKeyConnectivityOptions] = @(config.connectivityOptions);
     params[TNLRequestConfigurationPropertyKeyCachePolicy] = @(config.cachePolicy);
     params[TNLRequestConfigurationPropertyKeyNetworkServiceType] = @(config.networkServiceType);
     params[TNLRequestConfigurationPropertyKeyAllowsCellularAccess] = @(config.allowsCellularAccess);
@@ -783,6 +822,16 @@ TNLRequestProtocolOptions TNLProtocolOptionsForProtocolClasses(NSArray * __nulla
     }
 
     return options;
+}
+
+void TNLRequestConfigurationAssociateWithRequest(TNLRequestConfiguration *config, NSURLRequest *request)
+{
+    objc_setAssociatedObject(request, &kAssociatedConfigKey, config, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+TNLRequestConfiguration * __nullable TNLRequestConfigurationGetAssociatedWithRequest(NSURLRequest *request)
+{
+    return objc_getAssociatedObject(request, &kAssociatedConfigKey);
 }
 
 NS_ASSUME_NONNULL_END

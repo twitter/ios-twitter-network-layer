@@ -14,6 +14,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 FOUNDATION_EXTERN NSString * const TNLNetworkExecutingNetworkConnectionsDidUpdateNotification;
 FOUNDATION_EXTERN NSString * const TNLNetworkExecutingNetworkConnectionsExecutingKey; // NSNumber (BOOL) - YES indicates there are executing connections, NO indicates there are no executing connections
+FOUNDATION_EXTERN NSString * const TNLNetworkDidSpinUpSessionNotification;
+FOUNDATION_EXTERN NSString * const TNLNetworkWillWindDownSessionNotification;
+FOUNDATION_EXTERN NSString * const TNLNetworkSessionIdentifierKey;
 
 /**
 

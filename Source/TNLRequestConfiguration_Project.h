@@ -39,31 +39,15 @@ TNLProtocolClassesForProtocolOptions(TNLRequestProtocolOptions options);
 FOUNDATION_EXTERN TNLRequestProtocolOptions
 TNLProtocolOptionsForProtocolClasses(NSArray<Class> * __nullable protocols);
 
-// Keys for TNL
+FOUNDATION_EXTERN void
+TNLRequestConfigurationAssociateWithRequest(TNLRequestConfiguration *config, NSURLRequest *request);
 
-FOUNDATION_EXTERN NSString * const TNLTwitterNetworkLayerURLScheme;
+FOUNDATION_EXTERN TNLRequestConfiguration * __nullable
+TNLRequestConfigurationGetAssociatedWithRequest(NSURLRequest *request);
 
-// Key for TNLRequestConfiguration
-
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyRedirectPolicy;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyResponseDataConsumptionMode;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyProtocolOptions;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyIdleTimeout;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyAttemptTimeout;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyOperationTimeout;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyDeferrableInterval;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyCookieAcceptPolicy;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyCachePolicy;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyNetworkServiceType;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyAllowsCellularAccess;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyDiscrectionary;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyShouldLaunchAppForBackgroundEvents;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyShouldSetCookies;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyCookieStorage;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyURLCredentialStorage;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyURLCache;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeySharedContainerIdentifier;
-FOUNDATION_EXTERN NSString * const TNLRequestConfigurationPropertyKeyMultipathServiceType;
+FOUNDATION_EXTERN NSURLCache *TNLGetURLCacheDemuxProxy(void);
+FOUNDATION_EXTERN NSURLCredentialStorage *TNLGetURLCredentialStorageDemuxProxy(void);
+FOUNDATION_EXTERN NSHTTPCookieStorage *TNLGetHTTPCookieStorageDemuxProxy(void);
 
 @interface TNLRequestConfiguration (Project)
 

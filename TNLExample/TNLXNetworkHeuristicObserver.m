@@ -8,6 +8,8 @@
 
 #import "TNLXNetworkHeuristicObserver.h"
 
+#define LOG_STATS_HEARTBEAT 0
+
 @implementation TNLXNetworkHeuristicObserver
 {
     dispatch_queue_t _queue;
@@ -38,6 +40,7 @@
 {
     if (self = [super init]) {
         _queue = dispatch_queue_create("TNLXNetworkHeuristicObserver.queue", DISPATCH_QUEUE_SERIAL);
+#if LOG_STATS_HEARTBEAT
         _timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _queue);
         int64_t repeatInterval = (int64_t)(4.0 * (double)NSEC_PER_SEC);
         dispatch_source_set_timer(_timer, dispatch_time(DISPATCH_TIME_NOW, repeatInterval), (uint64_t)repeatInterval, (uint64_t)(1.0 * (double)NSEC_PER_SEC));
@@ -45,6 +48,7 @@
             NSLog(@"%@", [self dictionaryValue]);
         });
         dispatch_resume(_timer);
+#endif
     }
     return self;
 }

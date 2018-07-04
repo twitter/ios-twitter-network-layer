@@ -525,6 +525,31 @@ static void _updateCarrier(SELF_ARG,
     return self;
 }
 
+- (NSString *)description
+{
+    NSMutableDictionary *info = [[NSMutableDictionary alloc] init];
+    if (_carrierName) {
+        info[@"carrierName"] = _carrierName;
+    }
+    if (_mobileCountryCode) {
+        info[@"mobileCountryCode"] = _mobileCountryCode;
+    }
+    if (_mobileNetworkCode) {
+        info[@"mobileNetworkCode"] = _mobileNetworkCode;
+    }
+    if (_isoCountryCode) {
+        info[@"isoCountryCode"] = _isoCountryCode;
+    }
+    info[@"allowsVOIP"] = _allowsVOIP ? @"YES" : @"NO";
+    NSMutableString *description = [[NSMutableString alloc] init];
+    [description appendFormat:@"<%@ %p", NSStringFromClass([self class]), self];
+    [info enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
+        [description appendFormat:@", %@=%@", key, obj];
+    }];
+    [description appendString:@">"];
+    return description;
+}
+
 @end
 #endif
 
@@ -747,4 +772,31 @@ id<TNLCarrierInfo> __nullable TNLCarrierInfoFromDictionary(NSDictionary * __null
                                              mobileNetworkCode:dict[@"mobileCountryCode"]
                                                 isoCountryCode:dict[@"isoCountryCode"]
                                                     allowsVOIP:[dict[@"allowsVOIP"] boolValue]];
+}
+
+NS_INLINE const char _DebugCharFromReachabilityFlag(SCNetworkReachabilityFlags flags, uint32_t flag, const char presentChar)
+{
+    return TNL_BITMASK_HAS_SUBSET_FLAGS(flags, flag) ? presentChar : '_';
+}
+
+NSString *TNLDebugStringFromNetworkReachabilityFlags(SCNetworkReachabilityFlags flags)
+{
+    return [NSString stringWithFormat:
+#if TARGET_OS_IPHONE
+            @"%c%c%c%c%c%c%c%c%c",
+#else
+            @"%c%c%c%c%c%c%c%c",
+#endif
+            _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsTransientConnection, 'T'),
+            _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsReachable, 'R'),
+            _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsConnectionRequired, 'r'),
+            _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsConnectionOnTraffic, 't'),
+            _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsInterventionRequired, 'i'),
+            _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsConnectionOnDemand, 'd'),
+            _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsIsLocalAddress, 'L'),
+            _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsIsDirect, 'D')
+#if TARGET_OS_IPHONE
+            , _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsIsWWAN, 'W')
+#endif
+            ];
 }

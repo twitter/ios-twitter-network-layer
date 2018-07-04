@@ -130,6 +130,7 @@ typedef void(^TNLRequestMakeFinalResponseCompletionBlock)(TNLResponse * __nullab
                       completionHandler:(void (^)(NSURLRequest * __nullable, NSError * __nullable error))completionHandler;
 - (void)network_URLSessionTaskOperation:(TNLURLSessionTaskOperation *)taskOp
                   didReceiveURLResponse:(NSURLResponse *)URLResponse;
+- (void)network_URLSessionTaskOperationIsWaitingForConnectivity:(TNLURLSessionTaskOperation *)taskOp;
 @end
 
 NS_ASSUME_NONNULL_END

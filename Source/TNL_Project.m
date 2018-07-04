@@ -12,65 +12,6 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-#pragma mark Constants
-
-NSString * const TNLTwitterNetworkLayerURLScheme = @"tnl";
-
-#define kSharedKeyRequestCachePolicy @"rcp"
-#define kSharedKeyNetworkServiceType @"nst"
-#define kSharedKeyAllowsCellularAccess @"aca"
-#define kSharedKeyDiscretionary @"dis"
-#define kSharedKeyURLCredentialStorage @"crdsto"
-#define kSharedKeyURLCache @"urlcch"
-#define kSharedKeyHTTPCookieStorage @"ckisto"
-#define kSharedKeyHTTPCookieAcceptPolicy @"ckiplcy"
-#define kSharedKeyHTTPShouldSetCookies @"setcki"
-#define kSharedKeySharedContainerIdentifier @"scid"
-#define kSharedKeySessionSendsLaunchEvents @"ssle"
-#define kSharedKeyMultiPathServiceType @"mptcp" // Multipath TCP (MPTCP)
-
-NSString * const TNLSessionConfigurationPropertyKeyRequestCachePolicy = kSharedKeyRequestCachePolicy;
-NSString * const TNLSessionConfigurationPropertyKeyTimeoutIntervalForRequest = @"toi4req";
-NSString * const TNLSessionConfigurationPropertyKeyTimeoutIntervalForResource = @"toi4rsc";
-NSString * const TNLSessionConfigurationPropertyKeyNetworkServiceType = kSharedKeyNetworkServiceType;
-NSString * const TNLSessionConfigurationPropertyKeyAllowsCellularAccess = kSharedKeyAllowsCellularAccess;
-NSString * const TNLSessionConfigurationPropertyKeyDiscretionary = kSharedKeyDiscretionary;
-NSString * const TNLSessionConfigurationPropertyKeySessionSendsLaunchEvents = kSharedKeySessionSendsLaunchEvents;
-NSString * const TNLSessionConfigurationPropertyKeyConnectionProxyDictionary = @"cpd";
-NSString * const TNLSessionConfigurationPropertyKeyTLSMinimumSupportedProtocol = @"tlsmin";
-NSString * const TNLSessionConfigurationPropertyKeyTLSMaximumSupportedProtocol = @"tlsmax";
-NSString * const TNLSessionConfigurationPropertyKeyHTTPShouldUsePipelining = @"ppln";
-NSString * const TNLSessionConfigurationPropertyKeyHTTPShouldSetCookies = kSharedKeyHTTPShouldSetCookies;
-NSString * const TNLSessionConfigurationPropertyKeyHTTPCookieAcceptPolicy = kSharedKeyHTTPCookieAcceptPolicy;
-NSString * const TNLSessionConfigurationPropertyKeyHTTPAdditionalHeaders = @"hdrs";
-NSString * const TNLSessionConfigurationPropertyKeyHTTPMaximumConnectionsPerHost = @"maxcon";
-NSString * const TNLSessionConfigurationPropertyKeyHTTPCookieStorage = kSharedKeyHTTPCookieStorage;
-NSString * const TNLSessionConfigurationPropertyKeyURLCredentialStorage = kSharedKeyURLCredentialStorage;
-NSString * const TNLSessionConfigurationPropertyKeyURLCache = kSharedKeyURLCache;
-NSString * const TNLSessionConfigurationPropertyKeySharedContainerIdentifier = kSharedKeySharedContainerIdentifier;
-NSString * const TNLSessionConfigurationPropertyKeyProtocolClassPrefix = @"pc"; // key will be this prefix concatenated with an index
-NSString * const TNLSessionConfigurationPropertyKeyMultipathServiceType = kSharedKeyMultiPathServiceType;
-
-NSString * const TNLRequestConfigurationPropertyKeyRedirectPolicy = @"rdp";
-NSString * const TNLRequestConfigurationPropertyKeyResponseDataConsumptionMode = @"rdcm";
-NSString * const TNLRequestConfigurationPropertyKeyProtocolOptions = @"ptcls";
-NSString * const TNLRequestConfigurationPropertyKeyIdleTimeout = @"idlTO";
-NSString * const TNLRequestConfigurationPropertyKeyAttemptTimeout = @"atmpTO";
-NSString * const TNLRequestConfigurationPropertyKeyOperationTimeout = @"opTO";
-NSString * const TNLRequestConfigurationPropertyKeyDeferrableInterval = @"dfrI";
-NSString * const TNLRequestConfigurationPropertyKeyCookieAcceptPolicy = kSharedKeyHTTPCookieAcceptPolicy;
-NSString * const TNLRequestConfigurationPropertyKeyCachePolicy = kSharedKeyRequestCachePolicy;
-NSString * const TNLRequestConfigurationPropertyKeyNetworkServiceType = kSharedKeyNetworkServiceType;
-NSString * const TNLRequestConfigurationPropertyKeyAllowsCellularAccess = kSharedKeyAllowsCellularAccess;
-NSString * const TNLRequestConfigurationPropertyKeyDiscrectionary = kSharedKeyDiscretionary;
-NSString * const TNLRequestConfigurationPropertyKeyShouldLaunchAppForBackgroundEvents = kSharedKeySessionSendsLaunchEvents;
-NSString * const TNLRequestConfigurationPropertyKeyShouldSetCookies = kSharedKeyHTTPShouldSetCookies;
-NSString * const TNLRequestConfigurationPropertyKeyURLCredentialStorage = kSharedKeyURLCredentialStorage;
-NSString * const TNLRequestConfigurationPropertyKeyURLCache = kSharedKeyURLCache;
-NSString * const TNLRequestConfigurationPropertyKeyCookieStorage = kSharedKeyHTTPCookieStorage;
-NSString * const TNLRequestConfigurationPropertyKeySharedContainerIdentifier = kSharedKeySharedContainerIdentifier;
-NSString * const TNLRequestConfigurationPropertyKeyMultipathServiceType = kSharedKeyMultiPathServiceType;
-
 #pragma mark Functions
 
 dispatch_source_t tnl_dispatch_timer_create_and_start(dispatch_queue_t queue,

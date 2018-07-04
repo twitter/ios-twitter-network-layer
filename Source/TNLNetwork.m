@@ -12,6 +12,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 NSString * const TNLNetworkExecutingNetworkConnectionsDidUpdateNotification = @"TNLNetworkExecutingNetworkConnectionsDidUpdateNotification";
 NSString * const TNLNetworkExecutingNetworkConnectionsExecutingKey = @"executing";
+NSString * const TNLNetworkDidSpinUpSessionNotification = @"TNLNetworkDidSpinUpSessionNotification";
+NSString * const TNLNetworkWillWindDownSessionNotification = @"TNLNetworkWillWindDownSessionNotification";
+NSString * const TNLNetworkSessionIdentifierKey = @"identifier";
 
 NS_ASSUME_NONNULL_END
 

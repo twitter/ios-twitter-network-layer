@@ -95,6 +95,10 @@ typedef NS_ENUM(NSInteger, TNLWWANRadioAccessGeneration) {
 //! Determine the `TNLWWANRadioAccessGeneration` from a `TNLWWANRadioAccessTechnologyValue`
 FOUNDATION_EXTERN TNLWWANRadioAccessGeneration TNLWWANRadioAccessGenerationForTechnologyValue(TNLWWANRadioAccessTechnologyValue value) __attribute__((const));
 
+//! String to break SCNetworkReachabilityFlags into a string of flags - for debug purposes only
+FOUNDATION_EXTERN NSString *TNLDebugStringFromNetworkReachabilityFlags(SCNetworkReachabilityFlags flags);
+
+
 typedef void(^TNLCommunicationAgentIdentifyReachabilityCallback)(SCNetworkReachabilityFlags flags, TNLNetworkReachabilityStatus status);
 typedef void(^TNLCommunicationAgentIdentifyCarrierInfoCallback)(id<TNLCarrierInfo> __nullable info);
 typedef void(^TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback)(NSString * __nullable info);
