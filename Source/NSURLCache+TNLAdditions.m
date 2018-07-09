@@ -6,6 +6,7 @@
 //  Copyright (c) 2014 Twitter. All rights reserved.
 //
 
+#include <objc/message.h>
 #import "NSURLCache+TNLAdditions.h"
 #import "TNLRequestConfiguration_Project.h"
 
@@ -17,6 +18,11 @@ NS_ASSUME_NONNULL_BEGIN
 @interface TNLSharedURLCacheProxy : NSProxy
 @end
 
+// Demux interface for one NSURLSession to support multiple NSURLCache instances.
+// Unfortunately, NSURLSession accesses the underlying `CFURLCache` of the provide
+// NSURLCache which circumvents the Objective-C interface some undetermined reason.
+// This doesn't impact cache entry retrieval or storage, so things behave as expected -
+// NSURLSession just might be establishing assumptions that don't hold when a proxy is used.
 @interface TNLURLCacheDemuxProxy : TNLSharedURLCacheProxy
 @end
 
@@ -66,6 +72,26 @@ NSURLCache *TNLGetURLCacheDemuxProxy()
     [invocation invokeWithTarget:[NSURLCache sharedURLCache]];
 }
 
+// `NSURLCache` objects have an underlying `CFURLCache` which is accessed via
+// accessor (same with its cf type id).
+//
+// Using `methodSignatureForSelector:` will work, but is handled
+// via an exception handler when the _CFURLCache accessor is not strictly a 1:1 match to the a
+// selector signature.
+//
+// This is fine normally, however when debugging with exception breakpoints this can
+// be frustrating.
+//
+// So, to avoid that problem (and the exception overhead), we will insert `_CFURLCache` method
+// in our cache proxy and so we can call directly to the shared NSURLCache.
+
+- (CFTypeRef)_CFURLCache
+{
+    CFTypeRef (*_CFURLCacheMethodFun)(id, SEL) = (CFTypeRef (*)(id, SEL))objc_msgSend;
+    const CFTypeRef v = _CFURLCacheMethodFun([NSURLCache sharedURLCache], _cmd);
+    return v;
+}
+
 @end
 
 @implementation TNLURLCacheDemuxProxy
@@ -100,7 +126,7 @@ NSURLCache *TNLGetURLCacheDemuxProxy()
     }
 }
 
-// Modern
+// Modern - API_AVAILABLE(macos(10.10), ios(8.0), watchos(2.0), tvos(9.0))
 
 - (void)storeCachedResponse:(NSCachedURLResponse *)cachedResponse
                 forDataTask:(NSURLSessionDataTask *)dataTask
