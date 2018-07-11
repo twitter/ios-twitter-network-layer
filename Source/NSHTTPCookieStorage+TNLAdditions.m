@@ -60,7 +60,8 @@ NSHTTPCookieStorage *TNLGetHTTPCookieStorageDemuxProxy()
 
 - (NSString *)description
 {
-    // NSHTTPCookieStorage has a very severe bug in it's description that can lead to corruption, crashing or an invalid string
+    // NSHTTPCookieStorage has a very severe bug in its `description` method that can lead to
+    // corruption, crashing or an invalid string.
     // Let's avoid this in our proxy by overriding it
     // TODO:[nobrien] - investigate swizzling out the description method of NSHTTPCookieStorage for safety
     return [NSString stringWithFormat:@"<%@ %p>", NSStringFromClass([self class]), self];

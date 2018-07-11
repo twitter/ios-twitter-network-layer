@@ -1343,7 +1343,7 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
     // so have them be "unrestricted" on the session.
     // This will further reduce the number of NSURLSession instances TNL needs to spin up.
 
-    config.requestCachePolicy = NSURLRequestUseProtocolCachePolicy;
+    // TODO: config.requestCachePolicy = NSURLRequestUseProtocolCachePolicy;
     config.allowsCellularAccess = YES;
     config.networkServiceType = NSURLNetworkServiceTypeDefault;
 }
@@ -1563,7 +1563,7 @@ static void TNLMutableParametersStripNonBackgroundURLSessionProperties(TNLMutabl
 static void TNLMutableParametersStripOverriddenURLSessionProperties(TNLMutableParameterCollection *params)
 {
     // Strip properties that are overridden in order to coalesce more NSURLSession instances
-    params[TNLRequestConfigurationPropertyKeyCachePolicy] = nil;
+    // TODO: params[TNLRequestConfigurationPropertyKeyCachePolicy] = nil;
     params[TNLRequestConfigurationPropertyKeyAllowsCellularAccess] = nil;
     params[TNLRequestConfigurationPropertyKeyNetworkServiceType] = nil;
 }

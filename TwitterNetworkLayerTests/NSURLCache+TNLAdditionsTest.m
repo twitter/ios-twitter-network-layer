@@ -99,6 +99,7 @@
     XCTAssertEqualObjects(response.info.data, body);
     XCTAssertEqual(response.info.source, TNLResponseSourceNetworkRequest);
     [cache removeAllCachedResponses];
+    [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:2.5]]; // give cache time to purge
 
     config.cachePolicy = NSURLRequestReturnCacheDataDontLoad;
     response = [[self class] GETResponseWithURL:URL config:config];
