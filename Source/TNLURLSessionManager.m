@@ -30,7 +30,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Constants
 
-static const NSUInteger kMaxURLSessionContextCount = 30;
+static const NSUInteger kMaxURLSessionContextCount = 12;
 
 NSTimeInterval TNLGlobalServiceUnavailableRetryAfterBackoffValueDefault = 1.0;
 NSTimeInterval TNLGlobalServiceUnavailableRetryAfterMaximumBackoffValueBeforeTreatedAsGoAway = 10.0;
@@ -1137,6 +1137,7 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
     while ((op = _URLSessionTaskOperations.firstObject) != nil) {
         [self removeOperation:op];
     }
+    [_URLSession finishTasksAndInvalidate];
     TNLDecrementObjectCount([self class]);
 }
 
