@@ -10,6 +10,7 @@
 #import "NSURLCache+TNLAdditions.h"
 #import "NSURLCredentialStorage+TNLAdditions.h"
 #import "NSURLSessionConfiguration+TNLAdditions.h"
+#import "TNL_Project.h"
 #import "TNLGlobalConfiguration.h"
 #import "TNLRequestConfiguration_Project.h"
 
@@ -61,7 +62,7 @@
     [self runTestParamsEqualBetweenOriginal:params roundTrip:roundTripParams];
     XCTAssertEqualObjects(roundTripConfig, config);
 
-    if (@available(iOS 11, *)) {
+    if (tnl_available_multipath_service_type) {
         config.multipathServiceType = NSURLSessionMultipathServiceTypeInteractive;
 #if TARGET_OS_IOS
         testParamString = @"aca=1&atmpTO=60&ckiplcy=1&cnvty=0&dfrI=0&dis=0&idlTO=30&mptcp=2&nst=0&opTO=180&ptcls=0&rcp=0&rdcm=1&rdp=1&setcki=0&ssle=1";
@@ -99,12 +100,7 @@
     config.shouldSetCookies = NO;
     config.cookieAcceptPolicy = NSHTTPCookieAcceptPolicyNever;
 
-    if ([NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]) {
-        XCTAssertNotNil(config.sharedContainerIdentifier);
-    } else {
-        XCTAssertNil(config.sharedContainerIdentifier);
-    }
-
+    XCTAssertNotNil(config.sharedContainerIdentifier);
     XCTAssertEqualObjects(config, [config copy]);
 
     params = TNLMutableParametersFromRequestConfiguration(config, nil, nil, nil);

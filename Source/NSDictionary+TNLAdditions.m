@@ -19,7 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
     TNLAssert([key isKindOfClass:[NSString class]]);
     if ([key isKindOfClass:[NSString class]]) {
         for (NSString *otherKey in self.allKeys) {
-            TNLAssert([key isKindOfClass:[NSString class]]);
+            TNLAssert([otherKey isKindOfClass:[NSString class]]);
             if ([otherKey caseInsensitiveCompare:key] == NSOrderedSame) { // TWITTER_STYLE_CASE_INSENSITIVE_COMPARE_NIL_PRECHECKED
                 if (!keys) {
                     keys = [NSMutableSet set];

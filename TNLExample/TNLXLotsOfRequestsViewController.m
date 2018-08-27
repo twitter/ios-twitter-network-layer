@@ -163,7 +163,7 @@ static const BOOL kUseThumbnail = NO;
     TNLRequestOperation *op = [TNLRequestOperation operationWithRequest:urlReq
                                                           configuration:_imageConfig
                                                                delegate:self];
-    op.priority = TNLPriorityVeryLow;
+    op.priority = TNLPriorityLow;
     [[TNLRequestOperationQueue defaultOperationQueue] enqueueRequestOperation:op];
     [_operations addObject:op];
     [self _update];

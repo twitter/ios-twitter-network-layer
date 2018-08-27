@@ -175,13 +175,8 @@
     });
     response = [[self class] GETResponseWithURL:URL config:config];
 
-    if (@available(macOS 10.10, iOS 8, tvOS 9, watchOS 2, *)) {
-        // modern OSes with TNL will use demuxing to avoid spinning up multiple sessions
-        XCTAssertEqual(originalSpinUpCount, self.spinUps);
-    } else {
-        // legacy OSes with TNL cannot demuxing and will have a session per cache instance
-        XCTAssertLessThan(originalSpinUpCount, self.spinUps);
-    }
+    // TNL will use demuxing to avoid spinning up multiple sessions
+    XCTAssertEqual(originalSpinUpCount, self.spinUps);
 }
 
 - (void)_didSpinUpSession:(NSNotification *)note

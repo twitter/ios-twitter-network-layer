@@ -359,7 +359,7 @@
 - (void)willMoveToWindow:(UIWindow *)newWindow
 {
     [super willMoveToWindow:newWindow];
-    _imageOp.priority = (newWindow != nil) ? TNLPriorityNormal : TNLPriorityVeryLow;
+    _imageOp.priority = (newWindow != nil) ? TNLPriorityNormal : TNLPriorityLow;
 }
 
 - (void)dealloc

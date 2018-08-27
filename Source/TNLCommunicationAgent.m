@@ -51,7 +51,7 @@ static void _agent_identifyWWANRadioAccessTechnology(SELF_ARG,
 @end
 
 @interface TNLCommunicationAgent (Private)
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
 static void _updateCarrier(SELF_ARG,
                            CTCarrier *carrier);
 #endif
@@ -72,7 +72,7 @@ static void _updateCarrier(SELF_ARG,
     TNLCommunicationAgentWeakWrapper *_agentWrapper;
 
     SCNetworkReachabilityRef _reachabilityRef;
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
     CTTelephonyNetworkInfo *_internalTelephonyNetworkInfo;
 #endif
     struct {
@@ -102,6 +102,9 @@ static void _updateCarrier(SELF_ARG,
         _agentOperationQueue.name = @"TNLCommunicationAgent.queue";
         _agentOperationQueue.maxConcurrentOperationCount = 1;
         _agentOperationQueue.underlyingQueue = _agentQueue;
+        if ([_agentOperationQueue respondsToSelector:@selector(setQualityOfService:)]) {
+            _agentOperationQueue.qualityOfService = NSQualityOfServiceUtility;
+        }
         _agentWrapper = [[TNLCommunicationAgentWeakWrapper alloc] init];
         _agentWrapper.communicationAgent = self;
 
@@ -121,7 +124,7 @@ static void _updateCarrier(SELF_ARG,
         CFRelease(_reachabilityRef);
     }
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
     [[NSNotificationCenter defaultCenter] removeObserver:self
                                                     name:CTRadioAccessTechnologyDidChangeNotification
                                                   object:nil];
@@ -433,7 +436,7 @@ static void _agent_updateReachabilityFlags(SELF_ARG,
 
 @implementation TNLCommunicationAgent (Private)
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
 static void _updateCarrier(SELF_ARG,
                            CTCarrier *carrier)
 {
@@ -465,6 +468,9 @@ static void _updateCarrier(SELF_ARG,
     NSString *newTech = note.object;
     tnl_dispatch_async_autoreleasing(_agentQueue, ^{
         NSString *oldTech = self.currentWWANRadioAccessTechnology;
+        if (oldTech == newTech || ([oldTech isEqualToString:newTech])) {
+            return;
+        }
         self.currentWWANRadioAccessTechnology = newTech;
 
         NSArray<id<TNLCommunicationAgentObserver>> *observers = self->_observers.allObjects;
@@ -482,7 +488,7 @@ static void _updateCarrier(SELF_ARG,
 
 @end
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
 @implementation TNLCarrierInfoInternal
 
 @synthesize carrierName = _carrierName;
@@ -592,7 +598,7 @@ static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(SCNetwor
         return TNLNetworkReachabilityNotReachable;
     }
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
     if((flags & kSCNetworkReachabilityFlagsIsWWAN) == kSCNetworkReachabilityFlagsIsWWAN) {
         return TNLNetworkReachabilityReachableViaWWAN;
     }
@@ -620,7 +626,7 @@ TNLWWANRadioAccessTechnologyValue TNLWWANRadioAccessTechnologyValueFromString(NS
 
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
         sTechStringToValueMap = @{
                                   CTRadioAccessTechnologyGPRS : @(TNLWWANRadioAccessTechnologyValueGPRS),
                                   CTRadioAccessTechnologyEdge: @(TNLWWANRadioAccessTechnologyValueEDGE),
@@ -646,7 +652,7 @@ TNLWWANRadioAccessTechnologyValue TNLWWANRadioAccessTechnologyValueFromString(NS
 NSString *TNLWWANRadioAccessTechnologyValueToString(TNLWWANRadioAccessTechnologyValue value)
 {
     switch (value) {
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
         case TNLWWANRadioAccessTechnologyValueGPRS:
             return CTRadioAccessTechnologyGPRS;
         case TNLWWANRadioAccessTechnologyValueEDGE:
@@ -782,7 +788,7 @@ NS_INLINE const char _DebugCharFromReachabilityFlag(SCNetworkReachabilityFlags f
 NSString *TNLDebugStringFromNetworkReachabilityFlags(SCNetworkReachabilityFlags flags)
 {
     return [NSString stringWithFormat:
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
             @"%c%c%c%c%c%c%c%c%c",
 #else
             @"%c%c%c%c%c%c%c%c",
@@ -795,7 +801,7 @@ NSString *TNLDebugStringFromNetworkReachabilityFlags(SCNetworkReachabilityFlags 
             _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsConnectionOnDemand, 'd'),
             _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsIsLocalAddress, 'L'),
             _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsIsDirect, 'D')
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
             , _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsIsWWAN, 'W')
 #endif
             ];

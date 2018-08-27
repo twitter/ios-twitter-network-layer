@@ -55,6 +55,12 @@ do { \
 
 FOUNDATION_EXTERN NSString *TNLVersion(void);
 
+#if TARGET_OS_IOS
+#define tnl_available_multipath_service_type @available(iOS 11, *)
+#else
+#define tnl_available_multipath_service_type (NO)
+#endif
+
 #pragma mark - GCD Helpers
 
 #define MIN_TIMER_INTERVAL (0.1)
@@ -84,7 +90,7 @@ FOUNDATION_EXTERN dispatch_queue_t tnl_coding_queue(void);
 
 #pragma mark - Dynamic Linking
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
 
 NS_ASSUME_NONNULL_END
 #import <UIKit/UIApplication.h>
@@ -93,7 +99,7 @@ NS_ASSUME_NONNULL_BEGIN
 FOUNDATION_EXTERN UIApplication * __nullable TNLDynamicUIApplicationSharedApplication(void);
 FOUNDATION_EXTERN Class __nullable TNLDynamicUIApplicationClass(void);
 
-#endif
+#endif // TARGET_OS_IPHONE
 
 #pragma mark - Logging
 

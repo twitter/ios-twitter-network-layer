@@ -105,7 +105,7 @@ static NSData *sData;
     XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
 
     [sQueue enqueueRequestOperation:op];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertFalse(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -155,7 +155,7 @@ static NSData *sData;
     [sQueue enqueueRequestOperation:op];
     [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:1.1]];
     [sQueue resume];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertFalse(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -204,7 +204,7 @@ static NSData *sData;
     XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
 
     [sQueue enqueueRequestOperation:op];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertFalse(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -254,7 +254,7 @@ static NSData *sData;
     XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
 
     [sQueue enqueueRequestOperation:op];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertFalse(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -303,7 +303,7 @@ static NSData *sData;
     XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
 
     [sQueue enqueueRequestOperation:op];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertFalse(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -354,7 +354,7 @@ static NSData *sData;
     XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
 
     [sQueue enqueueRequestOperation:op];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertFalse(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -404,7 +404,7 @@ static NSData *sData;
     XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
 
     [sQueue enqueueRequestOperation:op];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertFalse(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -453,7 +453,7 @@ static NSData *sData;
     XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
 
     [sQueue enqueueRequestOperation:op];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertFalse(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -503,7 +503,7 @@ static NSData *sData;
     XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
 
     [sQueue enqueueRequestOperation:op];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertFalse(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -552,7 +552,7 @@ static NSData *sData;
     XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
 
     [sQueue enqueueRequestOperation:op];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertFalse(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -592,7 +592,7 @@ static NSData *sData;
     XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
 
     [sQueue enqueueRequestOperation:op];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertFalse(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -647,7 +647,7 @@ static NSData *sData;
     [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:1.5]];
     [op cancelWithSource:@"FORCE_CANCEL_SOURCE"];
 
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertTrue(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -688,7 +688,7 @@ static NSData *sData;
     [op cancelWithSource:@"FORCE_CANCEL_SOURCE"];
     [sQueue enqueueRequestOperation:op];
 
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertTrue(op.isCancelled);
     XCTAssertFalse(op.isExecuting);
@@ -729,7 +729,7 @@ static NSData *sData;
     [sQueue enqueueRequestOperation:op];
     [op cancelWithSource:@"FORCE_CANCEL_SOURCE"];
 
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     XCTAssertTrue(op.isCancelled);
     XCTAssertFalse(op.isExecuting);

@@ -30,7 +30,7 @@ dispatch_source_t tnl_dispatch_timer_create_and_start(dispatch_queue_t queue,
 
 NSString *TNLVersion()
 {
-    return @"2.0";
+    return @"2.2";
 }
 
 #pragma mark - Threading
@@ -57,7 +57,7 @@ dispatch_queue_t tnl_coding_queue()
 
 #pragma mark - Dynamic Loading
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
 
 Class TNLDynamicUIApplicationClass()
 {
@@ -78,7 +78,7 @@ UIApplication *TNLDynamicUIApplicationSharedApplication()
     return UIApplicationClass ? [UIApplicationClass sharedApplication] : nil;
 }
 
-#endif
+#endif // TARGET_OS_IPHONE
 
 #pragma mark - Introspection
 

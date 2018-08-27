@@ -142,6 +142,9 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
         sGlobalRequestOperationQueue = [[NSOperationQueue alloc] init];
         sGlobalRequestOperationQueue.name = @"com.TNL.global.request.operation.queue";
         sGlobalRequestOperationQueue.maxConcurrentOperationCount = NSOperationQueueDefaultMaxConcurrentOperationCount;
+        if ([sGlobalRequestOperationQueue respondsToSelector:@selector(setQualityOfService:)]) {
+            sGlobalRequestOperationQueue.qualityOfService = (NSQualityOfServiceUtility + NSQualityOfServiceUserInitiated / 2);
+        }
     });
 }
 
@@ -265,7 +268,7 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 
 #pragma mark Background Events
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
 + (BOOL)handleBackgroundURLSessionEvents:(nullable NSString *)identifier
                        completionHandler:(dispatch_block_t)completionHandler
 {

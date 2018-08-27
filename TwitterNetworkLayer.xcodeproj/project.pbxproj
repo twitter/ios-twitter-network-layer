@@ -197,6 +197,8 @@
 		8BF953E31A67E73E00E9C1AA /* TNLAttemptMetrics_Project.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BF953E11A67E73E00E9C1AA /* TNLAttemptMetrics_Project.h */; };
 		8BFDF958199ADF4300248C3D /* NSURLSessionConfiguration+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BFDF956199ADF4300248C3D /* NSURLSessionConfiguration+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF959199ADF4300248C3D /* NSURLSessionConfiguration+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BFDF957199ADF4300248C3D /* NSURLSessionConfiguration+TNLAdditions.m */; };
+		8BFE79DA213076E600E3B2AD /* TNLRequestRetryPolicyTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BFE79D9213076E600E3B2AD /* TNLRequestRetryPolicyTest.m */; };
+		8BFE79DB21308A7B00E3B2AD /* TNLRequestRetryPolicyTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BFE79D9213076E600E3B2AD /* TNLRequestRetryPolicyTest.m */; };
 		8BFF0A1D19FF32D1001F42B7 /* NSDictionary+TNLAdditionsTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BFF0A1C19FF32D1001F42B7 /* NSDictionary+TNLAdditionsTest.m */; };
 		8BFF0A6319FFEFED001F42B7 /* NSURLSessionConfiguration+TNLAdditionsTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BFF0A6219FFEFED001F42B7 /* NSURLSessionConfiguration+TNLAdditionsTest.m */; };
 		B3B9EA031C3AF02100B8A451 /* module.modulemap in Headers */ = {isa = PBXBuildFile; fileRef = B3B9E9FE1C3AEDE700B8A451 /* module.modulemap */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -603,6 +605,7 @@
 		8BF953E11A67E73E00E9C1AA /* TNLAttemptMetrics_Project.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLAttemptMetrics_Project.h; sourceTree = "<group>"; };
 		8BFDF956199ADF4300248C3D /* NSURLSessionConfiguration+TNLAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSURLSessionConfiguration+TNLAdditions.h"; sourceTree = "<group>"; };
 		8BFDF957199ADF4300248C3D /* NSURLSessionConfiguration+TNLAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSURLSessionConfiguration+TNLAdditions.m"; sourceTree = "<group>"; };
+		8BFE79D9213076E600E3B2AD /* TNLRequestRetryPolicyTest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TNLRequestRetryPolicyTest.m; sourceTree = "<group>"; };
 		8BFF0A1C19FF32D1001F42B7 /* NSDictionary+TNLAdditionsTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+TNLAdditionsTest.m"; sourceTree = "<group>"; };
 		8BFF0A6219FFEFED001F42B7 /* NSURLSessionConfiguration+TNLAdditionsTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSURLSessionConfiguration+TNLAdditionsTest.m"; sourceTree = "<group>"; };
 		B3B9E9FE1C3AEDE700B8A451 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
@@ -957,6 +960,7 @@
 				8B8FA3331AF426B200BC91DF /* TNLRequestOperationQueueTest.m */,
 				8B84348B1A13BF3C00D006DA /* TNLRequestOperationTest.m */,
 				8B4CBEA81A169A6800230318 /* TNLRequestRetryPolicyConfigurationTest.m */,
+				8BFE79D9213076E600E3B2AD /* TNLRequestRetryPolicyTest.m */,
 				8B23E00C19FFF799007C1E35 /* TNLRequestTests.m */,
 				8B8434891A13B8E500D006DA /* TNLResponseTest.m */,
 				8B227B831A004F97003B1C7C /* TNLTemporaryFileTest.m */,
@@ -1412,6 +1416,7 @@
 				5C7E65751B0298670037AD91 /* TNLAttemptMetaDataTest.m in Sources */,
 				8B6E34271DE35F71004A35C7 /* TNLContentEncodingTests.m in Sources */,
 				8B6E342A1DE35FCD004A35C7 /* TNLXContentEncoding.m in Sources */,
+				8BFE79DA213076E600E3B2AD /* TNLRequestRetryPolicyTest.m in Sources */,
 				8B8A684319FF13F0008623E8 /* TNLNetworkTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1492,6 +1497,7 @@
 				BF4AA1541EE626ED001647B5 /* TNLAttemptMetaDataTest.m in Sources */,
 				BF4AA1551EE626ED001647B5 /* TNLContentEncodingTests.m in Sources */,
 				BF4AA1561EE626ED001647B5 /* TNLXContentEncoding.m in Sources */,
+				8BFE79DB21308A7B00E3B2AD /* TNLRequestRetryPolicyTest.m in Sources */,
 				BF4AA1571EE626ED001647B5 /* TNLNetworkTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1563,7 +1569,6 @@
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				INFOPLIST_FILE = "TNLExample/TNLExample-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -1591,7 +1596,6 @@
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
 				INFOPLIST_FILE = "TNLExample/TNLExample-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
@@ -1636,7 +1640,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2.0;
+				CURRENT_PROJECT_VERSION = 2.2;
 				DEAD_CODE_STRIPPING = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = $CURRENT_PROJECT_VERSION;
@@ -1659,7 +1663,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = "-ObjC";
@@ -1698,7 +1702,7 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CURRENT_PROJECT_VERSION = 2.0;
+				CURRENT_PROJECT_VERSION = 2.2;
 				DEAD_CODE_STRIPPING = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = $CURRENT_PROJECT_VERSION;
@@ -1718,7 +1722,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				OTHER_LDFLAGS = "-ObjC";
 				SDKROOT = iphoneos;
@@ -1734,7 +1738,6 @@
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.twitter.TwitterNetworkLayer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1748,7 +1751,6 @@
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.twitter.TwitterNetworkLayer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1761,7 +1763,6 @@
 				APPLICATION_EXTENSION_API_ONLY = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				INFOPLIST_FILE = "TwitterNetworkLayerTests/TwitterNetworkLayerTests-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-Wl,-U,_CLSLog",
@@ -1778,7 +1779,6 @@
 				APPLICATION_EXTENSION_API_ONLY = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				INFOPLIST_FILE = "TwitterNetworkLayerTests/TwitterNetworkLayerTests-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -1797,7 +1797,6 @@
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.twitter.TwitterNetworkLayer;
 				PRODUCT_NAME = TwitterNetworkLayer;
@@ -1814,7 +1813,6 @@
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.twitter.TwitterNetworkLayer;
 				PRODUCT_NAME = TwitterNetworkLayer;
@@ -1830,7 +1828,6 @@
 				APPLICATION_EXTENSION_API_ONLY = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				INFOPLIST_FILE = "TwitterNetworkLayerTests/TwitterNetworkLayerTests-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-Wl,-U,_CLSLog",
@@ -1848,7 +1845,6 @@
 				APPLICATION_EXTENSION_API_ONLY = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				INFOPLIST_FILE = "TwitterNetworkLayerTests/TwitterNetworkLayerTests-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"$(inherited)",

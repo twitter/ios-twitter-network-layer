@@ -34,10 +34,9 @@ typedef NS_ENUM(NSInteger, TNLPriority) {
  A mapping from app features to priority values
  */
 typedef NS_ENUM(NSInteger, TNLFeaturePriority) {
-    TNLFeaturePriorityPolling = TNLPriorityVeryLow,
-    TNLFeaturePriorityPrefetching = TNLPriorityVeryLow,
-    TNLFeaturePriorityContentImage = TNLPriorityLow,
-    TNLFeaturePrioritySpecificImage = TNLPriorityNormal,
+    TNLFeaturePriorityPolling = TNLPriorityLow,
+    TNLFeaturePriorityPrefetching = TNLPriorityLow,
+    TNLFeaturePriorityContentImage = TNLPriorityNormal,
     TNLFeaturePriorityCurrentViewLoad = TNLPriorityHigh,
     TNLFeaturePriorityUserInitiated = TNLPriorityVeryHigh,
 };

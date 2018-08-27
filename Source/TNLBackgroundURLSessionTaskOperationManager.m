@@ -100,10 +100,7 @@ static TNLBackgroundRequestContext * __nullable _getBackgroundRequestContext(SEL
         context.URLResponse = (id)task.response;
     }
 
-    NSString *sharedContainerIdentifier = nil;
-    if ([NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]) {
-        sharedContainerIdentifier = _URLSession.configuration.sharedContainerIdentifier;
-    }
+    NSString *sharedContainerIdentifier = _URLSession.configuration.sharedContainerIdentifier;
 
     TNLResponseInfo *info = [[TNLResponseInfo alloc] initWithFinalURLRequest:task.currentRequest
                                                                  URLResponse:context.URLResponse

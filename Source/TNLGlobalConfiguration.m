@@ -38,7 +38,7 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
     dispatch_queue_t _backgroundTaskQueue;
     NSArray<id<TNLAuthenticationChallengeHandler>> *_authHandlers;
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
     UIBackgroundTaskIdentifier _sharedUIApplicationBackgroundTaskIdentifier;
 #endif
 }
@@ -76,10 +76,10 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
         _timeoutIntervalBetweenDataTransfer = 0.0;
         _operationAutomaticDependencyPriorityThreshold = (TNLPriority)NSIntegerMax;
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
         _sharedUIApplicationBackgroundTaskIdentifier = 0;
         const Class UIApplicationClass = TNLDynamicUIApplicationClass();
-        if (UIApplicationClass != NULL) {
+        if (UIApplicationClass != Nil) {
             _sharedUIApplicationBackgroundTaskIdentifier = UIBackgroundTaskInvalid;
 
             NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
@@ -119,12 +119,12 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
                 _lastApplicationState = UIApplicationStateBackground;
             }
         }
-#endif
+#endif // TARGET_OS_IPHONE
     }
     return self;
 }
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
 
 - (void)_tnl_applicationDidFinishLaunching:(NSNotification *)note
 {
@@ -259,27 +259,36 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
 {
     __block TNLBackgroundTaskIdentifier identifier;
     dispatch_sync(_backgroundTaskQueue, ^{
-        _bgTask_ensureSharedBackgroundTask(self);
-
         identifier = self->_nextBackgroundTaskIdentifier++;
         if (identifier == TNLBackgroundTaskInvalid) {
             TNLLogWarning(@"Background Task Identifier pool has been exhausted, restarting.");
             identifier = TNLBackgroundTaskInitial;
             self->_nextBackgroundTaskIdentifier = identifier + 1;
         }
+    });
+
+    dispatch_block_t block = ^{
+        _main_ensureSharedBackgroundTask(self);
 
         TNLBackgroundTaskHandleInternal *handle = [[TNLBackgroundTaskHandleInternal alloc] initWithTaskIdentifier:identifier
                                                                                                              name:name
                                                                                                 expirationHandler:handler];
         self->_runningBackgroundTasks[@(identifier)] = handle;
-    });
+    };
+
+    if ([NSThread isMainThread]) {
+        block();
+    } else {
+        tnl_dispatch_async_autoreleasing(dispatch_get_main_queue(), block);
+    }
+
     return identifier;
 }
 
 - (void)endBackgroundTaskWithIdentifier:(TNLBackgroundTaskIdentifier)identifier
 {
     SEL cmdSelector = _cmd;
-    tnl_dispatch_async_autoreleasing(_backgroundTaskQueue, ^{
+    tnl_dispatch_async_autoreleasing(dispatch_get_main_queue(), ^{
         if (identifier == TNLBackgroundTaskInvalid) {
             TNLLogWarning(@"Cannot call [%@ %@] with invalid identifier!", NSStringFromClass([self class]), NSStringFromSelector(cmdSelector));
             return;
@@ -292,13 +301,13 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
         }
 
         [self->_runningBackgroundTasks removeObjectForKey:@(identifier)];
-        _bgTask_cleanUpSharedBackgroundTaskIfNecessary(self);
+        _main_cleanUpSharedBackgroundTaskIfNecessary(self);
     });
 }
 
-static void _bgTask_ensureSharedBackgroundTask(SELF_ARG)
+static void _main_ensureSharedBackgroundTask(SELF_ARG)
 {
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
     if (!self) {
         return;
     }
@@ -314,9 +323,9 @@ static void _bgTask_ensureSharedBackgroundTask(SELF_ARG)
 #endif
 }
 
-static void _bgTask_cleanUpSharedBackgroundTaskIfNecessary(SELF_ARG)
+static void _main_cleanUpSharedBackgroundTaskIfNecessary(SELF_ARG)
 {
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
     if (!self) {
         return;
     }
@@ -334,14 +343,14 @@ static void _bgTask_cleanUpSharedBackgroundTaskIfNecessary(SELF_ARG)
 
 static void _handleExpiration(SELF_ARG)
 {
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
     if (!self) {
         return;
     }
 
     UIApplication *sharedUIApplication = TNLDynamicUIApplicationSharedApplication();
     if (sharedUIApplication) {
-        dispatch_sync(self->_backgroundTaskQueue, ^{
+        dispatch_block_t block = ^{
             for (TNLBackgroundTaskHandleInternal *handle in self->_runningBackgroundTasks.allValues) {
                 TNLLogWarning(@"Background Task Expired! '%@'", handle.name ?: @"???");
                 if (handle.expirationHandler) {
@@ -349,8 +358,14 @@ static void _handleExpiration(SELF_ARG)
                 }
             }
             [self->_runningBackgroundTasks removeAllObjects];
-            _bgTask_cleanUpSharedBackgroundTaskIfNecessary(self);
-        });
+            _main_cleanUpSharedBackgroundTaskIfNecessary(self);
+        };
+
+        if ([NSThread isMainThread]) {
+            block();
+        } else {
+            tnl_dispatch_async_autoreleasing(dispatch_get_main_queue(), block);
+        }
     }
 #endif
 }

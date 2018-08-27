@@ -12,7 +12,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
 
 @interface TNLCarrierInfoInternal : NSObject <TNLCarrierInfo>
 
@@ -32,6 +32,6 @@ NS_ASSUME_NONNULL_BEGIN
 FOUNDATION_EXTERN NSDictionary * __nullable TNLCarrierInfoToDictionary(id<TNLCarrierInfo> __nullable carrierInfo);
 FOUNDATION_EXTERN id<TNLCarrierInfo> __nullable TNLCarrierInfoFromDictionary(NSDictionary * __nullable dict);
 
-#endif
+#endif // TARGET_OS_IOS
 
 NS_ASSUME_NONNULL_END

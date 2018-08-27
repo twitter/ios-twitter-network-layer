@@ -84,7 +84,18 @@ NS_INLINE NSUInteger _URLErrorCodeToIndex(NSInteger code)
 
 + (instancetype)defaultConfiguration
 {
-    return [[self alloc] initWithRetriableMethods:@[@"GET"] statusCodes:@[@503] URLErrorCodes:nil POSIXErrorCodes:nil];
+    return [[self alloc] initWithRetriableMethods:@[@"GET"]
+                                      statusCodes:@[@503]
+                                    URLErrorCodes:nil
+                                  POSIXErrorCodes:nil];
+}
+
++ (instancetype)standardConfiguration
+{
+    return [[self alloc] initWithRetriableMethods:@[@"GET"]
+                                      statusCodes:@[@503]
+                                    URLErrorCodes:TNLStandardRetriableURLErrorCodes()
+                                  POSIXErrorCodes:TNLStandardRetriablePOSIXErrorCodes()];
 }
 
 - (instancetype)initWithRetriableMethods:(nullable NSArray *)methods

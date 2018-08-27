@@ -6,7 +6,7 @@
 //  Copyright © 2017 Twitter. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
+#import "TNLSafeOperation.h"
 
 /*
  * NOTE: this header is private to TNL
@@ -14,7 +14,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface TNLTimeoutOperation : NSOperation
+@interface TNLTimeoutOperation : TNLSafeOperation
 
 @property (nonatomic, readonly) NSTimeInterval timeoutDuration;
 

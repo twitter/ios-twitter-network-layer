@@ -23,11 +23,7 @@ NSHTTPCookieStorage *TNLGetHTTPCookieStorageDemuxProxy()
     static TNLHTTPCookieStorageDemuxProxy *sProxy;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        if (@available(macOS 10.10, iOS 8, tvOS 9, watchOS 2, *)) {
-            sProxy = [TNLHTTPCookieStorageDemuxProxy alloc];
-        } else {
-            TNLAssertNever();
-        }
+        sProxy = [TNLHTTPCookieStorageDemuxProxy alloc];
     });
     return (id)sProxy;
 }

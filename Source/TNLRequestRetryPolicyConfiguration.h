@@ -24,9 +24,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  A default configuration
- @return a configuration that permits retries on HTTP `GET` request that return `503`
+ @return a configuration that permits retries on HTTP `GET` requests that return `503`
  */
 + (instancetype)defaultConfiguration; // GET on 503
+
+/**
+ A standard configuration more advanced than the default configuration
+ @return a configuration that permits retries on HTTP `GET` requests that either return `503`, or
+ fail with a `NSURLErrorDomain` error from `TNLStandardRetriableURLErrorCodes()`, or
+ fail with a `NSPOSIXErrorDomain` error from `TNLStandardRetriablePOSIXErrorCodes()`
+ */
++ (instancetype)standardConfiguration; // GET w/ 503, TNLStandardRetriableURLErrorCodes() or TNLStandardRetriablePOSIXErrorCodes()
 
 /**
  Default initializer (designated)

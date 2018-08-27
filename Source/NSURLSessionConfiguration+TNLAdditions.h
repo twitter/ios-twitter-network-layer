@@ -16,42 +16,6 @@ NS_ASSUME_NONNULL_BEGIN
 @interface NSURLSessionConfiguration (TNLAdditions)
 
 /**
- Cement the provided _config_.
-
- `NSURLSessionConfiguration` objects, by default, lazily generate certain properties.
- These lazy generated values are not persisted in the underlying ivar though and subsequent calls to
- those properties will yield new objects.
- `tnl_cementConfiguration:` provides a mechanism to avoid this implementation detail by sending the
- return value for a property's getter to its setter.  This effectively caches that property for
- reuse and "cements" that property.  Since `NSURLSessionConfiguration` is a class cluster, we
- provide the functionality with a class method instead of an instance method.
-
- The properties are `URLCache`, `URLCredentialStorage` and `HTTPCookieStorage`
-
- @discussion __See Also:__ `[NSURLSessionConfiguration URLCache]`,
- `[NSURLSessionConfiguration URLCredentialStorage]` and
- `[NSURLSessionConfiguration HTTPCookieStorage]`
-
- @note The issue of needing to cement these properties was fixed in __iOS 8__ so this method is a
- no-op on iOS 8+.
- */
-+ (void)tnl_cementConfiguration:(NSURLSessionConfiguration *)config;
-
-/**
- Unifies between the two constructors for background session configurations on iOS 7 and iOS 8.
-
- __See Also:__ `[NSURLSessionConfiguration backgroundSessionConfiguration:]` (iOS 7) and
- `[NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:]` (iOS 8+)
- */
-+ (instancetype)tnl_backgroundSessionConfigurationWithIdentifier:(NSString *)identifier;
-
-/**
- Returns `YES` if `NSURLSessionConfiguration` supports the shared container identifier.
- Since `NSURLSessionConfiguration` is a class cluster, you can't use `instancesRespondToSelector:`
- */
-+ (BOOL)tnl_supportsSharedContainerIdentifier;
-
-/**
  Returns `NO` if the current OS has a critical bug where
  `URLSession:dataTask:didReceiveResponse:completionHandler:` being implemented in a delegate while
  using an `NSURLProtocol` will render the `NSURLSessionTask` completely unuseable. radar://19494690

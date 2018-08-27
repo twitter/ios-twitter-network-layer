@@ -180,7 +180,7 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
 
 - (NSURLSessionMultipathServiceType)multipathServiceType
 {
-    if (@available(iOS 11, *)) {
+    if (tnl_available_multipath_service_type) {
         return (NSURLSessionMultipathServiceType)_ivars.multipathServiceType;
     }
     return 0;
@@ -219,10 +219,8 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
         _URLCredentialStorage = config->_URLCredentialStorage;
         _URLCache = config->_URLCache;
         _cookieStorage = config->_cookieStorage;
-        if ([NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]) {
-            _sharedContainerIdentifier = [config->_sharedContainerIdentifier copy];
-        }
-        if (@available(iOS 11, *)) {
+        _sharedContainerIdentifier = [config->_sharedContainerIdentifier copy];
+        if (tnl_available_multipath_service_type) {
             _ivars.multipathServiceType = NSURLSessionMultipathServiceTypeNone;
         }
         _ivars.connectivityOptions = TNLRequestConnectivityOptionsDefault;
@@ -300,7 +298,7 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
     D_SET(isDiscretionary);
     D_SET(shouldLaunchAppForBackgroundEvents);
     D_SET(shouldSetCookies);
-    if (@available(iOS 11, *)) {
+    if (tnl_available_multipath_service_type) {
         D_SET(multipathServiceType);
     }
 
@@ -521,9 +519,6 @@ PROP_COPY_IMP(additionalContentDecoders);
 
 - (void)setSharedContainerIdentifier:(nullable NSString *)sharedContainerIdentifier
 {
-    if (![NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]) {
-        return;
-    }
     PROP_COPY_IMP(sharedContainerIdentifier);
 }
 
@@ -543,7 +538,7 @@ PROP_RETAIN_ASSIGN_IMP(cookieStorage);
 
 - (void)setMultipathServiceType:(NSURLSessionMultipathServiceType)multipathServiceType
 {
-    if (@available(iOS 11, *)) {
+    if (tnl_available_multipath_service_type) {
         _ivars.multipathServiceType = multipathServiceType;
     }
 }
@@ -645,12 +640,11 @@ PROP_RETAIN_ASSIGN_IMP(cookieStorage);
 
     PULL_VALUE(TNLRequestConfigurationPropertyKeyShouldLaunchAppForBackgroundEvents, shouldLaunchAppForBackgroundEvents, boolValue, BOOL);
 
-    if (@available(iOS 11, *)) {
+    if (tnl_available_multipath_service_type) {
         PULL_VALUE(TNLRequestConfigurationPropertyKeyMultipathServiceType, multipathServiceType, integerValue, NSURLSessionMultipathServiceType);
     }
 
     mConfig.sharedContainerIdentifier = params[TNLRequestConfigurationPropertyKeySharedContainerIdentifier];
-    TNLAssert(!mConfig.sharedContainerIdentifier || [NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]);
 
     // These cannot loaded from the params so it's best to have them be nil.
     // Having them be the default shared objects could hide that this constructor
@@ -741,7 +735,7 @@ TNLMutableParameterCollection * __nullable TNLMutableParametersFromRequestConfig
     params[TNLRequestConfigurationPropertyKeyIdleTimeout] = @(config.idleTimeout);
     params[TNLRequestConfigurationPropertyKeyAttemptTimeout] = @(config.attemptTimeout);
     params[TNLRequestConfigurationPropertyKeyShouldLaunchAppForBackgroundEvents] = @(config.shouldLaunchAppForBackgroundEvents);
-    if (@available(iOS 11, *)) {
+    if (tnl_available_multipath_service_type) {
         const NSURLSessionMultipathServiceType type = config.multipathServiceType;
         if (type != 0) {
             params[TNLRequestConfigurationPropertyKeyMultipathServiceType] = @(type);
@@ -763,7 +757,6 @@ TNLMutableParameterCollection * __nullable TNLMutableParametersFromRequestConfig
 
     value = config.sharedContainerIdentifier;
     if (value) {
-        TNLAssert([NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]);
         params[TNLRequestConfigurationPropertyKeySharedContainerIdentifier] = value;
     }
 
