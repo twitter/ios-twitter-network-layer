@@ -38,7 +38,7 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
     dispatch_queue_t _backgroundTaskQueue;
     NSArray<id<TNLAuthenticationChallengeHandler>> *_authHandlers;
 
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IOS || TARGET_OS_TV
     UIBackgroundTaskIdentifier _sharedUIApplicationBackgroundTaskIdentifier;
 #endif
 }
@@ -76,7 +76,7 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
         _timeoutIntervalBetweenDataTransfer = 0.0;
         _operationAutomaticDependencyPriorityThreshold = (TNLPriority)NSIntegerMax;
 
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IOS || TARGET_OS_TV
         _sharedUIApplicationBackgroundTaskIdentifier = 0;
         const Class UIApplicationClass = TNLDynamicUIApplicationClass();
         if (UIApplicationClass != Nil) {
@@ -119,12 +119,12 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
                 _lastApplicationState = UIApplicationStateBackground;
             }
         }
-#endif // TARGET_OS_IPHONE
+#endif // IOS + TV
     }
     return self;
 }
 
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IOS || TARGET_OS_TV
 
 - (void)_tnl_applicationDidFinishLaunching:(NSNotification *)note
 {
@@ -152,7 +152,7 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
     self.lastApplicationState = UIApplicationStateBackground;
 }
 
-#endif // TARGET_OS_IPHONE
+#endif // IOS + TV
 
 - (void)addNetworkObserver:(id<TNLNetworkObserver>)observer
 {
@@ -307,7 +307,7 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
 
 static void _main_ensureSharedBackgroundTask(SELF_ARG)
 {
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IOS || TARGET_OS_TV
     if (!self) {
         return;
     }
@@ -320,12 +320,12 @@ static void _main_ensureSharedBackgroundTask(SELF_ARG)
             }];
         }
     }
-#endif
+#endif // IOS + TV
 }
 
 static void _main_cleanUpSharedBackgroundTaskIfNecessary(SELF_ARG)
 {
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IOS || TARGET_OS_TV
     if (!self) {
         return;
     }
@@ -338,12 +338,12 @@ static void _main_cleanUpSharedBackgroundTaskIfNecessary(SELF_ARG)
             [sharedUIApplication endBackgroundTask:identifier];
         }
     }
-#endif
+#endif // IOS + TV
 }
 
+#if TARGET_OS_IOS || TARGET_OS_TV
 static void _handleExpiration(SELF_ARG)
 {
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
     if (!self) {
         return;
     }
@@ -367,8 +367,8 @@ static void _handleExpiration(SELF_ARG)
             tnl_dispatch_async_autoreleasing(dispatch_get_main_queue(), block);
         }
     }
-#endif
 }
+#endif // IOS + TV
 
 @end
 

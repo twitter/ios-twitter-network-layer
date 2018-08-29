@@ -7,6 +7,9 @@
 //
 
 #import <Foundation/Foundation.h>
+
+#if !TARGET_OS_WATCH // no communication agent for watchOS
+
 #import <SystemConfiguration/SystemConfiguration.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -263,3 +266,5 @@ typedef void(^TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback)(NS
 @end
 
 NS_ASSUME_NONNULL_END
+
+#endif // !TARGET_OS_WATCH

@@ -51,7 +51,7 @@
     roundTripParams = [[TNLParameterCollection alloc] initWithURLEncodedString:paramString options:0];
     roundTripConfig = (id)[TNLRequestConfiguration configurationFromParameters:params executionMode:config.executionMode version:[TNLGlobalConfiguration version]];
 
-#if TARGET_OS_IOS
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
     testParamString = @"aca=1&atmpTO=60&ckiplcy=1&cnvty=0&dfrI=0&dis=0&double=3.14159265359&idlTO=30&nst=0&opTO=180&ptcls=0&rcp=0&rdcm=1&rdp=1&setcki=0&ssle=1";
 #else
     testParamString = @"aca=1&atmpTO=60&ckiplcy=1&cnvty=0&dfrI=0&dis=0&double=3.14159265359&idlTO=30&nst=0&opTO=180&ptcls=0&rcp=0&rdcm=1&rdp=1&setcki=0&ssle=0";
@@ -62,13 +62,10 @@
     [self runTestParamsEqualBetweenOriginal:params roundTrip:roundTripParams];
     XCTAssertEqualObjects(roundTripConfig, config);
 
-    if (tnl_available_multipath_service_type) {
-        config.multipathServiceType = NSURLSessionMultipathServiceTypeInteractive;
 #if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
+        config.multipathServiceType = NSURLSessionMultipathServiceTypeInteractive;
         testParamString = @"aca=1&atmpTO=60&ckiplcy=1&cnvty=0&dfrI=0&dis=0&idlTO=30&mptcp=2&nst=0&opTO=180&ptcls=0&rcp=0&rdcm=1&rdp=1&setcki=0&ssle=1";
-#else
-        testParamString = @"aca=1&atmpTO=60&ckiplcy=1&cnvty=0&dfrI=0&dis=0&idlTO=30&mptcp=2&nst=0&opTO=180&ptcls=0&rcp=0&rdcm=1&rdp=1&setcki=0&ssle=0";
-#endif
         params = TNLMutableParametersFromRequestConfiguration(config, nil, nil, nil);
         paramString = params.stableURLEncodedStringValue;
         roundTripParams = [[TNLParameterCollection alloc] initWithURLEncodedString:paramString options:0];
@@ -80,6 +77,7 @@
         XCTAssertEqualObjects(roundTripConfig, config);
         config.multipathServiceType = 0;
     }
+#endif // TARGET_OS_IOS
 
     config.contributeToExecutingNetworkConnectionsCount = NO;
     config.executionMode = TNLRequestExecutionModeBackground;

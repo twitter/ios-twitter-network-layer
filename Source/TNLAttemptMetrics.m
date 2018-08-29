@@ -63,7 +63,9 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
                    operationError:(nullable NSError *)error
 {
     if (self = [super init]) {
+#if !TARGET_OS_WATCH
         _reachabilityStatus = TNLNetworkReachabilityUndetermined;
+#endif
         _attemptId = attemptId;
         _attemptType = type;
         _startMachTime = startMachTime;
@@ -103,14 +105,18 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
         _responseBodyParseError = [aDecoder decodeObjectOfClass:[NSError class]
                                                          forKey:@"parseError"];
 
+#if !TARGET_OS_WATCH
         _reachabilityStatus = [(NSNumber *)[aDecoder decodeObjectOfClass:[NSNumber class]
                                                                   forKey:@"reachabilityStatus"] integerValue];
         _reachabilityFlags = [(NSNumber *)[aDecoder decodeObjectOfClass:[NSNumber class]
                                                                  forKey:@"reachabilityFlags"] unsignedIntValue];
         _WWANRadioAccessTechnology = [aDecoder decodeObjectOfClass:[NSString class]
                                                             forKey:@"WWANRadioAccessTechnology"];
+#endif
+#if TARGET_OS_IOS
         _carrierInfo = TNLCarrierInfoFromDictionary([aDecoder decodeObjectOfClass:[NSDictionary class]
                                                                            forKey:@"carrierInfo"]);
+#endif
     }
     return self;
 }
@@ -128,10 +134,14 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     [aCoder encodeObject:_APIErrors forKey:@"APIErrors"];
     [aCoder encodeObject:_responseBodyParseError forKey:@"parseError"];
 
+#if !TARGET_OS_WATCH
     [aCoder encodeObject:@(_reachabilityStatus) forKey:@"reachabilityStatus"];
     [aCoder encodeObject:@(_reachabilityFlags) forKey:@"reachabilityFlags"];
     [aCoder encodeObject:_WWANRadioAccessTechnology forKey:@"WWANRadioAccessTechnology"];
+#endif
+#if TARGET_OS_IOS
     [aCoder encodeObject:TNLCarrierInfoToDictionary(_carrierInfo) forKey:@"carrierInfo"];
+#endif
 }
 
 - (void)finalizeMetrics
@@ -143,11 +153,13 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     [_metaData finalizeMetaData];
 }
 
+#if !TARGET_OS_WATCH
 - (void)setCommunicationMetricsWithAgent:(nullable TNLCommunicationAgent *)agent
 {
     if (!agent) {
         return;
     }
+
     if (_reachabilityStatus != TNLNetworkReachabilityUndetermined) {
         return;
     }
@@ -157,6 +169,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     _WWANRadioAccessTechnology = [agent.currentWWANRadioAccessTechnology copy];
     _carrierInfo = agent.currentCarrierInfo;
 }
+#endif
 
 - (NSString *)description
 {
@@ -231,6 +244,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
         }
     }
 
+#if !TARGET_OS_WATCH
     if (self.reachabilityFlags != other.reachabilityFlags) {
         return NO;
     }
@@ -244,6 +258,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
             return NO;
         }
     }
+#endif // !WATCH
 
     if (self.APIErrors != other.APIErrors) {
         if (![self.APIErrors isEqualToArray:other.APIErrors]) {
@@ -257,6 +272,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
         }
     }
 
+#if !TARGET_OS_WATCH
     id<TNLCarrierInfo> carrierInfo = self.carrierInfo;
     id<TNLCarrierInfo> otherCarrierInfo = other.carrierInfo;
     if (carrierInfo != otherCarrierInfo) {
@@ -282,6 +298,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
             }
         }
     }
+#endif // !WATCH
 
     return YES;
 }
@@ -300,7 +317,9 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
         return;
     }
     _endMachTime = time;
+#if !TARGET_OS_WATCH
     [self setCommunicationMetricsWithAgent:[TNLGlobalConfiguration sharedInstance].metricProvidingCommunicationAgent];
+#endif
 }
 
 - (void)setOperationError:(nullable NSError *)error
@@ -370,10 +389,12 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     dupeSubmetric->_taskTransactionMetrics = _taskTransactionMetrics;
     dupeSubmetric->_APIErrors = _APIErrors;
     dupeSubmetric->_responseBodyParseError = _responseBodyParseError;
+#if !TARGET_OS_WATCH
     dupeSubmetric->_reachabilityStatus = _reachabilityStatus;
     dupeSubmetric->_reachabilityFlags = _reachabilityFlags;
     dupeSubmetric->_WWANRadioAccessTechnology = [_WWANRadioAccessTechnology copyWithZone:zone];
     dupeSubmetric->_carrierInfo = _carrierInfo;
+#endif
     dupeSubmetric->_final = NO;
     return dupeSubmetric;
 }

@@ -9,6 +9,8 @@
 #import "TNL_Project.h"
 #import "TNLCommunicationAgent_Project.h"
 
+#if !TARGET_OS_WATCH // no communication agent for watchOS
+
 #define SELF_ARG PRIVATE_SELF(TNLCommunicationAgent)
 
 static void _ReachabilityCallback(__unused SCNetworkReachabilityRef target,
@@ -744,6 +746,8 @@ NSString *TNLNetworkReachabilityStatusToString(TNLNetworkReachabilityStatus stat
     return @"undetermined";
 }
 
+#if TARGET_OS_IOS
+
 NSDictionary * __nullable TNLCarrierInfoToDictionary(id<TNLCarrierInfo> __nullable carrierInfo)
 {
     if (!carrierInfo) {
@@ -780,6 +784,8 @@ id<TNLCarrierInfo> __nullable TNLCarrierInfoFromDictionary(NSDictionary * __null
                                                     allowsVOIP:[dict[@"allowsVOIP"] boolValue]];
 }
 
+#endif // TARGET_OS_IOS
+
 NS_INLINE const char _DebugCharFromReachabilityFlag(SCNetworkReachabilityFlags flags, uint32_t flag, const char presentChar)
 {
     return TNL_BITMASK_HAS_SUBSET_FLAGS(flags, flag) ? presentChar : '_';
@@ -806,3 +812,5 @@ NSString *TNLDebugStringFromNetworkReachabilityFlags(SCNetworkReachabilityFlags 
 #endif
             ];
 }
+
+#endif // !TARGET_OS_WATCH

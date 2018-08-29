@@ -201,8 +201,10 @@ static void _network_startCallbackTimer(SELF_ARG,
 static void _network_startCallbackTimerIfNecessary(SELF_ARG);
 static void _network_stopCallbackTimer(SELF_ARG);
 static void _network_callbackTimerFired(SELF_ARG);
+#if TARGET_OS_IOS || TARGET_OS_TV
 static void _network_pauseCallbackTimer(SELF_ARG);
 static void _network_unpauseCallbackTimer(SELF_ARG);
+#endif
 
 #pragma mark Attempt Timeout Timer
 
@@ -213,8 +215,10 @@ static void _network_attemptTimeoutTimerDidFire(SELF_ARG);
 
 #pragma mark Application States (iOS only)
 
+#if TARGET_OS_IOS || TARGET_OS_TV
 static void _network_startObservingApplicationStates(SELF_ARG);
 static void _dealloc_stopObservingApplicationStatesIfNecessary(SELF_ARG);
+#endif
 - (void)_private_willResignActive:(NSNotification *)note;
 - (void)_private_didBecomeActive:(NSNotification *)note;
 static void _network_willResignActive(SELF_ARG);
@@ -406,7 +410,7 @@ TNLStaticAssert(sizeof(TNLRequestOperationState_Unaligned_AtomicT) == sizeof(TNL
         [[TNLGlobalConfiguration sharedInstance] endBackgroundTaskWithIdentifier:backgroundTaskIdentifier];
     }
 
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IOS || TARGET_OS_TV
     _dealloc_stopObservingApplicationStatesIfNecessary(self);
 #endif
 
@@ -1960,12 +1964,10 @@ static void _network_start(SELF_ARG,
         return;
     }
 
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
     // Start a background task to keep things running even in the background
     if (TNLRequestExecutionModeInAppBackgroundTask == self->_requestConfiguration.executionMode) {
-        _network_startBackgroundTask(self);
+        _network_startBackgroundTask(self); // noop in macOS
     }
-#endif
 
     _network_transitionState(self,
                              TNLRequestOperationStatePreparingRequest,
@@ -3018,7 +3020,7 @@ static void _network_startCallbackTimer(SELF_ARG,
 
     if (self->_backgroundFlags.isCallbackClogDetectionEnabled) {
 
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IOS || TARGET_OS_TV
         if (!TNLIsExtension()) {
 
             // Lazily prep our app backgrounding observing
@@ -3032,7 +3034,7 @@ static void _network_startCallbackTimer(SELF_ARG,
                 return;
             }
         }
-#endif
+#endif // IOS + TV
 
         __weak typeof(self) weakSelf = self;
         self->_callbackTimeoutTimerSource = tnl_dispatch_timer_create_and_start(tnl_network_queue(),
@@ -3082,6 +3084,7 @@ static void _network_callbackTimerFired(SELF_ARG)
     }
 }
 
+#if TARGET_OS_IOS || TARGET_OS_TV
 static void _network_pauseCallbackTimer(SELF_ARG)
 {
     if (!self) {
@@ -3107,6 +3110,7 @@ static void _network_unpauseCallbackTimer(SELF_ARG)
         _network_startCallbackTimer(self, timeElapsed);
     }
 }
+#endif // IOS + TV
 
 #pragma mark Attempt Timeout Timer
 
@@ -3191,7 +3195,7 @@ static void _network_willResignActive(SELF_ARG)
         return;
     }
 
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IOS || TARGET_OS_TV
     self->_backgroundFlags.applicationIsInBackground = 1;
     _network_pauseCallbackTimer(self);
 #endif
@@ -3203,19 +3207,18 @@ static void _network_didBecomeActive(SELF_ARG)
         return;
     }
 
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IOS || TARGET_OS_TV
     self->_backgroundFlags.applicationIsInBackground = 0;
     _network_unpauseCallbackTimer(self);
 #endif
 }
 
+#if TARGET_OS_IOS || TARGET_OS_TV
 static void _network_startObservingApplicationStates(SELF_ARG)
 {
     if (!self) {
         return;
     }
-
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
 
     TNLAssert(!self->_backgroundFlags.isObservingApplicationStates);
     TNLAssert(!TNLIsExtension());
@@ -3237,17 +3240,15 @@ static void _network_startObservingApplicationStates(SELF_ARG)
     }
 
     self->_backgroundFlags.isObservingApplicationStates = 1;
-
-#endif // TARGET_OS_IPHONE
 }
+#endif // IOS + TV
 
+#if TARGET_OS_IOS || TARGET_OS_TV
 static void _dealloc_stopObservingApplicationStatesIfNecessary(SELF_ARG) TNL_THREAD_SANITIZER_DISABLED
 {
     if (!self) {
         return;
     }
-
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
 
     if (self->_backgroundFlags.isObservingApplicationStates) {
         TNLAssert(!TNLIsExtension());
@@ -3260,12 +3261,12 @@ static void _dealloc_stopObservingApplicationStatesIfNecessary(SELF_ARG) TNL_THR
                     object:nil];
         self->_backgroundFlags.isObservingApplicationStates = 0;
     }
-
-#endif // TARGET_OS_IPHONE
 }
+#endif // IOS + TV
 
 static void _network_startBackgroundTask(SELF_ARG)
 {
+#if TARGET_OS_IOS || TARGET_OS_TV
     if (!self) {
         return;
     }
@@ -3280,10 +3281,12 @@ static void _network_startBackgroundTask(SELF_ARG)
             self->_backgroundTaskIdentifier = TNLBackgroundTaskInvalid;
         });
     }];
+#endif // IOS + TV
 }
 
 static void _network_endBackgroundTask(SELF_ARG)
 {
+#if TARGET_OS_IOS || TARGET_OS_TV
     if (!self) {
         return;
     }
@@ -3294,6 +3297,7 @@ static void _network_endBackgroundTask(SELF_ARG)
 
     [[TNLGlobalConfiguration sharedInstance] endBackgroundTaskWithIdentifier:self->_backgroundTaskIdentifier];
     self->_backgroundTaskIdentifier = TNLBackgroundTaskInvalid;
+#endif // IOS + TV
 }
 
 @end

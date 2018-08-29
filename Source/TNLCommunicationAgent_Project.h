@@ -6,13 +6,19 @@
 //  Copyright © 2018 Twitter. All rights reserved.
 //
 
-#import <CoreTelephony/CTCarrier.h>
-#import <CoreTelephony/CTTelephonyNetworkInfo.h>
+
+#pragma mark Primary import
+
 #import <TwitterNetworkLayer/TNLCommunicationAgent.h>
 
-NS_ASSUME_NONNULL_BEGIN
-
 #if TARGET_OS_IOS
+
+#pragma mark IOS only imports
+
+#import <CoreTelephony/CTCarrier.h>
+#import <CoreTelephony/CTTelephonyNetworkInfo.h>
+
+NS_ASSUME_NONNULL_BEGIN
 
 @interface TNLCarrierInfoInternal : NSObject <TNLCarrierInfo>
 
@@ -32,6 +38,6 @@ NS_ASSUME_NONNULL_BEGIN
 FOUNDATION_EXTERN NSDictionary * __nullable TNLCarrierInfoToDictionary(id<TNLCarrierInfo> __nullable carrierInfo);
 FOUNDATION_EXTERN id<TNLCarrierInfo> __nullable TNLCarrierInfoFromDictionary(NSDictionary * __nullable dict);
 
-#endif // TARGET_OS_IOS
-
 NS_ASSUME_NONNULL_END
+
+#endif // TARGET_OS_IOS

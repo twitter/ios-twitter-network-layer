@@ -228,7 +228,7 @@ static void _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(dispatch_
 - (BOOL)handleBackgroundURLSessionEvents:(NSString *)identifier
                        completionHandler:(dispatch_block_t)completionHandler
 {
-#if !TARGET_OS_IPHONE // == !(IOS + WATCHOS + TVOS)
+#if !TARGET_OS_IPHONE // == !(IOS + WATCH + TV)
     return NO;
 #else
     if (!TNLURLSessionIdentifierIsTaggedForTNL(identifier)) {
@@ -826,10 +826,12 @@ static void _synchronize_serviceUnavailableEncountered(PRIVATE_SELF(TNLURLSessio
     completion(finalDisposition, nil);
 }
 
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
 - (void)URLSessionDidFinishEventsForBackgroundURLSession:(NSURLSession *)session
 {
     [self URLSessionDidCompleteBackgroundEvents:session];
 }
+#endif
 
 #pragma mark NSURLSessionTaskDelegate
 
@@ -1230,7 +1232,7 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
         }
         _ivars.discretionary = (config.isDiscretionary != NO);
         _ivars.shouldSetCookies = (config.HTTPShouldSetCookies != NO);
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
         _ivars.shouldLaunchAppForBackgroundEvents = (config.sessionSendsLaunchEvents != NO);
 #endif
     }
@@ -1356,7 +1358,7 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
 + (NSURLSessionConfiguration *)tnl_defaultSessionConfigurationWithNilPersistence
 {
     NSURLSessionConfiguration *config = [[NSURLSessionConfiguration defaultSessionConfiguration] copy];
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
     config.sessionSendsLaunchEvents = YES;
 #endif
     config.URLCache = nil;
@@ -1470,7 +1472,7 @@ TNLMutableParameterCollection *TNLMutableParametersFromURLSessionConfiguration(N
     if (tnl_available_ios_11) {
         params[TNLSessionConfigurationPropertyKeyWaitsForConnectivity] = @(config.waitsForConnectivity);
     }
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
     params[TNLSessionConfigurationPropertyKeySessionSendsLaunchEvents] = @(config.sessionSendsLaunchEvents);
 #endif
 
@@ -1611,15 +1613,17 @@ static void _ConfigureSessionConfigurationWithRequestConfiguration(NSURLSessionC
             sessionConfig.waitsForConnectivity = NO;
         }
     }
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
     sessionConfig.sessionSendsLaunchEvents = requestConfig.shouldLaunchAppForBackgroundEvents;
 #endif
     sessionConfig.HTTPCookieAcceptPolicy = requestConfig.cookieAcceptPolicy;
     sessionConfig.HTTPShouldSetCookies = requestConfig.shouldSetCookies;
     sessionConfig.sharedContainerIdentifier = requestConfig.sharedContainerIdentifier;
-    if (tnl_available_multipath_service_type) {
+#if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
         sessionConfig.multipathServiceType = requestConfig.multipathServiceType;
     }
+#endif
 
     // Transfer protocols
     NSArray *additionalClasses = TNLProtocolClassesForProtocolOptions(requestConfig.protocolOptions);

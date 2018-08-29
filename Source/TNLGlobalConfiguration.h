@@ -16,7 +16,10 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol TNLLogger;
 @protocol TNLNetworkObserver;
 @class TNLRequestOperation;
+
+#if !TARGET_OS_WATCH
 @class TNLCommunicationAgent;
+#endif
 
 ///! The default duration for the request operation callback timeout
 FOUNDATION_EXTERN const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefault;
@@ -137,12 +140,14 @@ typedef NS_ENUM(NSInteger, TNLGlobalConfigurationServiceUnavailableBackoffMode)
  */
 - (NSArray<id<TNLHTTPHeaderProvider>> *)allHeaderProviders;
 
+#if !TARGET_OS_WATCH
 /**
  The specified `TNLCommunicationAgent` will be used for all `TNLAttemptMetrics` to capture the best
  guess network state at attempt completion.
  Ideally, network state would be provided in task transaction metrics by Apple.
  */
 @property (atomic, nullable) TNLCommunicationAgent *metricProvidingCommunicationAgent;
+#endif
 
 #pragma mark Settings
 

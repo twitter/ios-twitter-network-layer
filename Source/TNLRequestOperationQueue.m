@@ -268,7 +268,7 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 
 #pragma mark Background Events
 
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
 + (BOOL)handleBackgroundURLSessionEvents:(nullable NSString *)identifier
                        completionHandler:(dispatch_block_t)completionHandler
 {

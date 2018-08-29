@@ -2559,7 +2559,11 @@ static NSString *TNLSecCertificateDescription(SecCertificateRef cert)
     if (tnl_available_ios_11) {
         serialNumberData = (NSData *)CFBridgingRelease(SecCertificateCopySerialNumberData(cert, NULL));
     } else {
+#if TARGET_OS_OSX
+        serialNumberData = (NSData *)CFBridgingRelease(SecCertificateCopySerialNumber(cert, NULL));
+#else
         serialNumberData = (NSData *)CFBridgingRelease(SecCertificateCopySerialNumber(cert));
+#endif
     }
     if (serialNumberData) {
         serialNumber = [serialNumberData tnl_hexStringValue];

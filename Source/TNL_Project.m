@@ -57,7 +57,7 @@ dispatch_queue_t tnl_coding_queue()
 
 #pragma mark - Dynamic Loading
 
-#if TARGET_OS_IPHONE // == IOS + WATCHOS + TVOS
+#if TARGET_OS_IOS || TARGET_OS_TV
 
 Class TNLDynamicUIApplicationClass()
 {
@@ -78,7 +78,7 @@ UIApplication *TNLDynamicUIApplicationSharedApplication()
     return UIApplicationClass ? [UIApplicationClass sharedApplication] : nil;
 }
 
-#endif // TARGET_OS_IPHONE
+#endif // IOS + TV
 
 #pragma mark - Introspection
 

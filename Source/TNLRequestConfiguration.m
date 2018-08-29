@@ -180,9 +180,11 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
 
 - (NSURLSessionMultipathServiceType)multipathServiceType
 {
-    if (tnl_available_multipath_service_type) {
-        return (NSURLSessionMultipathServiceType)_ivars.multipathServiceType;
+#if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
+        return _ivars.multipathServiceType;
     }
+#endif
     return 0;
 }
 
@@ -220,9 +222,11 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
         _URLCache = config->_URLCache;
         _cookieStorage = config->_cookieStorage;
         _sharedContainerIdentifier = [config->_sharedContainerIdentifier copy];
-        if (tnl_available_multipath_service_type) {
+#if TARGET_OS_IOS
+        if (tnl_available_ios_11) {
             _ivars.multipathServiceType = NSURLSessionMultipathServiceTypeNone;
         }
+#endif
         _ivars.connectivityOptions = TNLRequestConnectivityOptionsDefault;
 
         memcpy(&_ivars, &(config->_ivars), sizeof(_ivars));
@@ -298,9 +302,11 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
     D_SET(isDiscretionary);
     D_SET(shouldLaunchAppForBackgroundEvents);
     D_SET(shouldSetCookies);
-    if (tnl_available_multipath_service_type) {
+#if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
         D_SET(multipathServiceType);
     }
+#endif
 
 #undef D_SET
 #define D_SET(prop) \
@@ -538,9 +544,11 @@ PROP_RETAIN_ASSIGN_IMP(cookieStorage);
 
 - (void)setMultipathServiceType:(NSURLSessionMultipathServiceType)multipathServiceType
 {
-    if (tnl_available_multipath_service_type) {
+#if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
         _ivars.multipathServiceType = multipathServiceType;
     }
+#endif
 }
 
 - (void)configureAsLowPriority
@@ -640,9 +648,11 @@ PROP_RETAIN_ASSIGN_IMP(cookieStorage);
 
     PULL_VALUE(TNLRequestConfigurationPropertyKeyShouldLaunchAppForBackgroundEvents, shouldLaunchAppForBackgroundEvents, boolValue, BOOL);
 
-    if (tnl_available_multipath_service_type) {
+#if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
         PULL_VALUE(TNLRequestConfigurationPropertyKeyMultipathServiceType, multipathServiceType, integerValue, NSURLSessionMultipathServiceType);
     }
+#endif
 
     mConfig.sharedContainerIdentifier = params[TNLRequestConfigurationPropertyKeySharedContainerIdentifier];
 
@@ -735,12 +745,14 @@ TNLMutableParameterCollection * __nullable TNLMutableParametersFromRequestConfig
     params[TNLRequestConfigurationPropertyKeyIdleTimeout] = @(config.idleTimeout);
     params[TNLRequestConfigurationPropertyKeyAttemptTimeout] = @(config.attemptTimeout);
     params[TNLRequestConfigurationPropertyKeyShouldLaunchAppForBackgroundEvents] = @(config.shouldLaunchAppForBackgroundEvents);
-    if (tnl_available_multipath_service_type) {
+#if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
         const NSURLSessionMultipathServiceType type = config.multipathServiceType;
         if (type != 0) {
             params[TNLRequestConfigurationPropertyKeyMultipathServiceType] = @(type);
         }
     }
+#endif
 
     // Other properties
 

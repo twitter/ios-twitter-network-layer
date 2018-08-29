@@ -144,6 +144,8 @@ BOOL TNLErrorIsNetworkSecurityError(NSError * __nullable error)
         // SSL error
         return YES;
     } else if (-2000 == code) {
+
+#if !TARGET_OS_WATCH
         // cannot load from network - is it due to SSL?
 
         if (nil != error.userInfo[(NSString *)kCFStreamPropertySSLPeerTrust]) {
@@ -163,6 +165,7 @@ BOOL TNLErrorIsNetworkSecurityError(NSError * __nullable error)
                 return YES;
             }
         }
+#endif // !WATCH
     }
 
     NSError * const underlyingError = error.userInfo[NSUnderlyingErrorKey];

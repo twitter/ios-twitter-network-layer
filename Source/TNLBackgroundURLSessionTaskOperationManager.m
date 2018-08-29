@@ -78,11 +78,13 @@ static TNLBackgroundRequestContext * __nullable _getBackgroundRequestContext(SEL
 
 #pragma mark NSURLSessionDelegate
 
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
 - (void)URLSessionDidFinishEventsForBackgroundURLSession:(NSURLSession *)session
 {
     TNLAssert(nil != session.configuration.identifier);
     [[TNLURLSessionManager sharedInstance] URLSessionDidCompleteBackgroundEvents:session];
 }
+#endif
 
 - (void)URLSession:(NSURLSession *)session
         task:(NSURLSessionTask *)task

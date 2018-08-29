@@ -72,6 +72,7 @@
     });
 
     NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:NSStringFromSelector(_cmd)];
+    [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
     NSURLCache *cache = [[NSURLCache alloc] initWithMemoryCapacity:1024*1024*10 diskCapacity:1024*1024*10 diskPath:path];
     [cache removeAllCachedResponses];
     [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:2.5]]; // give cache time to purge
@@ -82,10 +83,10 @@
 
     TNLResponse *response = nil;
     TNLMutableRequestConfiguration *config = [TNLMutableRequestConfiguration defaultConfiguration];
-    config.cachePolicy = NSURLRequestReturnCacheDataElseLoad;
     config.URLCache = cache;
     config.protocolOptions = TNLRequestProtocolOptionPseudo;
 
+    config.cachePolicy = NSURLRequestReturnCacheDataElseLoad;
     response = [[self class] GETResponseWithURL:URL config:config];
     XCTAssertEqualObjects(response.info.data, body);
     XCTAssertEqual(response.info.source, TNLResponseSourceNetworkRequest);
@@ -98,6 +99,21 @@
     response = [[self class] GETResponseWithURL:URL config:config];
     XCTAssertEqualObjects(response.info.data, body);
     XCTAssertEqual(response.info.source, TNLResponseSourceNetworkRequest);
+
+#if TARGET_OS_OSX
+    // macOS has no way to clear the NSURLCache disk cache via API
+    // clearing the cache from disk can be done, but corrupts the sqlite db
+    // radar://43799833
+    return;
+#endif
+
+    if (tnl_available_ios_10) {
+        // ok
+    } else {
+        // just like macOS, iOS and tvOS on iOS 9 and lower cannot clear their disk cache
+        return;
+    }
+
     [cache removeAllCachedResponses];
     [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:2.5]]; // give cache time to purge
 
