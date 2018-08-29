@@ -34,11 +34,7 @@ NSURLCredentialStorage *TNLGetURLCredentialStorageDemuxProxy()
     static TNLSharedCredentialStorageProxy *sProxy;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        if (@available(macOS 10.10, iOS 8, tvOS 9, watchOS 2, *)) {
-            sProxy = [TNLSharedCredentialStorageProxy alloc];
-        } else {
-            TNLAssertNever();
-        }
+        sProxy = [TNLSharedCredentialStorageProxy alloc];
     });
     return (id)sProxy;
 }

@@ -56,14 +56,6 @@ NS_ASSUME_NONNULL_BEGIN
 
     d[@"statusCode"] = @([(NSHTTPURLResponse *)self.response statusCode]);
 
-    if (self.request.URL) {
-        d[@"URL"] = self.request.URL;
-    }
-
-    if (self.networkProtocolName) {
-        d[@"protocol"] = self.networkProtocolName;
-    }
-
 #define APPLY_VALUE(key, value) \
     do { \
         id valueObj = (value); \
@@ -72,6 +64,8 @@ NS_ASSUME_NONNULL_BEGIN
         } \
     } while (NO)
 
+    APPLY_VALUE(@"URL", self.request.URL);
+    APPLY_VALUE(@"protocol", self.networkProtocolName);
 
     APPLY_VALUE(@"dns", [self tnl_domainLookupDuration]);
     APPLY_VALUE(@"connect", [self tnl_connectDuration]);
@@ -122,87 +116,122 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (nullable NSNumber *)tnl_domainLookupDuration
 {
-    if (self.domainLookupEndDate) {
-        TNLAssert(self.domainLookupStartDate != nil);
-        return @([self.domainLookupEndDate timeIntervalSinceDate:self.domainLookupStartDate]);
+    NSDate *endDate = self.domainLookupEndDate;
+    if (!endDate) {
+        return nil;
     }
-    return nil;
+
+    NSDate *startDate = self.domainLookupStartDate;
+    TNLAssert(startDate != nil);
+    return @([endDate timeIntervalSinceDate:startDate]);
 }
 
 - (nullable NSNumber *)tnl_connectDuration
 {
-    if (self.connectEndDate) {
-        TNLAssert(self.connectStartDate != nil);
-        return @([self.connectEndDate timeIntervalSinceDate:self.connectStartDate]);
+    NSDate *endDate = self.connectEndDate;
+    if (!endDate) {
+        return nil;
     }
-    return nil;
+
+    NSDate *startDate = self.connectStartDate;
+    TNLAssert(startDate != nil);
+    return @([endDate timeIntervalSinceDate:startDate]);
 }
 
 - (nullable NSNumber *)tnl_transportConnectionDuration
 {
     NSDate *startDate = self.tnl_transportConnectionStartDate;
-    NSDate *endDate = self.tnl_transportConnectionEndDate;
-    if (startDate && endDate) {
-        return @([endDate timeIntervalSinceDate:startDate]);
+    if (!startDate) {
+        return nil;
     }
-    return nil;
+    NSDate *endDate = self.tnl_transportConnectionEndDate;
+    if (!endDate) {
+        return nil;
+    }
+
+    return @([endDate timeIntervalSinceDate:startDate]);
 }
 
 - (nullable NSNumber *)tnl_secureConnectionDuration
 {
-    if (self.secureConnectionEndDate) {
-        TNLAssert(self.secureConnectionStartDate != nil);
-        return @([self.secureConnectionEndDate timeIntervalSinceDate:self.secureConnectionStartDate]);
+    NSDate *endDate = self.secureConnectionEndDate;
+    if (!endDate) {
+        return nil;
     }
-    return nil;
+
+    NSDate *startDate = self.secureConnectionStartDate;
+    TNLAssert(startDate != nil);
+    return @([endDate timeIntervalSinceDate:startDate]);
 }
 
 - (nullable NSNumber *)tnl_requestSendDuration
 {
-    if (self.requestEndDate) {
-        TNLAssert(self.requestStartDate != nil);
-        return @([self.requestEndDate timeIntervalSinceDate:self.requestStartDate]);
+    NSDate *endDate = self.requestEndDate;
+    if (!endDate) {
+        return nil;
     }
-    return nil;
+
+    NSDate *startDate = self.requestStartDate;
+    TNLAssert(startDate != nil);
+    return @([endDate timeIntervalSinceDate:startDate]);
 }
 
 - (nullable NSNumber *)tnl_serverTimeDuration
 {
-    if (self.requestEndDate && self.responseStartDate) {
-        return @([self.responseStartDate timeIntervalSinceDate:self.requestEndDate]);
+    NSDate *requestEndDate = self.requestEndDate;
+    if (!requestEndDate) {
+        return nil;
     }
-    return nil;
+    NSDate *responseStartDate = self.responseStartDate;
+    if (!responseStartDate) {
+        return nil;
+    }
+
+    return @([responseStartDate timeIntervalSinceDate:requestEndDate]);
 }
 
 - (nullable NSNumber *)tnl_responseReceiveDuration
 {
-    if (self.responseEndDate) {
-        TNLAssert(self.responseStartDate != nil);
-        return @([self.responseEndDate timeIntervalSinceDate:self.responseStartDate]);
+    NSDate *endDate = self.responseEndDate;
+    if (!endDate) {
+        return nil;
     }
-    return nil;
+
+    NSDate *startDate = self.responseStartDate;
+    TNLAssert(startDate != nil);
+    return @([endDate timeIntervalSinceDate:startDate]);
 }
 
 - (nullable NSNumber *)tnl_totalDuration
 {
-    if (self.fetchStartDate && self.responseEndDate) {
-        return @([self.responseEndDate timeIntervalSinceDate:self.fetchStartDate]);
+    NSDate *fetchStartDate = self.fetchStartDate;
+    if (!fetchStartDate) {
+        return nil;
     }
-    return nil;
+    NSDate *responseEndDate = self.responseEndDate;
+    if (!responseEndDate) {
+        return nil;
+    }
+
+    return @([responseEndDate timeIntervalSinceDate:fetchStartDate]);
 }
 
 - (nullable NSNumber *)tnl_secureConnectionDurationExt
 {
-    if (!self.connectEndDate) {
+    NSDate *connectEndDate = self.connectEndDate;
+    if (!connectEndDate) {
         return self.tnl_secureConnectionDuration;
     }
-
     NSDate *startDate = self.secureConnectionStartDate;
-    NSDate *endDate = [self.secureConnectionEndDate laterDate:self.connectEndDate];
-    if (startDate && endDate) {
-        return @([endDate timeIntervalSinceDate:startDate]);
+    if (!startDate) {
+        return nil;
     }
-    return nil;
+    NSDate *endDate = [self.secureConnectionEndDate laterDate:connectEndDate];
+    if (!endDate) {
+        return nil;
+    }
+
+    return @([endDate timeIntervalSinceDate:startDate]);
 }
 
 @end

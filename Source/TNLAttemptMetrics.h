@@ -68,6 +68,7 @@ static const NSInteger TNLAttemptCompleteDispositionCount = 3;
 /** The associated `TNLAttemptMetaData` (if any) */
 @property (nonatomic, readonly, nullable) TNLAttemptMetaData *metaData;
 
+#if !TARGET_OS_WATCH
 /** attempt reachability status */
 @property (nonatomic, readonly) TNLNetworkReachabilityStatus reachabilityStatus;
 /** attempt reachability flags */
@@ -76,6 +77,7 @@ static const NSInteger TNLAttemptCompleteDispositionCount = 3;
 @property (nonatomic, copy, readonly, nullable) NSString *WWANRadioAccessTechnology;
 /** attempt carrier info. Note: `nil` for macOS since there is no cellular carrier information */
 @property (nonatomic, readonly, nullable) id<TNLCarrierInfo> carrierInfo;
+#endif // !TARGET_OS_WATCH
 
 /** The related request for this attempt */
 @property (nonatomic, readonly, copy) NSURLRequest *URLRequest;

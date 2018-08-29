@@ -9,6 +9,7 @@
 #include <stdatomic.h>
 
 #import "NSOperationQueue+TNLSafety.h"
+#import "TNLSafeOperation.h"
 
 @import XCTest;
 
@@ -17,7 +18,7 @@
 + (nullable instancetype)operationSafetyGuard;
 @end
 
-@interface TestAsyncOperation : NSOperation
+@interface TestAsyncOperation : TNLSafeOperation
 @property (nonatomic, copy) dispatch_block_t block;
 @property (atomic, getter=isExecuting) BOOL executing;
 @property (atomic, getter=isFinished) BOOL finished;

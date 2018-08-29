@@ -180,9 +180,11 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
 
 - (NSURLSessionMultipathServiceType)multipathServiceType
 {
-    if (@available(iOS 11, *)) {
-        return (NSURLSessionMultipathServiceType)_ivars.multipathServiceType;
+#if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
+        return _ivars.multipathServiceType;
     }
+#endif
     return 0;
 }
 
@@ -219,12 +221,12 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
         _URLCredentialStorage = config->_URLCredentialStorage;
         _URLCache = config->_URLCache;
         _cookieStorage = config->_cookieStorage;
-        if ([NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]) {
-            _sharedContainerIdentifier = [config->_sharedContainerIdentifier copy];
-        }
-        if (@available(iOS 11, *)) {
+        _sharedContainerIdentifier = [config->_sharedContainerIdentifier copy];
+#if TARGET_OS_IOS
+        if (tnl_available_ios_11) {
             _ivars.multipathServiceType = NSURLSessionMultipathServiceTypeNone;
         }
+#endif
         _ivars.connectivityOptions = TNLRequestConnectivityOptionsDefault;
 
         memcpy(&_ivars, &(config->_ivars), sizeof(_ivars));
@@ -300,9 +302,11 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
     D_SET(isDiscretionary);
     D_SET(shouldLaunchAppForBackgroundEvents);
     D_SET(shouldSetCookies);
-    if (@available(iOS 11, *)) {
+#if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
         D_SET(multipathServiceType);
     }
+#endif
 
 #undef D_SET
 #define D_SET(prop) \
@@ -521,9 +525,6 @@ PROP_COPY_IMP(additionalContentDecoders);
 
 - (void)setSharedContainerIdentifier:(nullable NSString *)sharedContainerIdentifier
 {
-    if (![NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]) {
-        return;
-    }
     PROP_COPY_IMP(sharedContainerIdentifier);
 }
 
@@ -543,9 +544,11 @@ PROP_RETAIN_ASSIGN_IMP(cookieStorage);
 
 - (void)setMultipathServiceType:(NSURLSessionMultipathServiceType)multipathServiceType
 {
-    if (@available(iOS 11, *)) {
+#if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
         _ivars.multipathServiceType = multipathServiceType;
     }
+#endif
 }
 
 - (void)configureAsLowPriority
@@ -645,12 +648,13 @@ PROP_RETAIN_ASSIGN_IMP(cookieStorage);
 
     PULL_VALUE(TNLRequestConfigurationPropertyKeyShouldLaunchAppForBackgroundEvents, shouldLaunchAppForBackgroundEvents, boolValue, BOOL);
 
-    if (@available(iOS 11, *)) {
+#if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
         PULL_VALUE(TNLRequestConfigurationPropertyKeyMultipathServiceType, multipathServiceType, integerValue, NSURLSessionMultipathServiceType);
     }
+#endif
 
     mConfig.sharedContainerIdentifier = params[TNLRequestConfigurationPropertyKeySharedContainerIdentifier];
-    TNLAssert(!mConfig.sharedContainerIdentifier || [NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]);
 
     // These cannot loaded from the params so it's best to have them be nil.
     // Having them be the default shared objects could hide that this constructor
@@ -741,12 +745,14 @@ TNLMutableParameterCollection * __nullable TNLMutableParametersFromRequestConfig
     params[TNLRequestConfigurationPropertyKeyIdleTimeout] = @(config.idleTimeout);
     params[TNLRequestConfigurationPropertyKeyAttemptTimeout] = @(config.attemptTimeout);
     params[TNLRequestConfigurationPropertyKeyShouldLaunchAppForBackgroundEvents] = @(config.shouldLaunchAppForBackgroundEvents);
-    if (@available(iOS 11, *)) {
+#if TARGET_OS_IOS
+    if (tnl_available_ios_11) {
         const NSURLSessionMultipathServiceType type = config.multipathServiceType;
         if (type != 0) {
             params[TNLRequestConfigurationPropertyKeyMultipathServiceType] = @(type);
         }
     }
+#endif
 
     // Other properties
 
@@ -763,7 +769,6 @@ TNLMutableParameterCollection * __nullable TNLMutableParametersFromRequestConfig
 
     value = config.sharedContainerIdentifier;
     if (value) {
-        TNLAssert([NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]);
         params[TNLRequestConfigurationPropertyKeySharedContainerIdentifier] = value;
     }
 

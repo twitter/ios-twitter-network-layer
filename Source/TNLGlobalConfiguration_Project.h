@@ -27,7 +27,7 @@ FOUNDATION_EXTERN const TNLBackgroundTaskIdentifier TNLBackgroundTaskInvalid;
 @property (atomic, nullable) id<TNLLogger> internalLogger;
 @property (atomic, copy, nullable, readonly) NSArray<id<TNLAuthenticationChallengeHandler>> * internalAuthenticationChallengeHandlers;
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS || TARGET_OS_TV
 @property (atomic) UIApplicationState lastApplicationState;
 #endif
 

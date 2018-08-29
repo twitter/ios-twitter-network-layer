@@ -497,7 +497,7 @@ static void _addParametersUsingJSONEncoding(PRIVATE_SELF(TNLMutableParameterColl
 
     dictionary = TNLURLEncodableDictionary(dictionary, TNLURLEncodableDictionaryOptionReplaceArraysWithArraysOfEncodableStrings | TNLURLEncodableDictionaryOptionReplaceDictionariesWithDictionariesOfEncodableStrings);
     NSJSONWritingOptions options = 0;
-    if (@available(iOS 11.0, macos 10.13, watchos 4.0, tvos 11.0, *)) {
+    if (tnl_available_ios_11) {
         options = NSJSONWritingSortedKeys;
     }
     NSData *data = [NSJSONSerialization dataWithJSONObject:dictionary

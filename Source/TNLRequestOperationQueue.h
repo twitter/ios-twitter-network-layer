@@ -171,7 +171,7 @@ FOUNDATION_EXTERN NSString * const TNLBackgroundRequestURLSessionSharedContainer
 
 @end
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
 /**
  __TNLRequestOperationQueue (Background)__
 

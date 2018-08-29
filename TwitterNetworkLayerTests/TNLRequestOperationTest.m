@@ -20,7 +20,7 @@
 #import "TNLTemporaryFile_Project.h"
 
 @import ObjectiveC.runtime;
-#if TARGET_OS_IOS
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
 @import UIKit.UIApplication; // for notification names
 #endif
 @import XCTest;
@@ -42,7 +42,7 @@ static NSError *CoersedOperationError(NSError *error)
     return error;
 }
 
-#if TARGET_OS_IOS
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
 @interface FakeApplication : NSObject
 @property (nonatomic) UIApplicationState applicationState;
 - (instancetype)init;
@@ -93,7 +93,7 @@ static void FireFakeApplicationNotification(NSString *notificationName, NSTimeIn
     return self;
 }
 @end
-#endif // TARGET_OS_IOS
+#endif // TARGET_OS_IPHONE
 
 @interface TestJSONResponse : TNLResponse
 @property (nonatomic, readonly) NSDictionary *result;
@@ -135,7 +135,7 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
 + (void)setUp
 {
     [super setUp];
-#if TARGET_OS_IOS
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
     (void)[TNLGlobalConfiguration sharedInstance];
     sFakeApplication = [[FakeApplication alloc] init];
     sFakeApplication.applicationState = UIApplicationStateActive;
@@ -145,7 +145,7 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
 
 + (void)tearDown
 {
-#if TARGET_OS_IOS
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
     sFakeApplication.applicationState = UIApplicationStateActive;
     FireFakeApplicationNotification(UIApplicationDidFinishLaunchingNotification, 0);
     sFakeApplication = nil;
@@ -1036,7 +1036,7 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     XCTAssertTrue([[response.operationError.userInfo[@"timeoutTags"] firstObject] hasPrefix:NSStringFromClass([self class])]);
 }
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
 
 - (void)testCallbackClog2_ClogBackgroundForegroundUnclogSuccess
 {
@@ -1057,7 +1057,7 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     XCTAssertTrue([[response.operationError.userInfo[@"timeoutTags"] firstObject] hasPrefix:NSStringFromClass([self class])]);
 }
 
-#endif
+#endif // TARGET_OS_IPHONE
 
 - (void)testIdleTimeoutModes
 {

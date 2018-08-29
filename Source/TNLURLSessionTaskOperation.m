@@ -663,29 +663,21 @@ static void _handleTaskResponseObservation(SELF_ARG,
 {
     NSURLProtectionSpace *protectionSpace = challenge.protectionSpace;
     NSString *protectionSpaceHost = protectionSpace.host;
-    if (!protectionSpaceHost) {
-        return;
-    }
-
     NSURLRequest *currentRequest = self.currentURLRequest;
-    NSString *currentHost = currentRequest.URL.host;
-    if (!currentHost) {
-        return;
-    }
-
-    if (NSOrderedSame != [protectionSpaceHost caseInsensitiveCompare:currentHost]) { // TWITTER_STYLE_CASE_INSENSITIVE_COMPARE_NIL_PRECHECKED
-        // different host, unaffected
-        return;
-    }
-
     NSArray<NSString *> *certDescriptions = TNLSecTrustGetCertificateChainDescriptions(protectionSpace.serverTrust);
     NSString *authMethod = protectionSpace.authenticationMethod;
 
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
         NSMutableDictionary *userInfo = [[NSMutableDictionary alloc] init];
-        userInfo[TNLErrorProtectionSpaceHostKey] = protectionSpaceHost;
-        userInfo[TNLErrorRequestKey] = currentRequest;
-        userInfo[TNLErrorAuthenticationChallengeMethodKey] = authMethod;
+        if (protectionSpaceHost) {
+            userInfo[TNLErrorProtectionSpaceHostKey] = protectionSpaceHost;
+        }
+        if (currentRequest) {
+            userInfo[TNLErrorRequestKey] = currentRequest;
+        }
+        if (authMethod) {
+            userInfo[TNLErrorAuthenticationChallengeMethodKey] = authMethod;
+        }
         if (certDescriptions) {
             userInfo[TNLErrorCertificateChainDescriptionsKey] = certDescriptions;
         }
@@ -1534,13 +1526,7 @@ static void _network_resumeSessionTask(SELF_ARG,
     // NSURLSessionTask's `resume` will capture the QOS of the calling queue for
     // reusing the same QOS for the execution of the task
 
-    long gcdIdentifier = DISPATCH_QUEUE_PRIORITY_DEFAULT;
-    if (@available(iOS 8, macOS 10.10, *)) {
-        gcdIdentifier = TNLConvertTNLPriorityToGCDQOS(self.requestPriority);
-    } else {
-        gcdIdentifier = TNLConvertTNLPriorityToGCDPriority(self.requestPriority);
-    }
-    dispatch_sync(dispatch_get_global_queue(gcdIdentifier, 0), ^{
+    dispatch_sync(dispatch_get_global_queue(TNLConvertTNLPriorityToGCDQOS(self.requestPriority), 0), ^{
         [task resume];
     });
 }
@@ -1553,10 +1539,7 @@ static void _network_didStartBackgroundTask(SELF_ARG)
 
     NSUInteger taskId = self.URLSessionTask.taskIdentifier;
     NSString *configId = self.URLSession.configuration.identifier;
-    NSString *sharedContainerIdentifier = nil;
-    if ([NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]) {
-        sharedContainerIdentifier = self->_URLSession.configuration.sharedContainerIdentifier;
-    }
+    NSString *sharedContainerIdentifier = self->_URLSession.configuration.sharedContainerIdentifier;
 
     [self->_requestOperation network_URLSessionTaskOperation:self
                     didStartBackgroundTaskWithTaskIdentifier:taskId
@@ -2149,10 +2132,7 @@ static void _network_transitionState(SELF_ARG,
         // Background Completion
 
         if (finishedDidChange && self->_executionMode == TNLRequestExecutionModeBackground && (self->_downloadTask != nil || self->_uploadTask != nil)) {
-            NSString *sharedContainerIdentifier = nil;
-            if ([NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]) {
-                sharedContainerIdentifier = self->_URLSession.configuration.sharedContainerIdentifier;
-            }
+            NSString *sharedContainerIdentifier = self->_URLSession.configuration.sharedContainerIdentifier;
             TNLAssert(self->_finalResponse);
             [self->_sessionManager URLSessionDidCompleteBackgroundTask:self.URLSessionTask.taskIdentifier
                                                sessionConfigIdentifier:self->_URLSession.configuration.identifier
@@ -2222,7 +2202,7 @@ static void _network_createTask(SELF_ARG,
         TNLRequestConfigurationAssociateWithRequest(self.requestConfiguration, task.originalRequest);
     }
 
-    TNLAssert((error == nil) ^ (task == nil));
+    TNLAssert((nil == error) ^ (nil == task));
     complete(task, error);
 }
 
@@ -2576,10 +2556,14 @@ static NSString *TNLSecCertificateDescription(SecCertificateRef cert)
 {
     NSString *serialNumber = nil;
     NSData *serialNumberData = nil;
-    if (@available(iOS 11.0, macOS 10.13.0, tvOS 11.0, watchOS 4.0, *)) {
+    if (tnl_available_ios_11) {
         serialNumberData = (NSData *)CFBridgingRelease(SecCertificateCopySerialNumberData(cert, NULL));
     } else {
+#if TARGET_OS_OSX
+        serialNumberData = (NSData *)CFBridgingRelease(SecCertificateCopySerialNumber(cert, NULL));
+#else
         serialNumberData = (NSData *)CFBridgingRelease(SecCertificateCopySerialNumber(cert));
+#endif
     }
     if (serialNumberData) {
         serialNumber = [serialNumberData tnl_hexStringValue];

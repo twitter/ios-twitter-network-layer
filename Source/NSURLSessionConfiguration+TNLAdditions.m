@@ -13,29 +13,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-#if TARGET_OS_IPHONE
-#define TNL_URL_SESSION_CONFIG_LINKS_DEPRECATED_INIT_WITH_IDENTIFIER_METHOD (__IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_8_0)
-#elif TARGET_OS_MAC
-#define TNL_URL_SESSION_CONFIG_LINKS_DEPRECATED_INIT_WITH_IDENTIFIER_METHOD (__MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_10)
-#else
-#define TNL_URL_SESSION_CONFIG_LINKS_DEPRECATED_INIT_WITH_IDENTIFIER_METHOD (0)
-#endif
-
-static BOOL _NSURLSessionConfigurationHasUncementedPersistenceValues(void);
-
 @implementation NSURLSessionConfiguration (TNLAdditions)
-
-+ (BOOL)tnl_supportsSharedContainerIdentifier
-{
-    static BOOL sSupported;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        // Get the default config and check if it responds
-        NSURLSessionConfiguration *defaultConfig = [NSURLSessionConfiguration defaultSessionConfiguration];
-        sSupported = [defaultConfig respondsToSelector:@selector(setSharedContainerIdentifier:)];
-    });
-    return sSupported;
-}
 
 + (BOOL)tnl_URLSessionCanReceiveResponseViaDelegate
 {
@@ -43,17 +21,12 @@ static BOOL _NSURLSessionConfigurationHasUncementedPersistenceValues(void);
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
 
-        NSProcessInfo *processInfo = [NSProcessInfo processInfo];
-        const NSOperatingSystemVersion OSVersion = [processInfo respondsToSelector:@selector(operatingSystemVersion)] ? processInfo.operatingSystemVersion : (NSOperatingSystemVersion){ 0, 0, 0 };
-
-#if TARGET_OS_IPHONE
-        sBugExists = (OSVersion.majorVersion == 8);
-#elif TARGET_OS_OSX
-        sBugExists = (OSVersion.majorVersion == 10 && OSVersion.minorVersion == 10);
-#else
-        (void)OSVersion;
-        sBugExists = NO;
-#endif
+        if (tnl_available_ios_9) {
+            // ok
+        } else {
+            // iOS 8 only has this bug
+            sBugExists = YES;
+        }
 
     });
 
@@ -66,84 +39,35 @@ static BOOL _NSURLSessionConfigurationHasUncementedPersistenceValues(void);
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
 
-        NSProcessInfo *processInfo = [NSProcessInfo processInfo];
-        if (![processInfo respondsToSelector:@selector(operatingSystemVersion)]) {
-            // version is too low
-            return;
-        }
+        if (tnl_available_ios_10) {
+            // task metrics added as an API in iOS 10
 
-        const NSOperatingSystemVersion OSVersion = processInfo.operatingSystemVersion;
-#if TARGET_OS_IPHONE
-        if (OSVersion.majorVersion < 10) {
-            // task metrics don't exist
-        } else if (OSVersion.majorVersion == 10) {
-            // iOS 10.0.X and iOS 10.1.X have a crashing bug that crashes 1 million times a day
-            // iOS 10.2+ has a different crasher, 5 thousand per day
-        } else if (OSVersion.majorVersion == 11) {
-            // fixed in iOS 11 ...
-            if (OSVersion.minorVersion == 0 && OSVersion.patchVersion == 0) {
-                // ... but some betas still had the crash, so let's require the first patch revision
-            } else {
-                // definitely fixed on 11.0.1 and up
-                sTaskMetricsAvailable = YES;
-            }
-        } else {
-            // newer releases
-            sTaskMetricsAvailable = YES;
-        }
-#elif TARGET_OS_OSX
-        if (OSVersion.majorVersion < 10) {
-            // task metrics don't exist
-        } else if (OSVersion.majorVersion == 10) {
-            if (OSVersion.minorVersion < 12) {
-                // task metrics don't exist
-            } else if (OSVersion.minorVersion == 12) {
-                // macOS 10.12.0 and macOS 10.12.1 has a bad crasher
-                // 10.12.2+ has a different (less severe) crasher
-            } else {
-                // finally fixed in macOS 10.13 GM
-                sTaskMetricsAvailable = YES;
-            }
-        } else {
-            // macOS 11 (if this every happens)
-            sTaskMetricsAvailable = YES;
-        }
+            if (tnl_available_ios_11) {
+                // Crashers of iOS 10 continue into iOS 11 betas
+                // Cannot differentiate iOS 11.0.0 and iOS 11 betas
+                // So...
+                //   On iOS 11.0.1, consider fixed
+                //   On iOS 11.0.0, consider bug present
+                //   On non-iOS targets, just presume non-beta and consider fixed
+#if TARGET_OS_IOS
+                if (@available(iOS 11.0.1, *)) {
+                    // definitely fixed on iOS 11.0.1
+                    sTaskMetricsAvailable = YES;
+                }
 #else
-        // Unexpected target, assume it cannot be used
-        (void)OSVersion;
-        sTaskMetricsAvailable = NO;
+                // non-iOS, consider fixed
+                sTaskMetricsAvailable = YES;
 #endif
+            } else {
+                // task metrics exist but have crashes on iOS 10.X
+                // iOS 10.0.X and iOS 10.1.X have a crashing bug that crashes 1 million times a day
+                // iOS 10.2+ has a different crasher, 5 thousand per day
+            }
+        }
 
     });
 
     return sTaskMetricsAvailable;
-}
-
-+ (void)tnl_cementConfiguration:(NSURLSessionConfiguration *)config
-{
-    if (config && _NSURLSessionConfigurationHasUncementedPersistenceValues()) {
-        // On iOS 7, Apple made a design choice with the URLCache, URLCredentialStorage and HTTPCookieStorage properties
-        // Those getters would lazily load their objects but would not populate the ivar.
-        // This meant that multiple calls to the same getter would yield different objects.
-        // When the setter is called, however, the ivar would be persistently set (including with nil).
-        // On iOS 8, Apple (thankfully) relented on this design choice and lazy loading will now populate the ivar.
-        config.URLCache = config.URLCache;
-        config.URLCredentialStorage = config.URLCredentialStorage;
-        config.HTTPCookieStorage = config.HTTPCookieStorage;
-    }
-}
-
-+ (instancetype)tnl_backgroundSessionConfigurationWithIdentifier:(NSString *)identifier
-{
-#if TNL_URL_SESSION_CONFIG_LINKS_DEPRECATED_INIT_WITH_IDENTIFIER_METHOD
-    if ([self tnl_supportsSharedContainerIdentifier] /* proxy for support of new constructor */) {
-        return [[self class] backgroundSessionConfigurationWithIdentifier:identifier];
-    } else {
-        return [[self class] backgroundSessionConfiguration:identifier];
-    }
-#else
-    return [[self class] backgroundSessionConfigurationWithIdentifier:identifier];
-#endif
 }
 
 + (BOOL)tnl_URLSessionSupportsDecodingBrotliContentEncoding
@@ -158,9 +82,14 @@ static BOOL _NSURLSessionConfigurationHasUncementedPersistenceValues(void);
             return;
         }
 
+        // Brotli support requires 2 things:
+        // - Running OS version of iOS 11 (or equivalent platform version) or greater
+        //   AND
+        // - Target SDK at compile time of iOS 11 (or equivalent platform version) or greater
+
         const NSOperatingSystemVersion OSVersion = processInfo.operatingSystemVersion;
         (void)OSVersion;
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
     #if defined(__IPHONE_11_0) && (__IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_11_0)
         if (OSVersion.majorVersion >= 11) {
             sBrotliSupported = YES;
@@ -203,7 +132,7 @@ static BOOL _NSURLSessionConfigurationHasUncementedPersistenceValues(void);
 
 + (instancetype)tnl_backgroundSessionConfigurationWithTaggedIdentifier:(NSString *)identifier
 {
-    NSURLSessionConfiguration *config = [self tnl_backgroundSessionConfigurationWithIdentifier:identifier];
+    NSURLSessionConfiguration *config = [self backgroundSessionConfigurationWithIdentifier:identifier];
     TNLRequestConfiguration *configParams = [TNLRequestConfiguration parseConfigurationFromIdentifier:identifier];
     if (configParams) {
         [configParams applySettingsToSessionConfiguration:config];
@@ -212,12 +141,5 @@ static BOOL _NSURLSessionConfigurationHasUncementedPersistenceValues(void);
 }
 
 @end
-
-static BOOL _NSURLSessionConfigurationHasUncementedPersistenceValues()
-{
-    // iOS 7 has this issue, which we'll use the container identifier for
-    // (to also match on other platforms like macOS)
-    return ![NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier];
-}
 
 NS_ASSUME_NONNULL_END

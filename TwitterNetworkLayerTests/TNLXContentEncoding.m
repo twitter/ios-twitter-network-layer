@@ -115,11 +115,14 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
     return (TNLXZLibContentEncoderGZIP == _mode) ? @"gzip" : @"deflate";
 }
 
-- (NSData *)tnl_encodeHTTPBody:(NSData *)bodyData error:(out NSError **)error
+- (NSData *)tnl_encodeHTTPBody:(NSData *)bodyData
+                         error:(out NSError **)error
 {
     if (bodyData.length < kMinBodySizeForCompression) {
         if (error) {
-            *error = [NSError errorWithDomain:TNLContentEncodingErrorDomain code:TNLContentEncodingErrorCodeSkipEncoding userInfo:nil];
+            *error = [NSError errorWithDomain:TNLContentEncodingErrorDomain
+                                         code:TNLContentEncodingErrorCodeSkipEncoding
+                                     userInfo:nil];
         }
         return nil;
     }
@@ -129,8 +132,6 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
     z_stream zStream;
     __block z_streamp zStreamPtr = &zStream;
     memset(zStreamPtr, 0, sizeof(z_stream));
-    unsigned char outBuffer[kZipBufferSize];
-    unsigned char *outRef = outBuffer;
 
     zRetVal = deflateInit2(zStreamPtr,
                            Z_DEFAULT_COMPRESSION,
@@ -140,26 +141,43 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
                            Z_DEFAULT_STRATEGY);
     if (zRetVal == Z_OK) {
 
+        unsigned char *outBuffer = (unsigned char *)malloc(kZipBufferSize);
+
         TIPXDataEnumerateBlock enumBlock = ^(const void *bytes, NSRange byteRange, BOOL *stop) {
 
             zStreamPtr->avail_in = (uInt)byteRange.length;
             zStreamPtr->next_in = (z_const Byte *)bytes;
 
-            int flush = byteRange.length > 0 ? Z_NO_FLUSH : Z_FINISH;
+            const int flush = byteRange.length > 0 ? Z_NO_FLUSH : Z_FINISH;
 
             do {
 
                 zStreamPtr->avail_out = kZipBufferSize;
-                zStreamPtr->next_out = outRef;
+                zStreamPtr->next_out = outBuffer;
 
                 zRetVal = deflate(zStreamPtr, flush);
 
-                uInt bytesMoved = kZipBufferSize - zStreamPtr->avail_out;
-                if (bytesMoved && (Z_OK == zRetVal || Z_STREAM_END == zRetVal)) {
-                    [mData appendBytes:outRef length:bytesMoved];
+                if (Z_OK != zRetVal && Z_STREAM_END != zRetVal) {
+                    // failure
+                    break;
                 }
 
-            } while (zStreamPtr->avail_in != 0);
+                const uInt bytesMoved = kZipBufferSize - zStreamPtr->avail_out;
+                if (bytesMoved) {
+                    [mData appendBytes:outBuffer length:bytesMoved];
+                }
+
+                if (Z_STREAM_END == zRetVal) {
+                    // done
+                    break;
+                }
+
+                if (Z_FINISH != flush && zStreamPtr->avail_in == 0) {
+                    // no more data to consume
+                    break;
+                }
+
+            } while (true);
 
             if (Z_OK != zRetVal) {
                 *stop = YES;
@@ -177,6 +195,7 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
             }
         }
 
+        free(outBuffer);
         (void)deflateEnd(zStreamPtr);
     }
 
@@ -206,12 +225,16 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
     return (TNLXZLibContentEncoderGZIP == _mode) ? @"gzip" : @"deflate";
 }
 
-- (id<TNLContentDecoderContext>)tnl_initializeDecodingWithContentEncoding:(NSString *)contentEncodingValue client:(id<TNLContentDecoderClient>)client error:(out NSError **)error
+- (id<TNLContentDecoderContext>)tnl_initializeDecodingWithContentEncoding:(NSString *)contentEncodingValue
+                                                                   client:(id<TNLContentDecoderClient>)client
+                                                                    error:(out NSError **)error
 {
     return [[TNLXZLibContentDecoderContext alloc] initWithMode:_mode client:client];
 }
 
-- (BOOL)tnl_decode:(TNLXZLibContentDecoderContext *)context additionalData:(NSData *)data error:(out NSError **)error
+- (BOOL)tnl_decode:(TNLXZLibContentDecoderContext *)context
+    additionalData:(NSData *)data
+             error:(out NSError **)error
 {
     return [context decodeData:data error:error];
 }
@@ -236,7 +259,8 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
     } _flags;
 }
 
-- (instancetype)initWithMode:(TNLXZLibContentEncoderMode)mode client:(id<TNLContentDecoderClient>)client
+- (instancetype)initWithMode:(TNLXZLibContentEncoderMode)mode
+                      client:(id<TNLContentDecoderClient>)client
 {
     if (self = [super init]) {
         _mode = mode;
@@ -263,7 +287,9 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
 {
     if (Z_OK == _flags.zStatus || Z_STREAM_END == _flags.zStatus) {
         [data enumerateByteRangesUsingBlock:^(const void *bytes, NSRange byteRange, BOOL *stop) {
-            *stop = ![self decodeBytes:bytes length:byteRange.length error:error];
+            *stop = ![self decodeBytes:bytes
+                                length:byteRange.length
+                                 error:error];
             if (self->_flags.zStatus != Z_OK && self->_flags.zStatus != Z_STREAM_END) {
                 *stop = YES;
             }
@@ -276,7 +302,9 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
 
     if (Z_OK != _flags.zStatus && Z_STREAM_END != _flags.zStatus) {
         if (error) {
-            *error = [NSError errorWithDomain:@"zlib.error" code:_flags.zStatus userInfo:nil];
+            *error = [NSError errorWithDomain:@"zlib.error"
+                                         code:_flags.zStatus
+                                     userInfo:nil];
         }
         return NO;
     }
@@ -284,7 +312,9 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
     return YES;
 }
 
-- (BOOL)decodeBytes:(const Byte *)bytes length:(NSUInteger)length error:(out NSError **)error
+- (BOOL)decodeBytes:(const Byte *)bytes
+             length:(NSUInteger)length
+              error:(out NSError **)error
 {
     _zStream.avail_in = (uInt)length;
     _zStream.next_in = (z_const Byte *)bytes;
@@ -301,7 +331,8 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
         uInt bytesMoved = kZipBufferSize - _zStream.avail_out;
         if (inflateSuccess && bytesMoved) {
             id<TNLContentDecoderClient> delegate = self.tnl_decoderClient;
-            if (![delegate tnl_dataWasDecoded:[NSData dataWithBytes:_outRef length:bytesMoved] error:error]) {
+            NSData *data = [NSData dataWithBytes:_outRef length:bytesMoved];
+            if (![delegate tnl_dataWasDecoded:data error:error]) {
                 return NO;
             }
         }
@@ -325,7 +356,9 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
     }
 
     if (error) {
-        *error = [NSError errorWithDomain:@"zlib.error" code:((_flags.zStatus == Z_OK) ? Z_STREAM_ERROR : _flags.zStatus) userInfo:nil];
+        *error = [NSError errorWithDomain:@"zlib.error"
+                                     code:((_flags.zStatus == Z_OK) ? Z_STREAM_ERROR : _flags.zStatus)
+                                 userInfo:nil];
     }
     return NO;
 }
@@ -341,7 +374,9 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
 
 - (NSData *)tnl_encodeHTTPBody:(NSData *)bodyData error:(out NSError **)error
 {
-    return [bodyData base64EncodedDataWithOptions:(NSDataBase64Encoding64CharacterLineLength | NSDataBase64EncodingEndLineWithCarriageReturn | NSDataBase64EncodingEndLineWithLineFeed)];
+    return [bodyData base64EncodedDataWithOptions:(NSDataBase64Encoding64CharacterLineLength |
+                                                   NSDataBase64EncodingEndLineWithCarriageReturn |
+                                                   NSDataBase64EncodingEndLineWithLineFeed)];
 }
 
 @end
@@ -353,17 +388,22 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
     return @"base64";
 }
 
-- (id<TNLContentDecoderContext>)tnl_initializeDecodingWithContentEncoding:(NSString *)contentEncodingValue client:(id<TNLContentDecoderClient>)client error:(out NSError **)error
+- (id<TNLContentDecoderContext>)tnl_initializeDecodingWithContentEncoding:(NSString *)contentEncodingValue
+                                                                   client:(id<TNLContentDecoderClient>)client
+                                                                    error:(out NSError **)error
 {
     return [[TNLXBase64ContentDecoderContext alloc] initWithClient:client];
 }
 
-- (BOOL)tnl_decode:(TNLXBase64ContentDecoderContext *)context additionalData:(NSData *)data error:(out NSError **)error
+- (BOOL)tnl_decode:(TNLXBase64ContentDecoderContext *)context
+    additionalData:(NSData *)data
+             error:(out NSError **)error
 {
     return [context decodeData:data error:error];
 }
 
-- (BOOL)tnl_finalizeDecoding:(TNLXBase64ContentDecoderContext *)context error:(out NSError **)error
+- (BOOL)tnl_finalizeDecoding:(TNLXBase64ContentDecoderContext *)context
+                       error:(out NSError **)error
 {
     return [context finalizeAndReturnError:error];
 }
@@ -388,12 +428,14 @@ typedef void(^TIPXDataEnumerateBlock)(const void *bytes, NSRange byteRange, BOOL
     NSData *decodedData = nil;
     if (_carryOverData) {
         [_carryOverData appendData:data];
-        decodedData = [[NSData alloc] initWithBase64EncodedData:_carryOverData options:NSDataBase64DecodingIgnoreUnknownCharacters];
+        decodedData = [[NSData alloc] initWithBase64EncodedData:_carryOverData
+                                                        options:NSDataBase64DecodingIgnoreUnknownCharacters];
         if (decodedData) {
             _carryOverData = nil;
         }
     } else {
-        decodedData = [[NSData alloc] initWithBase64EncodedData:data options:NSDataBase64DecodingIgnoreUnknownCharacters];
+        decodedData = [[NSData alloc] initWithBase64EncodedData:data
+                                                        options:NSDataBase64DecodingIgnoreUnknownCharacters];
         if (!decodedData) {
             _carryOverData = [data mutableCopy];
         }

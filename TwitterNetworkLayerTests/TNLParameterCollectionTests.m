@@ -561,7 +561,7 @@ static void TestSwizzle(Class cls, SEL originalSelector, SEL swizzledSelector)
     [params addParametersFromDictionary:dict withFormattingMode:TNLParameterCollectionAddParametersFromDictionaryModeJSONEncoded combineRepeatingKeys:NO forKey:@"dict"];
     encodedString = [params stableURLEncodedStringValue];
 
-    if (@available(iOS 11.0, macos 10.13, watchos 4.0, tvos 11.0, *)) {
+    if (tnl_available_ios_11) {
         // will be sorted
         XCTAssertEqualObjects(encodedString, @"dict=%7B%22key1%22%3A%22value1%22%2C%22key2%22%3A%22value2%22%2C%22key3%22%3A%22value3%22%7D");
     } else {

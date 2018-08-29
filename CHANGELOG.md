@@ -2,13 +2,23 @@
 
 ## Info
 
-**Document version:** 2.0.2
+**Document version:** 2.2.0
 
-**Last updated:** 07/01/2018
+**Last updated:** 08/27/2018
 
 **Author:** Nolan O'Brien
 
 ## History
+
+### 2.2.0
+- drop iOS 7 support
+  - removes some compatibility check APIs that are no longer necessary too
+
+### 2.1.0
+
+- revise `TNLRetryPolicyProvider` interface to optionally provide a new `TNLRequestConfiguration` when retrying
+  - prior interface only permitted updating the _idleTimeout_ which was not sufficient for more use cases
+  - example use case: provide a custom content encoder that fails to encode a request, the retry policy and update the configuration to remove the custom content encoder to try again without encoding
 
 ### 2.0.2
 

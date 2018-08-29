@@ -7,6 +7,7 @@
 //
 
 #import "NSOperationQueue+TNLSafety.h"
+#import "TNL_Project.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -17,8 +18,6 @@ static NSTimeInterval const TNLOperationSafetyGuardCheckForAlreadyFinishedOperat
 - (void)addOperation:(NSOperation *)op;
 - (NSSet *)operations;
 + (nullable instancetype)operationSafetyGuard;
-- (instancetype)init NS_UNAVAILABLE;
-- (instancetype)new NS_UNAVAILABLE;
 @end
 
 @implementation NSOperationQueue (TNLSafety)
@@ -45,26 +44,20 @@ static NSTimeInterval const TNLOperationSafetyGuardCheckForAlreadyFinishedOperat
     static TNLOperationSafetyGuard *sGuard = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        NSOperatingSystemVersion version = { 7, 0, 0 }; /* arbitrarily default as iOS 7 (minimum version for TNL) */
-        if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)]) {
-            version = [NSProcessInfo processInfo].operatingSystemVersion;
-        }
-        if (version.majorVersion < 9) {
-            sGuard = [[TNLOperationSafetyGuard alloc] initWithOperationSystemVersion:version];
+        if (tnl_available_ios_9) {
+            // no guard needed
+        } else {
+            sGuard = [[TNLOperationSafetyGuard alloc] init];
         }
     });
     return sGuard;
 }
 
-- (instancetype)initWithOperationSystemVersion:(NSOperatingSystemVersion)version
+- (instancetype)init
 {
     if (self = [super init]) {
         _operations = [[NSMutableSet alloc] init];
-        dispatch_queue_attr_t queueAttr = DISPATCH_QUEUE_SERIAL;
-        if (version.majorVersion >= 8) {
-            queueAttr = dispatch_queue_attr_make_with_qos_class(queueAttr, QOS_CLASS_BACKGROUND, 0);
-        }
-        _queue = dispatch_queue_create("NSOperationQueue.tnl.safety", queueAttr);
+        _queue = dispatch_queue_create("NSOperationQueue.tnl.safety", dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_UTILITY, 0));
     }
     return self;
 }

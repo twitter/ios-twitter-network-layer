@@ -49,17 +49,19 @@ NS_ASSUME_NONNULL_BEGIN
                                              withResponse:(TNLResponse *)response;
 
 /**
- Callback for new idle timeout of next retry (optional)
+ Callback for new request configuration of next retry (optional)
 
- By default, `op.requestConfiguration.idleTimeout` will be used
+ By default, `op.requestConfiguration` will be used (aka _priorConfig_)
 
  @param op The `TNLRequestOperation` that will retry
  @param response the temporary `TNLResponse` composed for this retry query
- @return the new idle timeout of next retry.  The minimum value is `0.1` seconds, anything smaller
- will be treated as _never_.
+ @param priorConfig the `TNLRequestConfiguration` of the prior attempt
+ @return the new `TNLRequestConfiguration` of next retry.  `nil` will use _priorConfig_.
+ @note Recommend taking the _priorConfig_ and modifying a mutable copy.
  */
-- (NSTimeInterval)tnl_idleTimeoutOfRetryForRequestOperation:(TNLRequestOperation *)op
-                                               withResponse:(TNLResponse *)response;
+- (nullable TNLRequestConfiguration *)tnl_configurationOfRetryForRequestOperation:(TNLRequestOperation *)op
+                                                                     withResponse:(TNLResponse *)response
+                                                               priorConfiguration:(TNLRequestConfiguration *)priorConfig;
 
 /**
  The operation will retry

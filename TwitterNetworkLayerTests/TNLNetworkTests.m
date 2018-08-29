@@ -36,31 +36,31 @@
 
     incrementExpectation = [self _incrementExpectation];
     [TNLNetwork incrementExecutingNetworkConnections];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     decrementExpectation = [self _decrementExpectation];
     [TNLNetwork decrementExecutingNetworkConnections];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     incrementExpectation = [self _incrementExpectation];
     for (NSUInteger i = 0; i < 5; i++) {
         [TNLNetwork incrementExecutingNetworkConnections];
     }
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     decrementExpectation = [self _decrementExpectation];
     for (NSUInteger i = 0; i < 5; i++) {
         [TNLNetwork decrementExecutingNetworkConnections];
     }
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     incrementExpectation = [self _incrementExpectation];
     [TNLNetwork incrementExecutingNetworkConnections];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     decrementExpectation = [self _decrementExpectation];
     [TNLNetwork decrementExecutingNetworkConnections];
-    [self waitForExpectationsWithTimeout:5.0 handler:NULL];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
 
     (void)incrementExpectation;
     (void)decrementExpectation;

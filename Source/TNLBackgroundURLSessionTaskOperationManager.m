@@ -78,11 +78,13 @@ static TNLBackgroundRequestContext * __nullable _getBackgroundRequestContext(SEL
 
 #pragma mark NSURLSessionDelegate
 
+#if TARGET_OS_IPHONE // == IOS + WATCH + TV
 - (void)URLSessionDidFinishEventsForBackgroundURLSession:(NSURLSession *)session
 {
     TNLAssert(nil != session.configuration.identifier);
     [[TNLURLSessionManager sharedInstance] URLSessionDidCompleteBackgroundEvents:session];
 }
+#endif
 
 - (void)URLSession:(NSURLSession *)session
         task:(NSURLSessionTask *)task
@@ -100,10 +102,7 @@ static TNLBackgroundRequestContext * __nullable _getBackgroundRequestContext(SEL
         context.URLResponse = (id)task.response;
     }
 
-    NSString *sharedContainerIdentifier = nil;
-    if ([NSURLSessionConfiguration tnl_supportsSharedContainerIdentifier]) {
-        sharedContainerIdentifier = _URLSession.configuration.sharedContainerIdentifier;
-    }
+    NSString *sharedContainerIdentifier = _URLSession.configuration.sharedContainerIdentifier;
 
     TNLResponseInfo *info = [[TNLResponseInfo alloc] initWithFinalURLRequest:task.currentRequest
                                                                  URLResponse:context.URLResponse

@@ -84,7 +84,7 @@ FOUNDATION_EXTERN dispatch_queue_t tnl_coding_queue(void);
 
 #pragma mark - Dynamic Linking
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS || TARGET_OS_TV
 
 NS_ASSUME_NONNULL_END
 #import <UIKit/UIApplication.h>
@@ -93,7 +93,7 @@ NS_ASSUME_NONNULL_BEGIN
 FOUNDATION_EXTERN UIApplication * __nullable TNLDynamicUIApplicationSharedApplication(void);
 FOUNDATION_EXTERN Class __nullable TNLDynamicUIApplicationClass(void);
 
-#endif
+#endif // TARGET_OS_IOS || TARGET_OS_TV
 
 #pragma mark - Logging
 
@@ -153,12 +153,16 @@ FOUNDATION_EXTERN void TNLDecrementObjectCount(Class class);
 #define TNLDecrementObjectCount(class) ((void)0)
 #endif
 
-#pragma mark - Error Functions
+#pragma mark - Error Helpers
 
 FOUNDATION_EXTERN NSError *TNLErrorCreateWithCode(TNLErrorCode code);
 FOUNDATION_EXTERN NSError *TNLErrorCreateWithCodeAndUnderlyingError(TNLErrorCode code,
                                                                     NSError * __nullable underlyingError);
 FOUNDATION_EXTERN NSError *TNLErrorCreateWithCodeAndUserInfo(TNLErrorCode code,
                                                              NSDictionary * __nullable userInfo);
+
+#if TARGET_OS_WATCH
+#define kCFErrorDomainCFNetwork @"kCFErrorDomainCFNetwork"
+#endif
 
 NS_ASSUME_NONNULL_END
