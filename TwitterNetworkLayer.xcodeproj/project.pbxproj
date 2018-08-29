@@ -361,7 +361,6 @@
 		8BFDF93B2135AB2C002F6A80 /* libxml2.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BE3DB9B1CDB009F0081ACCE /* libxml2.tbd */; };
 		8BFDF93C2135AB2C002F6A80 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BE3DB991CDB008C0081ACCE /* libz.tbd */; };
 		8BFDF93D2135AB2C002F6A80 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B6DCB4B1974598300235576 /* CFNetwork.framework */; };
-		8BFDF93E2135AB2C002F6A80 /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B4AA75D1E1F28DF00BF7EA0 /* CoreTelephony.framework */; };
 		8BFDF93F2135AB2C002F6A80 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BE402C91946743D00C7241E /* Foundation.framework */; };
 		8BFDF9402135AB2C002F6A80 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B427D541FB53DBF00C9E5CE /* Security.framework */; };
 		8BFDF9412135AB2C002F6A80 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B4DEFF81986AA64008A31EB /* SystemConfiguration.framework */; };
@@ -986,7 +985,6 @@
 				8BFDF93B2135AB2C002F6A80 /* libxml2.tbd in Frameworks */,
 				8BFDF93C2135AB2C002F6A80 /* libz.tbd in Frameworks */,
 				8BFDF93D2135AB2C002F6A80 /* CFNetwork.framework in Frameworks */,
-				8BFDF93E2135AB2C002F6A80 /* CoreTelephony.framework in Frameworks */,
 				8BFDF93F2135AB2C002F6A80 /* Foundation.framework in Frameworks */,
 				8BFDF9402135AB2C002F6A80 /* Security.framework in Frameworks */,
 				8BFDF9412135AB2C002F6A80 /* SystemConfiguration.framework in Frameworks */,
@@ -1815,7 +1813,6 @@
 						ProvisioningStyle = Manual;
 					};
 					8BE402C51946743D00C7241E = {
-						DevelopmentTeamName = Twitter;
 						ProvisioningStyle = Manual;
 					};
 					8BE402D51946743E00C7241E = {
