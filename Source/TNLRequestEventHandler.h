@@ -45,9 +45,10 @@ typedef void(^TNLRequestOperationEnqueueNetworkingOperationBlock)(NSArray<NSOper
 
 /** The operation did start a background request.  See `TNLRequestConfiguration`. */
 - (void)tnl_requestOperation:(TNLRequestOperation *)op
-        didStartBackgroundRequestWithURLSessionTaskIdentifier:(NSUInteger)taskId
+        didStartRequestWithURLSessionTaskIdentifier:(NSUInteger)taskId
         URLSessionConfigurationIdentifier:(nullable NSString *)configId
-        URLSessionSharedContainerIdentifier:(nullable NSString *)sharedContainerIdentifier;
+        URLSessionSharedContainerIdentifier:(nullable NSString *)sharedContainerIdentifier
+        isBackgroundRequest:(BOOL)isBackgroundRequest;
 
 /** The operation did redirect */
 - (void)tnl_requestOperation:(TNLRequestOperation *)op

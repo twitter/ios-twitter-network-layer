@@ -260,7 +260,6 @@ static void _network_prepareRequestStep(SELF_ARG,
 
 @end
 
-static const size_t kPreprationFunctionsCount = 11;
 typedef void (*tnl_request_preparation_function_ptr)(SELF_ARG, tnl_request_preparation_block_t block);
 static const tnl_request_preparation_function_ptr _Nonnull sPreparationFunctions[] = {
     _network_validateOriginalRequest,
@@ -275,7 +274,7 @@ static const tnl_request_preparation_function_ptr _Nonnull sPreparationFunctions
     _network_authorizeScratchURLRequest,
     _network_cementScratchURLRequest,
 };
-TNLStaticAssert(kPreprationFunctionsCount == (sizeof(sPreparationFunctions) / sizeof(sPreparationFunctions[0])), Incorrect_Number_Of_Preparation_Static_Functions);
+static const size_t kPreparationFunctionsCount = (sizeof(sPreparationFunctions) / sizeof(sPreparationFunctions[0]));
 
 @interface TNLRequestOperation (Tagging)
 
@@ -951,24 +950,26 @@ static void _network_notifyHostSanitized(SELF_ARG,
 }
 
 - (void)network_URLSessionTaskOperation:(TNLURLSessionTaskOperation *)taskOp
-        didStartBackgroundTaskWithTaskIdentifier:(NSUInteger)taskId
+        didStartTaskWithTaskIdentifier:(NSUInteger)taskId
         configIdentifier:(nullable NSString *)configIdentifier
         sharedContainerIdentifier:(nullable NSString *)sharedContainerIdentifier
+        isBackgroundRequest:(BOOL)isBackgroundRequest
 {
     TNLAssertIsNetworkQueue();
     if (!_network_getHasFailedOrFinished(self) && self.URLSessionTaskOperation == taskOp) {
-        TNLAssert(self.executionMode == TNLRequestExecutionModeBackground);
+        TNLAssert((self.executionMode == TNLRequestExecutionModeBackground) == isBackgroundRequest);
         id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
-        SEL callback = @selector(tnl_requestOperation:didStartBackgroundRequestWithURLSessionTaskIdentifier:URLSessionConfigurationIdentifier:URLSessionSharedContainerIdentifier:);
+        SEL callback = @selector(tnl_requestOperation:didStartRequestWithURLSessionTaskIdentifier:URLSessionConfigurationIdentifier:URLSessionSharedContainerIdentifier:isBackgroundRequest:);
         if ([eventHandler respondsToSelector:callback]) {
             dispatch_barrier_async(_callbackQueue, ^{
                 @autoreleasepool {
                     NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
                     _updateTag(self, tag);
                     [eventHandler tnl_requestOperation:self
-                                  didStartBackgroundRequestWithURLSessionTaskIdentifier:taskId
+                                  didStartRequestWithURLSessionTaskIdentifier:taskId
                                   URLSessionConfigurationIdentifier:configIdentifier
-                                  URLSessionSharedContainerIdentifier:sharedContainerIdentifier];
+                                  URLSessionSharedContainerIdentifier:sharedContainerIdentifier
+                                  isBackgroundRequest:isBackgroundRequest];
                     _clearTag(self, tag);
                 }
             });
@@ -1232,7 +1233,7 @@ static void _network_prepareRequestStep(SELF_ARG,
         return;
     }
 
-    if (preparationStepIndex >= kPreprationFunctionsCount) {
+    if (preparationStepIndex >= kPreparationFunctionsCount) {
         _network_connect(self, isRetry);
         return;
     }
@@ -1826,8 +1827,12 @@ static void _network_fail(SELF_ARG,
         return;
     }
 
+    if (_network_getIsStateFinished(self)) {
+        // something else failed first, abort this subsequent attempt to fail
+        return;
+    }
+
     TNLAssert(error != nil);
-    TNLAssert(!_network_getIsStateFinished(self));
     BOOL isCancel = NO;
     BOOL isTerminal = NO;
 
@@ -1872,7 +1877,8 @@ static void _network_fail(SELF_ARG,
                              (isCancel) ? TNLRequestOperationStateCancelled : TNLRequestOperationStateFailed,
                              response);
 
-    self.URLSessionTaskOperation = nil; // discard at the end so all internal states can be updated first before disassociating with the associated task operation
+    // discard the task operation at the end so all internal states can be updated first before disassociating with the associated task operation
+    self.URLSessionTaskOperation = nil;
 }
 
 #pragma mark NSOperation
@@ -2176,11 +2182,21 @@ static void _network_updateMetrics(SELF_ARG,
             // ... NOT the currentURLRequest since that won't have been applied yet
             NSURLRequest *request = self.hydratedURLRequest;
             if (!request) {
-                // we could be going through a transition to an early failure state during hydration,
-                // so we'll use the incomplete scratch request instead to preserve the `nonnull` of
-                // our attempt metrics.
+                // we could be going through a transition to an early failure state during/before hydration,
+                // so we'll use some fallbacks to find the best matching request for populating the metrics.
+
+                // try the incomplete scratch request
                 request = [self->_scratchURLRequest copy];
+                if (!request) {
+                    // no scratch request, try the hydrated request
+                    request = [TNLRequest URLRequestForRequest:self.hydratedRequest error:NULL];
+                    if (!request) {
+                        // no hydrated request either, try just the original request
+                        request = [TNLRequest URLRequestForRequest:self.originalRequest error:NULL];
+                    }
+                }
             }
+            TNLAssertMessage(request != nil, @"must have a request by time Starting state happens");
             [self willChangeValueForKey:@"attemptCount"];
             if (self->_metrics.attemptCount == 0) {
                 [self->_metrics addInitialStartWithMachTime:machTime

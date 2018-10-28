@@ -494,9 +494,10 @@ typedef NS_ENUM(NSInteger, TNLXRedirectTestPolicy)
 }
 
 - (void)tnl_requestOperation:(TNLRequestOperation *)op
-        didStartBackgroundRequestWithURLSessionTaskIdentifier:(NSUInteger)taskId
+        didStartRequestWithURLSessionTaskIdentifier:(NSUInteger)taskId
         URLSessionConfigurationIdentifier:(NSString *)configId
         URLSessionSharedContainerIdentifier:(NSString *)sharedContainerIdentifier
+        isBackgroundRequest:(BOOL)isBackgroundRequest
 {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (op != self->_fileDownloadOp) {

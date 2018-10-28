@@ -831,12 +831,20 @@ TNLRequestProtocolOptions TNLProtocolOptionsForProtocolClasses(NSArray * __nulla
 
 void TNLRequestConfigurationAssociateWithRequest(TNLRequestConfiguration *config, NSURLRequest *request)
 {
-    objc_setAssociatedObject(request, &kAssociatedConfigKey, config, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    TNLAssert(request);
+    TNLAssert(config);
+    if (request) {
+        objc_setAssociatedObject(request, &kAssociatedConfigKey, config, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
 }
 
 TNLRequestConfiguration * __nullable TNLRequestConfigurationGetAssociatedWithRequest(NSURLRequest *request)
 {
-    return objc_getAssociatedObject(request, &kAssociatedConfigKey);
+    TNLAssert(request);
+    if (request) {
+        return objc_getAssociatedObject(request, &kAssociatedConfigKey);
+    }
+    return nil;
 }
 
 NS_ASSUME_NONNULL_END

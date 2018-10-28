@@ -76,49 +76,15 @@ NS_ASSUME_NONNULL_BEGIN
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
 
-        NSProcessInfo *processInfo = [NSProcessInfo processInfo];
-        if (![processInfo respondsToSelector:@selector(operatingSystemVersion)]) {
-            // version is too low
-            return;
-        }
-
         // Brotli support requires 2 things:
         // - Running OS version of iOS 11 (or equivalent platform version) or greater
         //   AND
         // - Target SDK at compile time of iOS 11 (or equivalent platform version) or greater
 
-        const NSOperatingSystemVersion OSVersion = processInfo.operatingSystemVersion;
-        (void)OSVersion;
-#if TARGET_OS_IOS
-    #if defined(__IPHONE_11_0) && (__IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_11_0)
-        if (OSVersion.majorVersion >= 11) {
+#if TARGET_SDK_SUPPORTS_BROTLI
+        if (tnl_available_ios_11) {
             sBrotliSupported = YES;
         }
-    #endif
-#elif TARGET_OS_TV
-    #if defined(__TVOS_11_0) && (__TV_OS_VERSION_MAX_ALLOWED >= __TVOS_11_0)
-        if (OSVersion.majorVersion >= 11) {
-            sBrotliSupported = YES;
-        }
-    #endif
-#elif TARGET_OS_WATCH
-    #if defined(__WATCHOS_4_0) && (__WATCH_OS_VERSION_MAX_ALLOWED >= __WATCHOS_4_0)
-        if (OSVersion.majorVersion >= 4) {
-            sBrotliSupported = YES;
-        }
-    #endif
-#elif TARGET_OS_OSX
-    #if defined(__MAC_10_13) && (__MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_13)
-        if (OSVersion.majorVersion > 10) {
-            // Assume post "10" will have brotli
-            sBrotliSupported = YES;
-        } else if (OSVersion.majorVersion == 10 && OSVersion.minorVersion >= 13) {
-            sBrotliSupported = YES;
-        }
-    #endif
-#else
-        // Unexpected target, assume it cannot be used
-        sBrotliSupported = NO;
 #endif
 
     });

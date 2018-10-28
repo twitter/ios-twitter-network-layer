@@ -38,8 +38,8 @@ static NSUInteger const kMaxBytesToCompare = 1024;
         if (TNLHTTPMethodUnknown == method) {
             error = TNLErrorCreateWithCode(TNLErrorCodeRequestInvalidHTTPMethod);
         } else {
-            BOOL isDownload = (TNLResponseDataConsumptionModeSaveToDisk == config.responseDataConsumptionMode);
-            BOOL isBackground = (TNLRequestExecutionModeBackground == config.executionMode);
+            const BOOL isDownload = (TNLResponseDataConsumptionModeSaveToDisk == config.responseDataConsumptionMode);
+            const BOOL isBackground = (TNLRequestExecutionModeBackground == config.executionMode);
             union {
                 struct {
                     BOOL data:1;
@@ -57,12 +57,14 @@ static NSUInteger const kMaxBytesToCompare = 1024;
 
             if (isBackground) {
                 if (!isDownload) {
-                    if (!bodyUnion.body.file) {
-                        // upload must have a file for the body.  nil, data and stream are invalid in the background
+                    if (!bodyUnion.body.file && !bodyUnion.body.data) {
+                        // upload must have a file or data for the body.
+                        // nil and stream are invalid in the background
                         error = TNLErrorCreateWithCode(TNLErrorCodeRequestInvalidBackgroundRequest);
                     }
                 }
             }
+
             if (isDownload && bodyUnion.hasBody) {
                 error = TNLErrorCreateWithCode(TNLErrorCodeRequestHTTPBodyCannotBeSetForDownload);
             }

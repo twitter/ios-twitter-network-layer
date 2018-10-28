@@ -42,6 +42,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 #define EXTRA_DOWNLOAD_BYTES_BUFFER (16)
 
+static NSString * const kTempFileDir = @"com.tnl.temp";
+
+static NSString *TNLWriteDataToTemporaryFile(NSData *data);
 static BOOL TNLURLRequestHasBody(NSURLRequest *request, id<TNLRequest> requestPrototype);
 static NSArray<NSString *> *TNLSecTrustGetCertificateChainDescriptions(SecTrustRef trust);
 static NSString *TNLSecCertificateDescription(SecCertificateRef cert);
@@ -164,7 +167,7 @@ static NSURLSessionTask *_network_populateURLSessionTask(SELF_ARG,
 
 static NSError * __nullable _network_appendDecodedData(SELF_ARG,
                                                        NSData * __nullable data);
-static void _network_didStartBackgroundTask(SELF_ARG);
+static void _network_didStartTask(SELF_ARG, BOOL isBackgroundRequest);
 static void _network_updateMD5(SELF_ARG, NSData *data);
 static void _network_finishMD5(SELF_ARG, BOOL success);
 
@@ -189,6 +192,7 @@ static void _network_idleTimerFired(SELF_ARG);
     NSURLSessionDataTask *_dataTask;
     NSURLSessionDownloadTask *_downloadTask;
     NSURLSessionUploadTask *_uploadTask;
+    NSURLRequest *_taskRequest;
     NSData *_uploadData;
     NSString *_uploadFilePath;
     NSData *_resumeData; // TODO:[nobrien] - utilize
@@ -248,6 +252,7 @@ static void _network_idleTimerFired(SELF_ARG);
         BOOL useIdleTimeoutForInitialConnection:1;
         BOOL shouldCaptureResponse:1;
         BOOL encounteredCompletionBeforeTaskMetrics:1;
+        BOOL shouldDeleteUploadFile:1;
     } _flags;
 
     volatile BOOL _isObservingURLSessionTask;
@@ -353,7 +358,7 @@ static BOOL _currentRequestHasBody(SELF_ARG)
 
 - (nullable NSURLRequest *)originalURLRequest
 {
-    NSURLRequest *request = self.URLSessionTask.originalRequest;
+    NSURLRequest *request = self.URLSessionTask.originalRequest ?: _taskRequest;
     if (_uploadData && !request.HTTPBody) {
         NSMutableURLRequest *mRequest = [request mutableCopy];
         mRequest.HTTPBody = _uploadData;
@@ -370,6 +375,10 @@ static BOOL _currentRequestHasBody(SELF_ARG)
 - (nullable NSURLRequest *)currentURLRequest
 {
     NSURLRequest *request = self.URLSessionTask.currentRequest;
+    if (!request) {
+        return self.originalURLRequest;
+    }
+
     if (_uploadData && !request.HTTPBody) {
         NSMutableURLRequest *mRequest = [request mutableCopy];
         mRequest.HTTPBody = _uploadData;
@@ -590,8 +599,11 @@ static BOOL _currentRequestHasBody(SELF_ARG)
                 }
                 _network_willResumeSessionTask(self, currentURLRequest);
                 _network_resumeSessionTask(self, createdTask);
-                if (TNLRequestExecutionModeBackground == self->_executionMode) {
-                    _network_didStartBackgroundTask(self);
+                _network_didStartTask(self, (TNLRequestExecutionModeBackground == self->_executionMode));
+
+                if (self->_flags.shouldDeleteUploadFile) {
+                    [[NSFileManager defaultManager] removeItemAtPath:self->_uploadFilePath error:NULL];
+                    self->_flags.shouldDeleteUploadFile = NO;
                 }
 
                 if (self->_flags.useIdleTimeoutForInitialConnection) {
@@ -1531,7 +1543,7 @@ static void _network_resumeSessionTask(SELF_ARG,
     });
 }
 
-static void _network_didStartBackgroundTask(SELF_ARG)
+static void _network_didStartTask(SELF_ARG, BOOL isBackgroundRequest)
 {
     if (!self) {
         return;
@@ -1542,9 +1554,10 @@ static void _network_didStartBackgroundTask(SELF_ARG)
     NSString *sharedContainerIdentifier = self->_URLSession.configuration.sharedContainerIdentifier;
 
     [self->_requestOperation network_URLSessionTaskOperation:self
-                    didStartBackgroundTaskWithTaskIdentifier:taskId
+                              didStartTaskWithTaskIdentifier:taskId
                                             configIdentifier:configId
-                                   sharedContainerIdentifier:sharedContainerIdentifier];
+                                   sharedContainerIdentifier:sharedContainerIdentifier
+                                         isBackgroundRequest:isBackgroundRequest];
 }
 
 static void _network_updatePriorities(SELF_ARG)
@@ -1653,6 +1666,12 @@ static void _network_fail(SELF_ARG,
     _network_buildResponseInfo(self);
     TNLAssert(self->_responseInfo);
     _network_finalize(self, (didCancel) ? TNLRequestOperationStateCancelled : TNLRequestOperationStateFailed);
+
+    // discard temporary file at the end (if needed)
+    if (self->_flags.shouldDeleteUploadFile) {
+        [[NSFileManager defaultManager] removeItemAtPath:self->_uploadFilePath error:NULL];
+        self->_flags.shouldDeleteUploadFile = NO;
+    }
 }
 
 static void _network_cancel(SELF_ARG)
@@ -2190,6 +2209,7 @@ static void _network_createTask(SELF_ARG,
                                            &error);
     if (!error) {
         self->_resumeData = nil;
+        self->_taskRequest = request;
 
         if (![NSURLSessionConfiguration tnl_URLSessionCanReceiveResponseViaDelegate]) {
             _network_setObservingURLSessionTask(self, YES /*observing*/);
@@ -2199,7 +2219,7 @@ static void _network_createTask(SELF_ARG,
             task.priority = TNLConvertTNLPriorityToURLSessionTaskPriority(self->_requestPriority);
         }
 
-        TNLRequestConfigurationAssociateWithRequest(self.requestConfiguration, task.originalRequest);
+        TNLRequestConfigurationAssociateWithRequest(self.requestConfiguration, task.originalRequest ?: self->_taskRequest);
     }
 
     TNLAssert((nil == error) ^ (nil == task));
@@ -2235,7 +2255,7 @@ static NSURLSessionTask *_network_populateURLSessionTask(SELF_ARG,
                     @try {
                         self->_downloadTask = [self->_URLSession downloadTaskWithResumeData:self->_resumeData];
                     } @catch (NSException *exception) {
-                        TNLLogError(@"%@", exception);
+                        TNLLogWarning(@"%@", exception);
                     }
                 }
 
@@ -2244,29 +2264,42 @@ static NSURLSessionTask *_network_populateURLSessionTask(SELF_ARG,
                 }
             }
         } else {
-            if (hasBody) {
-                if (isBackground) {
-                    if (![requestPrototype respondsToSelector:@selector(HTTPBodyFilePath)] || !requestPrototype.HTTPBodyFilePath) {
-                        TNLAssertNever(); // should have been caught by [TNLRequest validateRequest:withConfiguration:error:]
-                        error = TNLErrorCreateWithCode(TNLErrorCodeRequestInvalidBackgroundRequest);
-                    }
+            if (isBackground) {
+                if ([requestPrototype respondsToSelector:@selector(HTTPBodyFilePath)] && requestPrototype.HTTPBodyFilePath) {
+                    // OK
+                } else if ([request respondsToSelector:@selector(HTTPBody)] && request.HTTPBody) {
+                    // OK
+                } else {
+                    TNLAssertNever(); // should have been caught by [TNLRequest validateRequest:withConfiguration:error:]
+                    error = TNLErrorCreateWithCode(TNLErrorCodeRequestInvalidBackgroundRequest);
                 }
+            }
 
-                if (!error) {
-                    if (request.HTTPBody) {
+            if (hasBody && !error) {
+                if (request.HTTPBody) {
+                    if (!isBackground) {
                         self->_uploadData = request.HTTPBody;
                         self->_uploadTask = [self->_URLSession uploadTaskWithRequest:request
                                                                             fromData:self->_uploadData];
-                    } else if ([requestPrototype respondsToSelector:@selector(HTTPBodyFilePath)] && requestPrototype.HTTPBodyFilePath) {
-                        self->_uploadFilePath = requestPrototype.HTTPBodyFilePath;
-                        self->_uploadTask = [self->_URLSession uploadTaskWithRequest:request
-                                                                            fromFile:[NSURL fileURLWithPath:self->_uploadFilePath
-                                                                                                isDirectory:NO]];
-                    } else if ([requestPrototype respondsToSelector:@selector(HTTPBodyStream)] && requestPrototype.HTTPBodyStream) {
-                        self->_uploadTask = [self->_URLSession uploadTaskWithStreamedRequest:request];
                     } else {
-                        TNLAssertNever();
+                        // NSURLSessionUploadTask cannot upload anything other than a file in the background.
+                        // Let's help plug that hole by automatically writing the data to a file so
+                        // NSURLSessionUploadTask won't fail
+                        self->_uploadFilePath = TNLWriteDataToTemporaryFile(request.HTTPBody);
+                        NSURL *uploadFileURL = [NSURL fileURLWithPath:self->_uploadFilePath isDirectory:NO];
+                        self->_uploadTask = [self->_URLSession uploadTaskWithRequest:request
+                                                                            fromFile:uploadFileURL];
+                        self->_flags.shouldDeleteUploadFile = YES;
                     }
+                } else if ([requestPrototype respondsToSelector:@selector(HTTPBodyFilePath)] && requestPrototype.HTTPBodyFilePath) {
+                    self->_uploadFilePath = requestPrototype.HTTPBodyFilePath;
+                    NSURL *uploadFileURL = [NSURL fileURLWithPath:self->_uploadFilePath isDirectory:NO];
+                    self->_uploadTask = [self->_URLSession uploadTaskWithRequest:request
+                                                                        fromFile:uploadFileURL];
+                } else if ([requestPrototype respondsToSelector:@selector(HTTPBodyStream)] && requestPrototype.HTTPBodyStream) {
+                    self->_uploadTask = [self->_URLSession uploadTaskWithStreamedRequest:request];
+                } else {
+                    TNLAssertNever(); // where's the body?
                 }
             }
 
@@ -2291,7 +2324,7 @@ static NSURLSessionTask *_network_populateURLSessionTask(SELF_ARG,
         // iOS 9 introduced a new exception.
         // It used to be the case that when you created an NSURLSessionTask with an invalidated session
         // you would just get the URLSession:didBecomeInvalidWithError: callback.
-        // Now it is possible for an exception is thrown - so we need to handle it.
+        // Now it is possible for an exception to be thrown - so we need to handle it.
         // The exception is an NSGenericException...so not exactly as concrete as a specific error.
         // We'll just handle any exception (except assertion exceptions) and coerse it into an invalidated session error
         // so that our session retry code will kick in.
@@ -2301,7 +2334,7 @@ static NSURLSessionTask *_network_populateURLSessionTask(SELF_ARG,
                                 userInfo:@{ @"exception" : exception }];
     }
 
-    if (!self.URLSessionTask &&  !error) {
+    if (!self.URLSessionTask && !error) {
         NSString *reason = @"Underlying NSURLSessionTask was not populated and no error provided";
         TNLAssertMessage(error || self.URLSessionTask, @"%@", reason);
         @throw [NSException exceptionWithName:NSInternalInconsistencyException
@@ -2392,6 +2425,10 @@ static void _network_updateMD5(SELF_ARG,
 static void _network_finishMD5(SELF_ARG,
                                BOOL success)
 {
+    if (!self) {
+        return;
+    }
+
     if (self->_flags.isComputingMD5) {
         unsigned char *md5HashBuffer = (unsigned char *)malloc(CC_MD5_DIGEST_LENGTH);
         self->_md5HashData = [NSData dataWithBytesNoCopy:md5HashBuffer
@@ -2592,6 +2629,15 @@ static NSArray<NSString *> *TNLSecTrustGetCertificateChainDescriptions(SecTrustR
     }
 
     return [certChain copy];
+}
+
+static NSString *TNLWriteDataToTemporaryFile(NSData *data)
+{
+    NSString *temporaryFileDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:kTempFileDir];
+    NSString *temporaryFilePath = [temporaryFileDir stringByAppendingString:[NSUUID UUID].UUIDString];
+    [[NSFileManager defaultManager] createDirectoryAtPath:temporaryFileDir withIntermediateDirectories:YES attributes:nil error:NULL];
+    [data writeToFile:temporaryFilePath atomically:YES];
+    return temporaryFilePath;
 }
 
 NS_ASSUME_NONNULL_END

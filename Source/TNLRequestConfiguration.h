@@ -43,7 +43,7 @@ typedef NS_ENUM(NSInteger, TNLRequestRedirectPolicy) {
 
  Note that when the consumption mode is `TNLResponseDataConsumptionModeSaveToDisk` and the execution
  mode is `TNLRequestExecutionModeBackground` it is required that the request have either no HTTP Body or,
- if a body is set, it must the as data and not as a stream or a file.
+ if a body is set, it must be as data and not as a stream or a file.
 
  ## enum TNLResponseDataConsumptionMode
  */
@@ -83,8 +83,7 @@ typedef NS_ENUM(NSInteger, TNLRequestExecutionMode) {
      Operation is executed in the background.
      Slower than `ModeInApp` plus has some restrictions:
        1. The operation must end up as an upload or a download.
-          To qualify as an upload, the HTTP Body must be set as data, a stream or a file (with a
-          file being preferrable).
+          To qualify as an upload, the HTTP Body must be set as a file or `NSData` (streams are not supported).
           To qualify as a download, `[TNLRequestConfiguration responseDataConsumptionMode]` must set
           to `TNLResponseDataConsumptionModeSaveToDisk`.
        2. When `[TNLRequestConfiguration responseDataConsumptionMode]` is set to

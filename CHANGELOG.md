@@ -2,13 +2,18 @@
 
 ## Info
 
-**Document version:** 2.2.0
+**Document version:** 2.3.0
 
-**Last updated:** 08/27/2018
+**Last updated:** 09/24/2018
 
 **Author:** Nolan O'Brien
 
 ## History
+
+### 2.3.0
+- Add background upload support using `HTTPBody`
+  - TNL will encapsulate the busy-work if there is an upload desire via an `HTTPBody` instead of an `HTTPFilePath`
+- Other miscellaneous minor fixes
 
 ### 2.2.0
 - drop iOS 7 support

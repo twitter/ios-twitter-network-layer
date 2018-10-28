@@ -30,7 +30,13 @@ dispatch_source_t tnl_dispatch_timer_create_and_start(dispatch_queue_t queue,
 
 NSString *TNLVersion()
 {
-    return @"2.2";
+    TNLStaticAssert(TNL_PROJECT_VERSION >= 1.0 && TNL_PROJECT_VERSION <= 10.0, INVALID_TNL_VERSION);
+
+#define __TNL_VERSION(version) @"" #version
+#define _TNL_VERSION(version) __TNL_VERSION( version )
+#define TNL_VERSION()  _TNL_VERSION( TNL_PROJECT_VERSION )
+
+    return TNL_VERSION();
 }
 
 #pragma mark - Threading

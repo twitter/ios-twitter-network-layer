@@ -188,12 +188,17 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
 #if RUN_TESTS_WITH_CANNED_RESPONSES
 
     NSURL *endpoint = request.URL;
-    BOOL hasBody = request.HTTPBody || request.HTTPBodyFilePath || request.HTTPBodyStream;
+    const BOOL hasBody = request.HTTPBody || request.HTTPBodyFilePath || request.HTTPBodyStream;
 
     NSMutableDictionary *headers = [request.allHTTPHeaderFields mutableCopy];
     headers[@"Host"] = endpoint.host;
     if (hasBody) {
-        headers[@"Content-Length"] = @(self.uploadData.length).stringValue;
+        if (!request.HTTPBody && !request.HTTPBodyFilePath) {
+            // streamed requests are "chunked"
+            headers[@"Transfer-Encoding"] = @"Chunked";
+        } else {
+            headers[@"Content-Length"] = @(self.uploadData.length).stringValue;
+        }
         headers[@"Content-Type"] = TNLHTTPContentTypeJSON;
     }
     NSDictionary *responseBodyJSON = @{ @"args" : args ?: @{}, @"headers" : headers, @"url" : endpoint.absoluteString, @"json" : (hasBody) ? kBODY_DICTIONARY : [NSNull null] };
@@ -535,7 +540,7 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
         XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)self.uploadData.length);
+        XCTAssertEqualObjects([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Transfer-Encoding"].firstObject lowercaseString], @"chunked");
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], kBODY_DICTIONARY);
         XCTAssertFalse(response.responseBodyWasInFile);
@@ -785,7 +790,7 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
         XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)self.uploadData.length);
+        XCTAssertEqualObjects([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Transfer-Encoding"].firstObject lowercaseString], @"chunked");
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], kBODY_DICTIONARY);
         XCTAssertFalse(response.responseBodyWasInFile);

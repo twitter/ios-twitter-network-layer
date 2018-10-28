@@ -110,9 +110,10 @@ typedef void(^TNLRequestMakeFinalResponseCompletionBlock)(TNLResponse * __nullab
 - (void)network_URLSessionTaskOperation:(TNLURLSessionTaskOperation *)taskOp
                      appendReceivedData:(NSData *)data;
 - (void)network_URLSessionTaskOperation:(TNLURLSessionTaskOperation *)taskOp
-        didStartBackgroundTaskWithTaskIdentifier:(NSUInteger)taskId
+        didStartTaskWithTaskIdentifier:(NSUInteger)taskId
         configIdentifier:(nullable NSString *)configIdentifier
-        sharedContainerIdentifier:(nullable NSString *)sharedContainerIdentifier;
+        sharedContainerIdentifier:(nullable NSString *)sharedContainerIdentifier
+        isBackgroundRequest:(BOOL)isBackgroundRequest;
 - (void)network_URLSessionTaskOperation:(TNLURLSessionTaskOperation *)taskOp
          willPerformRedirectFromRequest:(NSURLRequest *)fromRequest
                        withHTTPResponse:(NSHTTPURLResponse *)response

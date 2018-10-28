@@ -512,6 +512,7 @@ static void _addAttemptStart(PRIVATE_SELF(TNLResponseMetrics),
     if (self->_final) {
         return;
     }
+
     TNLAssert(request != nil);
     TNLAssert(self->_attemptMetrics != nil);
     TNLAttemptMetrics *lastMetrics = self->_attemptMetrics.lastObject;

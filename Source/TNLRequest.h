@@ -381,6 +381,7 @@ NS_ASSUME_NONNULL_BEGIN
  Implement either `HTTPBody`, `HTTPBodyFilePath` or `HTTPBodyStream`.
  If more than one is implemented, the priority is `HTTPBody`, `HTTPBodyFilePath` then `HTTPBodyStream`.
  @return an `NSData` of the HTTP body
+ @note Supported with `TNLRequestExecutionModeBackground` upload operations.
  */
 - (nullable NSData *)HTTPBody;
 
@@ -391,6 +392,7 @@ NS_ASSUME_NONNULL_BEGIN
  Implement either `HTTPBody`, `HTTPBodyFilePath` or `HTTPBodyStream`.
  If more than one is implemented, the priority is `HTTPBody`, `HTTPBodyFilePath` then `HTTPBodyStream`.
  @return an `NSString` of the path to a file for use as the HTTP body
+ @note Supported with `TNLRequestExecutionModeBackground` upload operations.
  */
 - (nullable NSString *)HTTPBodyFilePath;
 
@@ -404,6 +406,7 @@ NS_ASSUME_NONNULL_BEGIN
  `@"Chunked"` and the `@"Content-Length"` HTTP Header field will not be provided (even if manually
  set in the `allHTTPHeaderFields`).  This is defined behavior by __Apple__.
  When in doubt, use the `HTTPBodyFilePath` instead.
+ @note Cannot be used for a `TNLRequestExecutionModeBackground` upload operation, use `HTTPBodyFilePath` or `HTTPBody`
  */
 - (nullable NSInputStream *)HTTPBodyStream;
 

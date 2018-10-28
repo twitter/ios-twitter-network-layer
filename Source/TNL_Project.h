@@ -51,6 +51,34 @@ do { \
     } \
 } while (0)
 
+#pragma mark - Brotli SDK Check
+
+#define TARGET_SDK_SUPPORTS_BROTLI 0
+#if TARGET_OS_IOS
+#if defined(__IPHONE_11_0) && (__IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_11_0)
+#undef TARGET_SDK_SUPPORTS_BROTLI
+#define TARGET_SDK_SUPPORTS_BROTLI 1
+#endif
+#elif TARGET_OS_TV
+#if defined(__TVOS_11_0) && (__TV_OS_VERSION_MAX_ALLOWED >= __TVOS_11_0)
+#undef TARGET_SDK_SUPPORTS_BROTLI
+#define TARGET_SDK_SUPPORTS_BROTLI 1
+#endif
+#elif TARGET_OS_WATCH
+#if defined(__WATCHOS_4_0) && (__WATCH_OS_VERSION_MAX_ALLOWED >= __WATCHOS_4_0)
+#undef TARGET_SDK_SUPPORTS_BROTLI
+#define TARGET_SDK_SUPPORTS_BROTLI 1
+#endif
+#elif TARGET_OS_OSX
+#if defined(__MAC_10_13) && (__MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_13)
+#undef TARGET_SDK_SUPPORTS_BROTLI
+#define TARGET_SDK_SUPPORTS_BROTLI 1
+#endif
+#else
+// Unexpected target, assume Brotli supported
+#define TARGET_SDK_SUPPORTS_BROTLI 1
+#endif
+
 #pragma mark - Version
 
 FOUNDATION_EXTERN NSString *TNLVersion(void);

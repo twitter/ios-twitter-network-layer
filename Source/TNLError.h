@@ -79,31 +79,31 @@ typedef NS_ENUM(NSInteger, TNLErrorCode) {
     // Request Error Codes
 
     /** Generic `TNLRequest` error */
-    TNLErrorCodeRequestGenericError = TNLErrorCodePageRequest,
+    TNLErrorCodeRequestGenericError = TNLErrorCodePageRequest, // 100
 
     /** Invalid `TNLRequest` */
-    TNLErrorCodeRequestInvalid,
+    TNLErrorCodeRequestInvalid = 101,
 
     /** Invalid URL on a `TNLRequest` */
-    TNLErrorCodeRequestInvalidURL,
+    TNLErrorCodeRequestInvalidURL = 102,
 
     /** Invalid HTTP Method on a `TNLRequest` */
-    TNLErrorCodeRequestInvalidHTTPMethod,
+    TNLErrorCodeRequestInvalidHTTPMethod = 103,
 
     /**
      When the execution mode is `TNLResponseDataConsumptionModeSaveToDisk`, the HTTP Body must not
      be set.  This is because simultaneous uploading a body and downloading a file is not supported.
      */
-    TNLErrorCodeRequestHTTPBodyCannotBeSetForDownload,
+    TNLErrorCodeRequestHTTPBodyCannotBeSetForDownload = 104,
 
     /**
      Background requests must either upload data (via file) or download data (to a file).
      For upload, set an HTTP Body (with `HTTPBodyFilePath`).
      For download, set the execution mode to `TNLResponseDataConsumptionModeSaveToDisk`.
      NOTE: background uploading a body without a file (`HTTPBody` or `HTTPBodyStream`) is also
-     invalid and will yield this error.
+     invalid and will yield this error.  The _NSURLSession_ docs are incorrect, which falsely state that any `NSURLSessionUploadTask` will work on a background session.
      */
-    TNLErrorCodeRequestInvalidBackgroundRequest,
+    TNLErrorCodeRequestInvalidBackgroundRequest = 105,
 
 
 
@@ -111,7 +111,7 @@ typedef NS_ENUM(NSInteger, TNLErrorCode) {
     // Request Operation Error Codes
 
     /** Generic `TNLRequestOperation` error */
-    TNLErrorCodeRequestOperationGenericError = TNLErrorCodePageRequestOperation,
+    TNLErrorCodeRequestOperationGenericError = TNLErrorCodePageRequestOperation, // 200
 
     /**
      The request operation was cancelled.
@@ -121,67 +121,67 @@ typedef NS_ENUM(NSInteger, TNLErrorCode) {
      See `[TNLRequestOperation cancelWithSource:underlyingError:]` and
      `[TNLRequestOperationQueue cancelAllWithSource:underlyingError:]`.
      */
-    TNLErrorCodeRequestOperationCancelled,
+    TNLErrorCodeRequestOperationCancelled = 201,
 
     /** The request operation timed out.  See `[TNLRequestConfiguration operationTimeout]`. */
-    TNLErrorCodeRequestOperationOperationTimedOut,
+    TNLErrorCodeRequestOperationOperationTimedOut = 202,
 
     /** The request attempt timed out.  See `[TNLRequestConfiguration attemptTimeout]`. */
-    TNLErrorCodeRequestOperationAttemptTimedOut,
+    TNLErrorCodeRequestOperationAttemptTimedOut = 203,
 
     /** The request timed out due to idleness.  See `[TNLRequestConfiguration idleTimeout]`. */
-    TNLErrorCodeRequestOperationIdleTimedOut,
+    TNLErrorCodeRequestOperationIdleTimedOut = 204,
 
     /** The request times out due to a delegate/retry-policy callback taking too long (10 seconds). */
-    TNLErrorCodeRequestOperationCallbackTimedOut,
+    TNLErrorCodeRequestOperationCallbackTimedOut = 205,
 
     /** The request operation was not provided an object that conforms to the `TNLRequest` protocol. */
-    TNLErrorCodeRequestOperationRequestNotProvided,
+    TNLErrorCodeRequestOperationRequestNotProvided = 206,
 
     /** The `TNLRequest` could not be hydrated. The `NSUnderlyingError` key will be set. */
-    TNLErrorCodeRequestOperationFailedToHydrateRequest,
+    TNLErrorCodeRequestOperationFailedToHydrateRequest = 207,
 
     /**
      The hydrated `TNLRequest` is not valid.
      The `NSUnderlyingError` will be set - usually a `TNLErrorCodeRequestBLAH` error.
      */
-    TNLErrorCodeRequestOperationInvalidHydratedRequest,
+    TNLErrorCodeRequestOperationInvalidHydratedRequest = 208,
 
     /** There was an I/O error */
-    TNLErrorCodeRequestOperationFileIOError,
+    TNLErrorCodeRequestOperationFileIOError = 209,
 
     /** There was an issue appending received data to memory */
-    TNLErrorCodeRequestOperationAppendResponseDataError,
+    TNLErrorCodeRequestOperationAppendResponseDataError = 210,
 
     /**
      The underlying NSURLSession became invalid.
      If the invalidation is systemic, the `NSUnderlyingError` will be set.
      */
-    TNLErrorCodeRequestOperationURLSessionInvalidated,
+    TNLErrorCodeRequestOperationURLSessionInvalidated = 211,
 
     /** Authentication challenge was cancelled */
-    TNLErrorCodeRequestOperationAuthenticationChallengeCancelled,
+    TNLErrorCodeRequestOperationAuthenticationChallengeCancelled = 212,
 
     /**
      The request's `"Content-Encoding"` HTTP field was specified and it did not match the specified
      `TNLContentEncoder` on the `TNLRequestConfiguration`
      */
-    TNLErrorCodeRequestOperationRequestContentEncodingTypeMissMatch,
+    TNLErrorCodeRequestOperationRequestContentEncodingTypeMissMatch = 213,
 
     /**
      The request's body failed to be encoded with the specified `TNLContentEncoder` on the
      `TNLRequestConfiguration`
      */
-    TNLErrorCodeRequestOperationRequestContentEncodingFailed,
+    TNLErrorCodeRequestOperationRequestContentEncodingFailed = 214,
 
     /**
      The response's body failed to be decoded with the matching `TNLContentDecoder` specified by
      `TNLRequestConfiguration`
      */
-    TNLErrorCodeRequestOperationRequestContentDecodingFailed,
+    TNLErrorCodeRequestOperationRequestContentDecodingFailed = 215,
 
     /** The operation could not authorize its request. */
-    TNLErrorCodeRequestOperationFailedToAuthorizeRequest,
+    TNLErrorCodeRequestOperationFailedToAuthorizeRequest = 216,
 
 
 
@@ -189,13 +189,13 @@ typedef NS_ENUM(NSInteger, TNLErrorCode) {
     // Global Error Codes
 
     /** Generic global error */
-    TNLErrorCodeGlobalGenericError = TNLErrorCodePageGlobal,
+    TNLErrorCodeGlobalGenericError = TNLErrorCodePageGlobal, // 300
 
     /**
      The URL host was blocked by the `TNLGlobalConfiguration`'s `TNLHostSanitizer`.
      `TNLErrorHostKey` will be set.
      */
-    TNLErrorCodeGlobalHostWasBlocked,
+    TNLErrorCodeGlobalHostWasBlocked = 301,
 
 
 
@@ -203,10 +203,10 @@ typedef NS_ENUM(NSInteger, TNLErrorCode) {
     // Other Error Codes
 
     /** Generic other error */
-    TNLErrorCodeOtherGenericError = TNLErrorCodePageOther,
+    TNLErrorCodeOtherGenericError = TNLErrorCodePageOther, // 9900
 
     /** The URL host was empty */
-    TNLErrorCodeOtherHostCannotBeEmpty,
+    TNLErrorCodeOtherHostCannotBeEmpty = 9901,
 };
 
 //! Convert `TNLErrorCode` to an `NSString`
