@@ -40,10 +40,13 @@ static void _GlobalRequestOperationQueueAddOperation(TNLRequestOperation *op);
 
 static volatile atomic_int_fast64_t __attribute__((aligned(8))) sGlobalExecutingConnectionCount = 0;
 static NSMapTable<NSString *, TNLRequestOperationQueue *> *sGlobalRequestOperationQueueMapTable = nil;
-static NSMutableSet<id<TNLNetworkObserver>> *sGlobalObservers = nil;
+static NSMutableSet<id<TNLNetworkObserver>> *sGlobalNetworkObservers = nil;
 static NSOperationQueue *sGlobalRequestOperationQueue = nil;
 static NSHashTable<TNLRequestOperation *> *sGlobalAutoDependencyOperations = nil;
-static NSMutableOrderedSet<id<TNLHTTPHeaderProvider>> *sGlobalHeaderProviders = nil;
+
+//use NSMutableArray instead of NSMutableOrderedSet as it avoids an expensive class load when accessed during +(void)load,
+//which for a collection with only a few elements and a few lookups is a worthwhile tradeoff
+static NSMutableArray<id<TNLHTTPHeaderProvider>> *sGlobalHeaderProviders = nil;
 
 static dispatch_queue_t _GlobalOperationQueueQueue(void);
 static dispatch_queue_t _GlobalOperationQueueQueue()
@@ -80,7 +83,7 @@ static NSArray<TNLRequestOperation *> * __nullable _GlobalAutoDependencyOperatio
 static void _GlobalAddAutoDependencyOperation(TNLRequestOperation *op);
 static void _GlobalAddAutoDependencyOperation(TNLRequestOperation *op)
 {
-    dispatch_async(_GlobalOperationQueueQueue(), ^{
+    tnl_dispatch_async_autoreleasing(_GlobalOperationQueueQueue(), ^{
         [sGlobalAutoDependencyOperations addObject:op];
     });
 }
@@ -89,7 +92,7 @@ static void _GlobalAddAutoDependencyOperation(TNLRequestOperation *op)
 static void _GlobalRemoveAutoDependencyOperation(TNLRequestOperation *op);
 static void _GlobalRemoveAutoDependencyOperation(TNLRequestOperation *op)
 {
-    dispatch_async(_GlobalOperationQueueQueue(), ^{
+    tnl_dispatch_async_autoreleasing(_GlobalOperationQueueQueue(), ^{
         [sGlobalAutoDependencyOperations removeObject:op];
     });
 }
@@ -155,18 +158,18 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 
 + (void)addGlobalNetworkObserver:(id<TNLNetworkObserver>)observer
 {
-    dispatch_async(_GlobalOperationQueueQueue(), ^{
-        if (!sGlobalObservers) {
-            sGlobalObservers = [[NSMutableSet alloc] init];
+    tnl_dispatch_async_autoreleasing(_GlobalOperationQueueQueue(), ^{
+        if (!sGlobalNetworkObservers) {
+            sGlobalNetworkObservers = [[NSMutableSet alloc] init];
         }
-        [sGlobalObservers addObject:observer];
+        [sGlobalNetworkObservers addObject:observer];
     });
 }
 
 + (void)removeGlobalNetworkObserver:(id<TNLNetworkObserver>)observer
 {
-    dispatch_async(_GlobalOperationQueueQueue(), ^{
-        [sGlobalObservers removeObject:observer];
+    tnl_dispatch_async_autoreleasing(_GlobalOperationQueueQueue(), ^{
+        [sGlobalNetworkObservers removeObject:observer];
     });
 }
 
@@ -174,16 +177,16 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 {
     __block NSArray<id<TNLNetworkObserver>> *allGlobalNetworkObservers = nil;
     tnl_dispatch_sync_autoreleasing(_GlobalOperationQueueQueue(), ^{
-        allGlobalNetworkObservers = [sGlobalObservers allObjects];
+        allGlobalNetworkObservers = [sGlobalNetworkObservers allObjects];
     });
     return allGlobalNetworkObservers;
 }
 
 + (void)addGlobalHeaderProvider:(id<TNLHTTPHeaderProvider>)provider
 {
-    dispatch_async(_GlobalOperationQueueQueue(), ^{
+    tnl_dispatch_async_autoreleasing(_GlobalOperationQueueQueue(), ^{
         if (!sGlobalHeaderProviders) {
-            sGlobalHeaderProviders = [[NSMutableOrderedSet alloc] init];
+            sGlobalHeaderProviders = [[NSMutableArray alloc] init];
         }
         // remove then add to make sure provider is the latest
         [sGlobalHeaderProviders removeObject:provider];
@@ -193,7 +196,7 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 
 + (void)removeGlobalHeaderProvider:(id<TNLHTTPHeaderProvider>)provider
 {
-    dispatch_async(_GlobalOperationQueueQueue(), ^{
+    tnl_dispatch_async_autoreleasing(_GlobalOperationQueueQueue(), ^{
         [sGlobalHeaderProviders removeObject:provider];
     });
 }
@@ -201,8 +204,8 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 + (nullable NSArray<id<TNLHTTPHeaderProvider>> *)allGlobalHeaderProviders
 {
     __block NSArray* providers = nil;
-    dispatch_sync(_GlobalOperationQueueQueue(), ^{
-        providers = [[sGlobalHeaderProviders array] copy];
+    tnl_dispatch_sync_autoreleasing(_GlobalOperationQueueQueue(), ^{
+        providers = [sGlobalHeaderProviders copy];
     });
     return providers;
 }
@@ -236,7 +239,7 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
         _stagedRequestOperations = [[NSMutableArray alloc] init];
 
         __block BOOL didRegister = NO;
-        dispatch_sync(_GlobalOperationQueueQueue(), ^{
+        tnl_dispatch_sync_autoreleasing(_GlobalOperationQueueQueue(), ^{
             didRegister = [sGlobalRequestOperationQueueMapTable objectForKey:self.identifier] == nil;
             if (didRegister) {
                 [sGlobalRequestOperationQueueMapTable setObject:self forKey:self.identifier];
@@ -375,7 +378,7 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 
 - (void)syncAddRequestOperation:(TNLRequestOperation *)op
 {
-    dispatch_sync(_sessionStateQueue, ^{
+    tnl_dispatch_sync_autoreleasing(_sessionStateQueue, ^{
         if (self->_suspendCount > 0) {
             [self->_stagedRequestOperations addObject:op];
         } else {
@@ -386,7 +389,7 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 
 - (void)clearQueuedRequestOperation:(TNLRequestOperation *)op
 {
-    dispatch_async(_sessionStateQueue, ^{
+    tnl_dispatch_async_autoreleasing(_sessionStateQueue, ^{
         [self->_stagedRequestOperations removeObject:op];
     });
 }
@@ -415,8 +418,9 @@ static void _cancelAllStagedRequestOperations(SELF_ARG,
             underlyingError:(nullable NSError *)optionalUnderlyingError
 {
     _cancelAllStagedRequestOperations(self, source, optionalUnderlyingError);
-    [[TNLURLSessionManager sharedInstance] cancelAllWithSource:source
-                                               underlyingError:optionalUnderlyingError];
+    [[TNLURLSessionManager sharedInstance] cancelAllForQueue:self
+                                                      source:source
+                                             underlyingError:optionalUnderlyingError];
 }
 
 - (void)cancelAllWithSource:(id<TNLRequestOperationCancelSource>)source
@@ -439,9 +443,9 @@ static void _cancelAllStagedRequestOperations(SELF_ARG,
 
 - (void)operationDidStart:(TNLRequestOperation *)op
 {
-    _executeOnObservers(self,
-                        @selector(tnl_requestOperationDidStart:),
-                        ^(id<TNLNetworkObserver> observer) {
+    _executeOnNetworkObservers(self,
+                               @selector(tnl_requestOperationDidStart:),
+                               ^(id<TNLNetworkObserver> observer) {
         [observer tnl_requestOperationDidStart:op];
     });
 }
@@ -451,9 +455,9 @@ static void _cancelAllStagedRequestOperations(SELF_ARG,
 {
     NSURLRequest *URLRequest = op.currentURLRequest;
 
-    _executeOnObservers(self,
-                        @selector(tnl_requestOperation:didStartAttemptRequest:metrics:),
-                        ^(id<TNLNetworkObserver> observer) {
+    _executeOnNetworkObservers(self,
+                               @selector(tnl_requestOperation:didStartAttemptRequest:metrics:),
+                               ^(id<TNLNetworkObserver> observer) {
         [observer tnl_requestOperation:op
                 didStartAttemptRequest:URLRequest
                                metrics:metrics];
@@ -464,9 +468,9 @@ static void _cancelAllStagedRequestOperations(SELF_ARG,
         didCompleteAttempt:(TNLResponse *)response
         disposition:(TNLAttemptCompleteDisposition)disposition
 {
-    _executeOnObservers(self,
-                        @selector(tnl_requestOperation:didCompleteAttemptWithIntermediateResponse:disposition:),
-                        ^(id<TNLNetworkObserver> observer) {
+    _executeOnNetworkObservers(self,
+                               @selector(tnl_requestOperation:didCompleteAttemptWithIntermediateResponse:disposition:),
+                               ^(id<TNLNetworkObserver> observer) {
         [observer tnl_requestOperation:op
                   didCompleteAttemptWithIntermediateResponse:response
                   disposition:disposition];
@@ -476,9 +480,9 @@ static void _cancelAllStagedRequestOperations(SELF_ARG,
 - (void)operation:(TNLRequestOperation *)op
         didCompleteWithResponse:(TNLResponse *)response
 {
-    _executeOnObservers(self,
-                        @selector(tnl_requestOperation:didCompleteWithResponse:),
-                        ^(id<TNLNetworkObserver> observer) {
+    _executeOnNetworkObservers(self,
+                               @selector(tnl_requestOperation:didCompleteWithResponse:),
+                               ^(id<TNLNetworkObserver> observer) {
         [observer tnl_requestOperation:op
                didCompleteWithResponse:response];
     });
@@ -488,24 +492,26 @@ static void _cancelAllStagedRequestOperations(SELF_ARG,
         didCompleteAttempt:(TNLResponse *)response
 {
     TNLRequestOperation *requestOp = [op synthesizeRequestOperation];
-    _executeOnObservers(self,
-                        @selector(tnl_requestOperation:didCompleteWithResponse:),
-                        ^(id<TNLNetworkObserver> observer) {
+    _executeOnNetworkObservers(self,
+                               @selector(tnl_requestOperation:didCompleteWithResponse:),
+                               ^(id<TNLNetworkObserver> observer) {
         [observer tnl_requestOperation:requestOp
                didCompleteWithResponse:response];
     });
 }
 
-static void _executeOnObservers(SELF_ARG,
-                                SEL selector,
-                                void(^matchingBlock)(id<TNLNetworkObserver> matchingObserver))
+#pragma mark Private
+
+static void _executeOnNetworkObservers(SELF_ARG,
+                                       SEL selector,
+                                       void(^matchingBlock)(id<TNLNetworkObserver> matchingObserver))
 {
     if (!self) {
         return;
     }
 
     tnl_dispatch_async_autoreleasing(_GlobalOperationQueueQueue(), ^{
-        NSSet *observers = [sGlobalObservers copy];
+        NSSet<id<TNLNetworkObserver>> *observers = [sGlobalNetworkObservers copy];
         tnl_dispatch_async_autoreleasing(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             for (id<TNLNetworkObserver> observer in observers) {
                 if ([observer respondsToSelector:selector]) {

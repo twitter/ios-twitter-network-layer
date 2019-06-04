@@ -28,6 +28,7 @@
 @end
 
 #define PSEUDO_ORIGIN @"http://www.pseudo.com"
+#define PSEUDO_REDIRECT PSEUDO_ORIGIN @"/redirect"
 #if ENABLE_TIMING_TESTS
 #define TIME_BUFFER (0.25)
 #endif
@@ -65,7 +66,7 @@ static NSData *sData;
 
 - (void)tearDown
 {
-    [self unregisterCannedResponse];
+    [TNLPseudoURLProtocol unregisterAllEndpoints];
     [super tearDown];
 }
 
@@ -74,9 +75,16 @@ static NSData *sData;
     [TNLPseudoURLProtocol registerURLResponse:sResponse body:sData config:config withEndpoint:sURL];
 }
 
-- (void)unregisterCannedResponse
+- (void)registerRedirectWithBehavior:(TNLPseudoURLProtocolRedirectBehavior)behavior
 {
-    [TNLPseudoURLProtocol unregisterEndpoint:sURL];
+    NSURL *redirectURL = [NSURL URLWithString:PSEUDO_REDIRECT];
+    NSHTTPURLResponse *redirectResponse = [[NSHTTPURLResponse alloc] initWithURL:redirectURL
+                                                                      statusCode:302
+                                                                     HTTPVersion:@"HTTP/1.1"
+                                                                    headerFields:@{ @"Location" : PSEUDO_ORIGIN }];
+    TNLPseudoURLResponseConfig *config = [[TNLPseudoURLResponseConfig alloc] init];
+    config.redirectBehavior = behavior;
+    [TNLPseudoURLProtocol registerURLResponse:redirectResponse body:nil config:config withEndpoint:redirectURL];
 }
 
 #pragma mark Tests
@@ -324,6 +332,231 @@ static NSData *sData;
     XCTAssertEqualWithAccuracy(response.metrics.totalDuration, 0.5, TIME_BUFFER * 2);
 #endif
     XCTAssertEqual(1UL, response.metrics.attemptCount);
+}
+
+- (void)testOperation302_Follow
+{
+    NSURL *redirectURL = [NSURL URLWithString:PSEUDO_REDIRECT];
+
+    [self registerRedirectWithBehavior:TNLPseudoURLProtocolRedirectBehaviorFollowLocation];
+    [self registerCannedResponseWithConfig:nil];
+
+    TNLMutableHTTPRequest *request = [[TNLMutableHTTPRequest alloc] initWithURL:redirectURL];
+    TNLRequestOperation *op = [TNLRequestOperation operationWithRequest:request configuration:sConfig delegate:self];
+
+    // expect redirection
+
+    __block NSURLRequest *fromRequest;
+    __block NSURLRequest *toRequest;
+    XCTestExpectation *expectRedirect;
+    expectRedirect = [self expectationForNotification:@"Redirect" object:op handler:^BOOL(NSNotification *notification) {
+        fromRequest = notification.userInfo[@"fromRequest"];
+        toRequest = notification.userInfo[@"toRequest"];
+        return YES;
+    }];
+
+    // expect completion
+
+    __block TNLResponse *response;
+    XCTestExpectation *expectComplete;
+    expectComplete = [self expectationForNotification:@"Complete" object:op handler:^BOOL(NSNotification *notification) {
+        response = notification.userInfo[@"response"];
+        return YES;
+    }];
+
+    // enqueue the operation and wait for it to finish
+
+    XCTAssertFalse(op.isCancelled);
+    XCTAssertFalse(op.isFinished);
+    XCTAssertFalse(op.isExecuting);
+    XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
+
+    [sQueue enqueueRequestOperation:op];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+
+    XCTAssertFalse(op.isCancelled);
+    XCTAssertFalse(op.isExecuting);
+    XCTAssertTrue(op.isFinished);
+    XCTAssertEqual(op.state, TNLRequestOperationStateSucceeded);
+
+    // check that the redirect happend correctly
+
+    XCTAssertEqualObjects(PSEUDO_REDIRECT, fromRequest.URL.absoluteString);
+    XCTAssertEqualObjects(PSEUDO_ORIGIN, toRequest.URL.absoluteString);
+    XCTAssertEqualObjects(sURL, toRequest.URL);
+    XCTAssertEqual(response.metrics.attemptCount, (NSUInteger)2);
+    XCTAssertEqual(response.metrics.attemptMetrics.firstObject.attemptType, TNLAttemptTypeInitial);
+    XCTAssertEqual(response.metrics.attemptMetrics.lastObject.attemptType, TNLAttemptTypeRedirect);
+
+    // check that the completion happened correctly
+
+    XCTAssertEqual(200, response.info.statusCode);
+    XCTAssertGreaterThan(response.info.data.length,  0);
+    XCTAssertEqual(1.0, op.downloadProgress);
+    XCTAssertEqual(1.0, op.uploadProgress);
+    XCTAssertNil(response.operationError);
+    XCTAssertEqualObjects(response, op.response);
+}
+
+- (void)testOperation302_FollowIfRegistered
+{
+    NSURL *redirectURL = [NSURL URLWithString:PSEUDO_REDIRECT];
+
+    [self registerRedirectWithBehavior:TNLPseudoURLProtocolRedirectBehaviorFollowLocationIfRedirectResponseIsRegistered];
+    [self registerCannedResponseWithConfig:nil];
+
+    TNLMutableHTTPRequest *request = [[TNLMutableHTTPRequest alloc] initWithURL:redirectURL];
+    TNLRequestOperation *op = [TNLRequestOperation operationWithRequest:request configuration:sConfig delegate:self];
+
+    // expect redirection
+
+    __block NSURLRequest *fromRequest;
+    __block NSURLRequest *toRequest;
+    XCTestExpectation *expectRedirect;
+    expectRedirect = [self expectationForNotification:@"Redirect" object:op handler:^BOOL(NSNotification *notification) {
+        fromRequest = notification.userInfo[@"fromRequest"];
+        toRequest = notification.userInfo[@"toRequest"];
+        return YES;
+    }];
+
+    // expect completion
+
+    __block TNLResponse *response;
+    XCTestExpectation *expectComplete;
+    expectComplete = [self expectationForNotification:@"Complete" object:op handler:^BOOL(NSNotification *notification) {
+        response = notification.userInfo[@"response"];
+        return YES;
+    }];
+
+    // enqueue the operation and wait for it to finish
+
+    XCTAssertFalse(op.isCancelled);
+    XCTAssertFalse(op.isFinished);
+    XCTAssertFalse(op.isExecuting);
+    XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
+
+    [sQueue enqueueRequestOperation:op];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+
+    XCTAssertFalse(op.isCancelled);
+    XCTAssertFalse(op.isExecuting);
+    XCTAssertTrue(op.isFinished);
+    XCTAssertEqual(op.state, TNLRequestOperationStateSucceeded);
+
+    // check that the redirect happend correctly
+
+    XCTAssertEqualObjects(PSEUDO_REDIRECT, fromRequest.URL.absoluteString);
+    XCTAssertEqualObjects(PSEUDO_ORIGIN, toRequest.URL.absoluteString);
+    XCTAssertEqualObjects(sURL, toRequest.URL);
+    XCTAssertEqual(response.metrics.attemptCount, (NSUInteger)2);
+    XCTAssertEqual(response.metrics.attemptMetrics.firstObject.attemptType, TNLAttemptTypeInitial);
+    XCTAssertEqual(response.metrics.attemptMetrics.lastObject.attemptType, TNLAttemptTypeRedirect);
+
+    // check that the completion happened correctly
+
+    XCTAssertEqual(200, response.info.statusCode);
+    XCTAssertGreaterThan(response.info.data.length,  0);
+    XCTAssertEqual(1.0, op.downloadProgress);
+    XCTAssertEqual(1.0, op.uploadProgress);
+    XCTAssertNil(response.operationError);
+    XCTAssertEqualObjects(response, op.response);
+}
+
+- (void)testOperation302_DontFollowIfNotRegistered
+{
+    NSURL *redirectURL = [NSURL URLWithString:PSEUDO_REDIRECT];
+
+    [self registerRedirectWithBehavior:TNLPseudoURLProtocolRedirectBehaviorFollowLocationIfRedirectResponseIsRegistered];
+
+    TNLMutableHTTPRequest *request = [[TNLMutableHTTPRequest alloc] initWithURL:redirectURL];
+    TNLRequestOperation *op = [TNLRequestOperation operationWithRequest:request configuration:sConfig delegate:self];
+
+    // expect completion
+
+    __block TNLResponse *response;
+    XCTestExpectation *expectComplete;
+    expectComplete = [self expectationForNotification:@"Complete" object:op handler:^BOOL(NSNotification *notification) {
+        response = notification.userInfo[@"response"];
+        return YES;
+    }];
+
+    // enqueue the operation and wait for it to finish
+
+    XCTAssertFalse(op.isCancelled);
+    XCTAssertFalse(op.isFinished);
+    XCTAssertFalse(op.isExecuting);
+    XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
+
+    [sQueue enqueueRequestOperation:op];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+
+    XCTAssertFalse(op.isCancelled);
+    XCTAssertFalse(op.isExecuting);
+    XCTAssertTrue(op.isFinished);
+    XCTAssertEqual(op.state, TNLRequestOperationStateSucceeded);
+
+    // check that the redirect did not happen
+
+    XCTAssertEqual(response.metrics.attemptCount, (NSUInteger)1);
+    XCTAssertEqual(response.metrics.attemptMetrics.firstObject.attemptType, TNLAttemptTypeInitial);
+
+    // check that the completion happened correctly
+
+    XCTAssertEqual(302, response.info.statusCode);
+    XCTAssertEqual(1.0, op.downloadProgress);
+    XCTAssertEqual(1.0, op.uploadProgress);
+    XCTAssertNil(response.operationError);
+    XCTAssertEqualObjects(response, op.response);
+    XCTAssertEqualObjects([response.info valueForResponseHeaderField:@"Location"], PSEUDO_ORIGIN);
+}
+
+- (void)testOperation302_DontFollow
+{
+    NSURL *redirectURL = [NSURL URLWithString:PSEUDO_REDIRECT];
+
+    [self registerRedirectWithBehavior:TNLPseudoURLProtocolRedirectBehaviorDontFollowLocation];
+    [self registerCannedResponseWithConfig:nil];
+
+    TNLMutableHTTPRequest *request = [[TNLMutableHTTPRequest alloc] initWithURL:redirectURL];
+    TNLRequestOperation *op = [TNLRequestOperation operationWithRequest:request configuration:sConfig delegate:self];
+
+    // expect completion
+
+    __block TNLResponse *response;
+    XCTestExpectation *expectComplete;
+    expectComplete = [self expectationForNotification:@"Complete" object:op handler:^BOOL(NSNotification *notification) {
+        response = notification.userInfo[@"response"];
+        return YES;
+    }];
+
+    // enqueue the operation and wait for it to finish
+
+    XCTAssertFalse(op.isCancelled);
+    XCTAssertFalse(op.isFinished);
+    XCTAssertFalse(op.isExecuting);
+    XCTAssertEqual(op.state, TNLRequestOperationStateIdle);
+
+    [sQueue enqueueRequestOperation:op];
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+
+    XCTAssertFalse(op.isCancelled);
+    XCTAssertFalse(op.isExecuting);
+    XCTAssertTrue(op.isFinished);
+    XCTAssertEqual(op.state, TNLRequestOperationStateSucceeded);
+
+    // check that the redirect did not happen
+
+    XCTAssertEqual(response.metrics.attemptCount, (NSUInteger)1);
+    XCTAssertEqual(response.metrics.attemptMetrics.firstObject.attemptType, TNLAttemptTypeInitial);
+
+    // check that the completion happened correctly
+
+    XCTAssertEqual(302, response.info.statusCode);
+    XCTAssertEqual(1.0, op.downloadProgress);
+    XCTAssertEqual(1.0, op.uploadProgress);
+    XCTAssertNil(response.operationError);
+    XCTAssertEqualObjects(response, op.response);
+    XCTAssertEqualObjects([response.info valueForResponseHeaderField:@"Location"], PSEUDO_ORIGIN);
 }
 
 - (void)testOperationError_AttemptTimeout
@@ -757,6 +990,11 @@ static NSData *sData;
 }
 
 #pragma mark TNLRequestDelegate
+
+- (void)tnl_requestOperation:(TNLRequestOperation *)op didRedirectFromURLRequest:(NSURLRequest *)fromRequest toURLRequest:(NSURLRequest *)toRequest
+{
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"Redirect" object:op userInfo:@{ @"fromRequest" : fromRequest, @"toRequest" : toRequest }];
+}
 
 - (void)tnl_requestOperation:(TNLRequestOperation *)op didCompleteWithResponse:(TNLResponse *)response
 {

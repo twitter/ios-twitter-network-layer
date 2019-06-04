@@ -275,7 +275,7 @@ NS_ASSUME_NONNULL_BEGIN
 {
     NSUInteger hash = self.HTTPBody.hash +
                         self.URL.hash +
-                        self.HTTPMethodValue +
+                        (NSUInteger)self.HTTPMethodValue +
                         self.HTTPBodyFilePath.hash +
                         self.HTTPBodyStream.hash +
                         self.allHTTPHeaderFields.count; // use the count of headers, not the hash since the dictionary will be case incensitive in comparison

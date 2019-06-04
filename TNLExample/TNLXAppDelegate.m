@@ -59,6 +59,14 @@ NSString *TNLXCommunicationStatusUpdatedNotification = @"TNLXCommunicationStatus
     NSLog(@"[%@]: %@", levelString, message);
 }
 
+- (BOOL)tnl_shouldRedactHTTPHeaderField:(nonnull NSString *)headerField
+{
+    if ([headerField isEqualToString:@"Authorization"]) {
+        return YES;
+    }
+    return NO;
+}
+
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     [[NSURLCache sharedURLCache] removeAllCachedResponses];
@@ -210,6 +218,7 @@ NSString *TNLXCommunicationStatusUpdatedNotification = @"TNLXCommunicationStatus
         status:(TNLNetworkReachabilityStatus)status
         carrierInfo:(nullable id<TNLCarrierInfo>)info
         WWANRadioAccessTechnology:(nullable NSString *)radioTech
+        captivePortalStatus:(TNLCaptivePortalStatus)captivePortalStatus
 {
     _SCFlagsString = TNLDebugStringFromNetworkReachabilityFlags(flags);
     _statusString = TNLNetworkReachabilityStatusToString(status) ?: @"<null>";

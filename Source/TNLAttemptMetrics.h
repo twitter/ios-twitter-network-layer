@@ -61,10 +61,16 @@ static const NSInteger TNLAttemptCompleteDispositionCount = 3;
 @property (nonatomic, readonly) int64_t attemptId;
 /** The type of the attempt */
 @property (nonatomic, readonly) TNLAttemptType attemptType;
+
+/** attempt start date */
+@property (nonatomic, readonly) NSDate *startDate;
 /** attempt start machine time */
 @property (nonatomic, readonly) uint64_t startMachTime;
+/** attempt end date */
+@property (nonatomic, readonly, nullable) NSDate *endDate;
 /** attempt end machine time */
 @property (nonatomic, readonly) uint64_t endMachTime;
+
 /** The associated `TNLAttemptMetaData` (if any) */
 @property (nonatomic, readonly, nullable) TNLAttemptMetaData *metaData;
 
@@ -77,6 +83,8 @@ static const NSInteger TNLAttemptCompleteDispositionCount = 3;
 @property (nonatomic, copy, readonly, nullable) NSString *WWANRadioAccessTechnology;
 /** attempt carrier info. Note: `nil` for macOS since there is no cellular carrier information */
 @property (nonatomic, readonly, nullable) id<TNLCarrierInfo> carrierInfo;
+/** attempt captive portal status */
+@property (nonatomic, readonly) TNLCaptivePortalStatus captivePortalStatus;
 #endif // !TARGET_OS_WATCH
 
 /** The related request for this attempt */
@@ -105,7 +113,9 @@ static const NSInteger TNLAttemptCompleteDispositionCount = 3;
 /** Designated Initializer */
 - (instancetype)initWithAttemptId:(int64_t)attemptId
                              type:(TNLAttemptType)type
+                        startDate:(NSDate *)startDate
                     startMachTime:(uint64_t)startMachTime
+                          endDate:(nullable NSDate *)endDate
                       endMachTime:(uint64_t)endMachTime
                          metaData:(nullable TNLAttemptMetaData *)metaData
                        URLRequest:(NSURLRequest *)request
@@ -114,7 +124,9 @@ static const NSInteger TNLAttemptCompleteDispositionCount = 3;
 
 /** Initializer */
 - (instancetype)initWithType:(TNLAttemptType)type
+                   startDate:(NSDate *)startDate
                startMachTime:(uint64_t)startMachTime
+                     endDate:(nullable NSDate *)endDate
                  endMachTime:(uint64_t)endMachTime
                     metaData:(nullable TNLAttemptMetaData *)metaData
                   URLRequest:(NSURLRequest *)request

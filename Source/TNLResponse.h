@@ -263,10 +263,14 @@ NS_SWIFT_NAME(response(request:operationError:info:metrics:));
  */
 @interface TNLResponseMetrics : NSObject <NSSecureCoding>
 
+/** When the `TNLRequestOperation` was enqueued to its `TNLRequestOperationQueue` as `NSDate` */
+@property (nonatomic, readonly) NSDate *enqueueDate;
 /** When the `TNLRequestOperation` was enqueued to its `TNLRequestOperationQueue` */
-@property (nonatomic, readonly) uint64_t enqueueMachTime;
+@property (nonatomic, readonly) uint64_t enqueueMachTime __attribute__((deprecated("use enqueueDate instead")));
+/** When the `TNLRequestOperation` completed as `NSDate` */
+@property (nonatomic, readonly, nullable) NSDate *completeDate;
 /** When the `TNLRequestOperation` completed */
-@property (nonatomic, readonly) uint64_t completeMachTime;
+@property (nonatomic, readonly) uint64_t completeMachTime __attribute__((deprecated("use completeDate instead")));
 
 /** The number of attempts that occurred (initial attempt + retries + redirects) */
 @property (nonatomic, readonly) NSUInteger attemptCount;
@@ -281,7 +285,9 @@ NS_SWIFT_NAME(response(request:operationError:info:metrics:));
 /**
  Helper init for custom `TNLResponseMetrics`
  */
-- (instancetype)initWithEnqueueTime:(uint64_t)enqueueTime
+- (instancetype)initWithEnqueueDate:(NSDate *)enqueueDate
+                        enqueueTime:(uint64_t)enqueueTime
+                       completeDate:(nullable NSDate *)completeDate
                        completeTime:(uint64_t)completeTime
                      attemptMetrics:(nullable NSArray<TNLAttemptMetrics *> *)attemptMetrics;
 
@@ -292,12 +298,18 @@ NS_SWIFT_NAME(response(request:operationError:info:metrics:));
  */
 @interface TNLResponseMetrics (Convenience)
 
+/** When the first attempt started (after the time spent waiting in the queue) as `NSDate` */
+@property (nonatomic, readonly, nullable) NSDate *firstAttemptStartDate;
 /** When the first attempt started (after the time spent waiting in the queue) */
-@property (nonatomic, readonly) uint64_t firstAttemptStartMachTime;
+@property (nonatomic, readonly) uint64_t firstAttemptStartMachTime __attribute__((deprecated("use firstAttemptStartDate instead")));
+/** When the current attempt started as `NSDate` */
+@property (nonatomic, readonly, nullable) NSDate *currentAttemptStartDate;
 /** When the current attempt started */
-@property (nonatomic, readonly) uint64_t currentAttemptStartMachTime;
+@property (nonatomic, readonly) uint64_t currentAttemptStartMachTime __attribute__((deprecated("use currentAttemptStartDate instead")));
+/** When the current attempt ended as `NSDate` */
+@property (nonatomic, readonly, nullable) NSDate *currentAttemptEndDate;
 /** When the current attempt ended */
-@property (nonatomic, readonly) uint64_t currentAttemptEndMachTime;
+@property (nonatomic, readonly) uint64_t currentAttemptEndMachTime __attribute__((deprecated("use currentAttemptEndDate instead")));
 
 /** calculate the total duration of the operation */
 - (NSTimeInterval)totalDuration;

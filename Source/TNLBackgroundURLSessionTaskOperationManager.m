@@ -109,7 +109,9 @@ static TNLBackgroundRequestContext * __nullable _getBackgroundRequestContext(SEL
                                                                       source:TNLResponseSourceNetworkRequest
                                                                         data:nil
                                                           temporarySavedFile:context.tempFile];
-    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueTime:mach_absolute_time()
+    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueDate:[NSDate date]
+                                                                      enqueueTime:mach_absolute_time()
+                                                                     completeDate:[NSDate date]
                                                                      completeTime:mach_absolute_time()
                                                                    attemptMetrics:nil];
     TNLResponse *response = [TNLResponse responseWithRequest:task.currentRequest

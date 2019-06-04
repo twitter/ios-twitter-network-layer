@@ -92,6 +92,42 @@ NS_ASSUME_NONNULL_BEGIN
     return sBrotliSupported;
 }
 
+- (void)tnl_insertProtocolClasses:(nullable NSArray<Class> *)additionalClasses
+{
+    if (additionalClasses.count == 0) {
+        return;
+    }
+
+    // get the default protocol classes
+    NSMutableArray<Class> *protocolClasses = [NSMutableArray arrayWithArray:self.protocolClasses];
+
+    // get the index of the first "NS" protocol
+    NSUInteger index = 0;
+    for (index = 0; index < protocolClasses.count; index++) {
+        NSString *className = NSStringFromClass((Class)protocolClasses[index]);
+        if ([className hasPrefix:@"_NS"] || [className hasPrefix:@"NS"]) {
+            break;
+        }
+    }
+
+    // insert the additional protocols BEFORE any NS protocols
+    /*
+     We want to do this because protocols are executed in order.
+     If insert at the end, the Apple encoders will surely handle our requests and render the
+     added protocol useless.
+     If inserted at the beginning, other protocols that could have been added (like OHHTTPStubs)
+     would end up being skipped -- and app level overrides should retain higher priority.
+     So, instead, we will skip all protocols until we hit an Apple protocol (NS prefixed).
+     */
+    for (Class protocol in additionalClasses) {
+        TNLAssert(index <= protocolClasses.count);
+        [protocolClasses insertObject:protocol atIndex:index++];
+    }
+
+    // update the protocol
+    self.protocolClasses = protocolClasses;
+}
+
 @end
 
 @implementation NSURLSessionConfiguration (TaggedIdentifier)

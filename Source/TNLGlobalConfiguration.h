@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol TNLHostSanitizer;
 @protocol TNLLogger;
 @protocol TNLNetworkObserver;
+@class TNLRequestConfiguration;
 @class TNLRequestOperation;
 
 #if !TARGET_OS_WATCH
@@ -67,6 +68,58 @@ typedef NS_ENUM(NSInteger, TNLGlobalConfigurationServiceUnavailableBackoffMode)
      */
     TNLGlobalConfigurationServiceUnavailableBackoffModeKeyOffHostAndPath = 2,
 };
+
+/**
+ Options for when to prune inactive underlying `NSURLSession` (does not apply to background sessions).
+
+ Pruning involves iterating over all internal `NSURLSession` instances and if there are `0` active
+ `TNLRequestOperation` instances associated with a session AND the session has not been used recently
+ (see `[TNLGlobalConfiguration URLSessionInactivityThreshold]`), that session will be invalidated with
+ `finishTasksAndInvalidate` and removed from __TNL__.  Future requests that would need the same session
+ will end up spinning up a new `NSURLSession`.
+
+ Pruning does not apply to background `NSURLSession` instances.  Background sessions are kept
+ persistent in case a background request ends up completing that would need to communicate
+ completion to the background request.
+
+ See `[TNLGlobalConfiguration URLSessionInactivityThreshold]`: it defines the duration that must elapse
+ before an unused `NSURLSession` is considered _inactive_.
+
+ @note __TNL__ will only maintain a limited number non-background `NSURLSession` instances.  If that
+ number is exceeded, the least recently used `NSURLSession` will be pruned with `finishTasksAndInvalidate` and will
+ require another request to spin it up again.  This number is about a dozen, but subject to change.
+ */
+typedef NS_OPTIONS(NSUInteger, TNLGlobalConfigurationURLSessionPruneOptions)
+{
+    /**
+     No options.  Do not prune inactive `NSURLSession` instances.
+     */
+    TNLGlobalConfigurationURLSessionPruneOptionsNone = 0,
+    /**
+     Prune inactive `NSURLSession` instances when the app enters the background.
+     Only applies to _iOS_ & _tvOS_ based apps.  Noop on _macOS_ etc.
+     */
+    TNLGlobalConfigurationURLSessionPruneOptionOnApplicationBackground = 1 << 0,
+    /**
+     Prune inactive `NSURLSession` instances when the app encounters a memory warning.
+     Only applies to _iOS_ & _tvOS_ based apps.  Noop on _macOS_ etc.
+     */
+    TNLGlobalConfigurationURLSessionPruneOptionOnMemoryWarning = 1 << 1,
+    /**
+     Prune inactive `NSURLSession` instances whenever an underlying `NSURLSessionTask` completes.
+     This is extremely aggressive, but will keep `NSURLSession` overhead to a minimum.
+     */
+    TNLGlobalConfigurationURLSessionPruneOptionAfterEveryTask = 1 << 2,
+    /**
+     Special case options mask to immediately prune inactive `NSURLSession` instances.
+     Whent this mask is set on `[TNLGlobalConfiguration URLSessionPruneOptions]`, it will
+     kick off a pruning but leave the options in the configuration unchanged.
+     */
+    TNLGlobalConfigurationURLSessionPruneOptionNow = NSUIntegerMax,
+};
+
+//! The default duration for an unused `NSURLSession` to become considered _inactive_
+FOUNDATION_EXTERN NSTimeInterval const TNLGlobalConfigurationURLSessionInactivityThresholdDefault;
 
 /**
  `TNLGlobalConfiguration` is where the settings that affect all of TNL are maintained.
@@ -168,6 +221,33 @@ typedef NS_ENUM(NSInteger, TNLGlobalConfigurationServiceUnavailableBackoffMode)
  Default == `TNLGlobalConfigurationServiceUnavailableBackoffModeDisabled`
  */
 @property (atomic) TNLGlobalConfigurationServiceUnavailableBackoffMode serviceUnavailableBackoffMode;
+
+#pragma mark Pruning inactive NSURLSession instances
+
+/**
+ The options for when to prune inactive `NSURLSession` instances in __TNL__.
+ Does not apply to background `NSURLSession` instances.
+ See `[TNLGlobalConfiguration URLSessionInactivityThreshold]`.
+
+ Default == `TNLGlobalConfigurationURLSessionPruneOptionsNone`
+ */
+@property (atomic) TNLGlobalConfigurationURLSessionPruneOptions URLSessionPruneOptions;
+
+/**
+ The duration before an unused `NSURLSession` becomes inactive.
+ See `[TNLGlobalConfiguration URLSessionPruneOptions]`
+ Default == `TNLGlobalConfigurationURLSessionInactivityThresholdDefault`
+ */
+@property (atomic) NSTimeInterval URLSessionInactivityThreshold;
+
+/**
+ Method to explicitely prune an `NSURLSession` if it has no active operations.
+ @param config The `TNLRequestConfiguration` to match with an underlying `NSURLSession`
+ @param operationQueueId the identifier for the related `TNLRequestOperationQueue` if the request configuration is for background execution mode.
+ */
+- (void)pruneURLSessionMatchingRequestConfiguration:(TNLRequestConfiguration *)config
+                                   operationQueueId:(nullable NSString *)operationQueueId;
+
 
 #pragma mark Authentication Challenges
 

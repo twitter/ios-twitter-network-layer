@@ -51,6 +51,15 @@ typedef NS_ENUM(NSInteger, TNLLogLevel)
                     line:(int)line
                  message:(NSString *)message;
 
+
+/*
+ Return YES when you want to redact the value of a header field from being logged.
+
+ This method is called when logging all header fields of a request / response,
+ abstracted by a `TNLRequestOperation`.
+ */
+- (BOOL)tnl_shouldRedactHTTPHeaderField:(NSString *)headerField;
+
 @optional
 
 /**

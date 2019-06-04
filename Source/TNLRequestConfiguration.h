@@ -366,7 +366,7 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
  (a.k.a. an attempt) can take before we time out.  If an attempt is executing and not idle, the
  _idleTimeout_ won't be triggered, so this will cap the attempt if it takes too long.
 
- @note The minimum interval is `1.0` seconds, anything smaller (including negative) will be treated as _never_.
+ @note The minimum interval is `0.1` seconds, anything smaller (including negative) will be treated as _never_.
  */
 @property (nonatomic, readonly) NSTimeInterval attemptTimeout;
 
@@ -380,7 +380,7 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
  to exectue.  This includes time in the queue without starting, redirects, retries, time waiting to
  retry and delegate callbacks.
 
- @note The minimum interval is `1.0` seconds, anything smaller (including negative) will be treated as _never_.
+ @note The minimum interval is `0.1` seconds, anything smaller (including negative) will be treated as _never_.
  */
 @property (nonatomic, readonly) NSTimeInterval operationTimeout;
 

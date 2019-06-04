@@ -104,6 +104,113 @@ NS_ASSUME_NONNULL_BEGIN
     return d;
 }
 
+- (NSString *)tnl_timingDescription
+{
+    NSDate *earliestDate = self.tnl_earliestDate;
+    if (!earliestDate) {
+        return @"<>";
+    }
+
+    NSDate *previousDate = earliestDate;
+    NSDate *currentDate = nil;
+    NSTimeInterval delta = 0;
+    NSMutableString *timing = [[NSMutableString alloc] init];
+    [timing appendString:@"<"];
+
+#define APPEND_DATE(dateName) \
+    do { \
+        currentDate = [self dateName##Date ]; \
+        if (currentDate) { \
+            if (timing.length > 1) { \
+                [timing appendString:@"|"]; \
+            } \
+            delta = [currentDate timeIntervalSinceDate:previousDate]; \
+            [timing appendFormat:@" (%c%li) %@ ", (delta < 0) ? '-' : '+', labs((long)(delta * 1000.0)), @"" #dateName ]; \
+            previousDate = currentDate; \
+        } \
+    } while (0)
+
+    APPEND_DATE(fetchStart);
+    APPEND_DATE(domainLookupStart);
+    APPEND_DATE(domainLookupEnd);
+    APPEND_DATE(connectStart);
+    APPEND_DATE(secureConnectionStart);
+    APPEND_DATE(secureConnectionEnd);
+    APPEND_DATE(connectEnd);
+    APPEND_DATE(requestStart);
+    APPEND_DATE(requestEnd);
+    APPEND_DATE(responseStart);
+    APPEND_DATE(responseEnd);
+
+#undef APPEND_DATE
+
+    [timing appendString:@">"];
+    return [timing copy];
+}
+
+- (nullable NSDate *)tnl_earliestDate
+{
+    NSDate *earliest = self.fetchStartDate;
+
+#define EARLIER(date) \
+    do { \
+        NSDate *__d = [self date ]; \
+        if (__d) { \
+            earliest = (earliest) ? [earliest earlierDate:__d] : __d; \
+        } \
+    } while (0)
+
+    EARLIER(domainLookupStartDate);
+    EARLIER(connectStartDate);
+    EARLIER(secureConnectionStartDate);
+    EARLIER(requestStartDate);
+    EARLIER(responseStartDate);
+
+#undef EARLIER
+
+    return earliest;
+}
+
+- (nullable NSDate *)tnl_latestDate
+{
+    NSDate *latest = self.responseEndDate;
+
+#define LATER(date) \
+    do { \
+        NSDate *__d = [self date ]; \
+        if (__d) { \
+            latest = (latest) ? [latest laterDate:__d] : __d; \
+        } \
+    } while (0)
+
+    LATER(responseStartDate);
+    LATER(requestEndDate);
+    LATER(requestStartDate);
+    LATER(connectEndDate);
+    LATER(secureConnectionEndDate);
+    LATER(secureConnectionStartDate);
+    LATER(connectStartDate);
+    LATER(domainLookupEndDate);
+    LATER(domainLookupStartDate);
+    LATER(fetchStartDate);
+
+#undef LATER
+
+    return latest;
+}
+
+- (NSTimeInterval)tnl_knownDuration
+{
+    NSDate *earliestDate = self.tnl_earliestDate;
+    NSDate *latestDate = self.tnl_latestDate;
+
+    if (!earliestDate || !latestDate) {
+        return 0;
+    }
+
+    return [latestDate timeIntervalSinceDate:earliestDate];
+}
+
 - (nullable NSDate *)tnl_transportConnectionStartDate
 {
     return self.connectStartDate;
@@ -187,7 +294,12 @@ NS_ASSUME_NONNULL_BEGIN
         return nil;
     }
 
-    return @([responseStartDate timeIntervalSinceDate:requestEndDate]);
+    const NSTimeInterval duration = [responseStartDate timeIntervalSinceDate:requestEndDate];
+    if (duration < 0.0) {
+        // response started BEFORE the request ended...strange...
+        return nil;
+    }
+    return @(duration);
 }
 
 - (nullable NSNumber *)tnl_responseReceiveDuration

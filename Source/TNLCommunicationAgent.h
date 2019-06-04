@@ -36,6 +36,44 @@ typedef NS_ENUM(NSInteger, TNLNetworkReachabilityStatus)
 FOUNDATION_EXTERN NSString * __nonnull TNLNetworkReachabilityStatusToString(TNLNetworkReachabilityStatus status);
 
 /**
+ Enum of captive portal status from the `TNLCommunicationAgent`
+ */
+typedef NS_ENUM(NSInteger, TNLCaptivePortalStatus)
+{
+    /** not yet determined captive portal status */
+    TNLCaptivePortalStatusUndetermined = -1,
+    /** captive portal is not apparent */
+    TNLCaptivePortalStatusNoCaptivePortal = 0,
+    /** captive portal was detected */
+    TNLCaptivePortalStatusCaptivePortalDetected = 1,
+    /**
+     captive portal cannot be detected due to ATS rules.
+     In order to support captive portal detection, an ATS exception must be made for connectivitycheck.gstatic.com
+
+       Update your `Info.plist` file to have an exception for connectivitycheck.gstatic.com like this:
+
+         <key>NSAppTransportSecurity</key>
+         <dict>
+           <key>NSAllowsArbitraryLoads</key>
+           <false/>
+           <key>NSExceptionDomains</key>
+           <dict>
+             <key>connectivitycheck.gstatic.com</key>
+             <dict>
+               <key>NSExceptionAllowsInsecureHTTPLoads</key>
+               <true/>
+             </dict>
+           </dict>
+         </dict>
+
+     */
+    TNLCaptivePortalStatusDetectionBlockedByAppTransportSecurity = -100,
+};
+
+//! Convert a `TNLCaptivePortalStatus` to an `NSString`
+FOUNDATION_EXTERN NSString * __nonnull TNLCaptivePortalStatusToString(TNLCaptivePortalStatus status);
+
+/**
  An enum of known radio access technologies.
  See `CTRadioAccessTechnology` constants in `CTTelephonyNetworkInfo.h`
  */
@@ -105,19 +143,24 @@ FOUNDATION_EXTERN NSString *TNLDebugStringFromNetworkReachabilityFlags(SCNetwork
 typedef void(^TNLCommunicationAgentIdentifyReachabilityCallback)(SCNetworkReachabilityFlags flags, TNLNetworkReachabilityStatus status);
 typedef void(^TNLCommunicationAgentIdentifyCarrierInfoCallback)(id<TNLCarrierInfo> __nullable info);
 typedef void(^TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback)(NSString * __nullable info);
+typedef void(^TNLCommunicationAgentIdentifyCaptivePortalStatusCallback)(TNLCaptivePortalStatus status);
 
 /**
  An agent for observing and determing traits regarding communication, including:
    - network reachability
    - carrier info
    - radio info
- @note There are known regressions since iOS 10 in SystemConfiguration for observing
+   - captive portal status
+ @warning There are known regressions since iOS 10 in SystemConfiguration for observing
  reachability.  These issues range from reachability events not working at all on simulator to
  getting into a state where reachability returning does not trigger events.
  @warning As always with reachability APIs, do _NOT_ rely on the reachability state as a gate prevent
  triggering a network request.  Always fire the networking request and use reachability as a helper
  signal, not a canonical source of truth.  Seriously... don't block your app on reachability, that
  leads to nothing but pain.
+ @note In order for captive portal status detection to work, an ATS exception must be made for
+ connectivitycheck.gstatic.com to permit insecure HTTP requests.
+ See `TNLCaptivePortalStatusDetectionBlockedByAppTransportSecurity` for more.
  */
 @interface TNLCommunicationAgent : NSObject
 
@@ -138,6 +181,8 @@ typedef void(^TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback)(NS
 - (void)identifyCarrierInfo:(TNLCommunicationAgentIdentifyCarrierInfoCallback)callback;
 /** identify the WWAN radio access technology asynchronously (callback on main thread) */
 - (void)identifyWWANRadioAccessTechnology:(TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback)callback;
+/** identify the captive portal status (callback on main thread) */
+- (void)identifyCaptivePortalStatus:(TNLCommunicationAgentIdentifyCaptivePortalStatusCallback)callback;
 
 /**
  add an observer for when communication traits update.
@@ -175,6 +220,8 @@ typedef void(^TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback)(NS
 @property (atomic, readonly) SCNetworkReachabilityFlags currentReachabilityFlags;
 /** cached radio access technology */
 @property (atomic, copy, readonly, nullable) NSString *currentWWANRadioAccessTechnology;
+/** cached captive portal status */
+@property (atomic, readonly) TNLCaptivePortalStatus currentCaptivePortalStatus;
 
 /** cached carrier info. Note: `nil` for macOS as there is no cellular carrier information */
 @property (atomic, readonly, nullable) id<TNLCarrierInfo> currentCarrierInfo; // or use `synchronousCarrierInfo`, which is more robust but can be slower
@@ -200,12 +247,14 @@ typedef void(^TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback)(NS
  @parameter status current network reachability status
  @parameter carrierInfo Any available carrier information.  Note: This is `nil` in macOS as there is no cellular carrier involved.
  @parameter WWANRadioAccessTechnology GPRS, EDGE, LTE, etc. Note: This is `nil` in macOS as there is no cellular carrier involved.
+ @parameter captivePortalStatus the `TNLCaptivePortalStatus` upon registration of an observer
  */
 - (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
         didRegisterObserverWithInitialReachabilityFlags:(SCNetworkReachabilityFlags)flags
         status:(TNLNetworkReachabilityStatus)status
         carrierInfo:(nullable id<TNLCarrierInfo>)info
-        WWANRadioAccessTechnology:(nullable NSString *)radioTech;
+        WWANRadioAccessTechnology:(nullable NSString *)radioTech
+        captivePortalStatus:(TNLCaptivePortalStatus)captivePortalStatus;
 
 /** called when reachability changes */
 - (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
@@ -228,6 +277,11 @@ typedef void(^TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback)(NS
 - (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
         didUpdateWWANRadioAccessTechnologyFromPreviousTech:(nullable NSString *)oldTech
         toCurrentTech:(nullable NSString *)newTech;
+
+/** called when captive portal status changes */
+- (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
+        didUpdateCaptivePortalStatusFromPreviousStatus:(TNLCaptivePortalStatus)oldStatus
+        toCurrentStatus:(TNLCaptivePortalStatus)newStatus;
 
 @end
 

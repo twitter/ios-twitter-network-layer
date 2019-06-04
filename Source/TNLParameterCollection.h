@@ -19,7 +19,10 @@ NS_ASSUME_NONNULL_BEGIN
 typedef NS_OPTIONS(NSInteger, TNLParameterTypes) {
     /** No type */
     TNLParameterTypeNone = 0,
-    /** The URL Parameter String.  Delimited with a ';'. */
+    /**
+     The URL Parameter String.  Delimited with a ';'.
+     @warning parameter string pattern in a URL is now considered deprecated behavior and `NSURL` will treat ';' delimited parameter string as part of the URL's path.  __TNL__ will continue to parse `TNLParameterTypesURLParameterString` for compatibility, but it is recommend that passing arguments via URL be done using query or fragment delimiters.
+     */
     TNLParameterTypeURLParameterString = (1 << 0),
     /** The URL Query.  Delimited with a '?'. */
     TNLParameterTypeURLQuery = (1 << 1),

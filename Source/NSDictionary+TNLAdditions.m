@@ -88,7 +88,9 @@ NS_ASSUME_NONNULL_BEGIN
 {
     TNLAssert(key);
     [self tnl_removeObjectsForCaseInsensitiveKey:key];
+#ifndef __clang_analyzer__ // reports key can be nil nil; we prefer to crash if it is
     self[key] = object;
+#endif
 }
 
 - (void)tnl_makeAllKeysLowercase

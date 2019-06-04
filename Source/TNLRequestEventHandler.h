@@ -102,7 +102,7 @@ typedef void(^TNLRequestOperationEnqueueNetworkingOperationBlock)(NSArray<NSOper
 /**
  The operation is ready to enqueue the networking work.
  This can be for the initial request or a retry.
- Call the `enqueue` to trigger the enqueue with optionally providing dependencies.
+ Call the `enqueueBlock` to trigger the enqueue with optionally providing dependencies.
  Default when not implemented is to just enqueue right away.
  */
 - (void)tnl_requestOperation:(TNLRequestOperation *)op

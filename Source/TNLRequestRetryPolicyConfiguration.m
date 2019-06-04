@@ -47,6 +47,11 @@ NS_INLINE NSUInteger _URLErrorCodeToIndex(NSInteger code)
 //    return codeInt * -1;
 //}
 
+NS_INLINE NSUInteger _HTTPStatusCodeToIndex(TNLHTTPStatusCode code)
+{
+    return (NSUInteger)code;
+}
+
 @interface TNLRequestRetryPolicyConfiguration ()
 
 @property (nonatomic, readonly, nullable) NSIndexSet *POSIXErrorCodes;
@@ -147,7 +152,7 @@ NS_INLINE NSUInteger _URLErrorCodeToIndex(NSInteger code)
 
 - (BOOL)statusCodeCanBeRetried:(TNLHTTPStatusCode)code
 {
-    return [self.statusCodes containsIndex:code];
+    return [self.statusCodes containsIndex:_HTTPStatusCodeToIndex(code)];
 }
 
 - (BOOL)URLErrorCodeCanBeRetried:(NSInteger)code
@@ -264,9 +269,9 @@ NS_INLINE NSUInteger _URLErrorCodeToIndex(NSInteger code)
     }
     TNLAssert([_statusCodes isKindOfClass:[NSMutableIndexSet class]]);
     if (canRetry) {
-        [(NSMutableIndexSet *)_statusCodes addIndex:code];
+        [(NSMutableIndexSet *)_statusCodes addIndex:_HTTPStatusCodeToIndex(code)];
     } else {
-        [(NSMutableIndexSet *)_statusCodes removeIndex:code];
+        [(NSMutableIndexSet *)_statusCodes removeIndex:_HTTPStatusCodeToIndex(code)];
     }
 }
 

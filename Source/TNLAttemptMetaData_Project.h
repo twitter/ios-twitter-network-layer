@@ -44,6 +44,12 @@ PRIMITIVE_FIELD(serverResponseTime, ServerResponseTime, SInt64, longLongValue) \
 PRIMITIVE_FIELD(localCacheHit, LocalCacheHit, BOOL, boolValue) \
 OBJECT_FIELD(expectedMD5Hash, ExpectedMD5Hash, NSData) \
 OBJECT_FIELD(MD5Hash, MD5Hash, NSData) \
+OBJECT_FIELD(sessionId, SessionId, NSString) \
+\
+PRIMITIVE_FIELD(taskResumeLatency, TaskResumeLatency, NSTimeInterval, doubleValue) \
+PRIMITIVE_FIELD(taskResumePriority, TaskResumePriority, TNLPriority, integerValue) \
+PRIMITIVE_FIELD(taskMetricsAfterCompletionLatency, TaskMetricsAfterCompletionLatency, NSTimeInterval, doubleValue) \
+PRIMITIVE_FIELD(taskWithoutMetricsCompletionLatency, TaskWithoutMetricsCompletionLatency, NSTimeInterval, doubleValue) \
 \
 PRIMITIVE_FIELD(requestContentLength, RequestContentLength, SInt64, longLongValue) \
 PRIMITIVE_FIELD(requestEncodingLatency, RequestEncodingLatency, NSTimeInterval, doubleValue) \

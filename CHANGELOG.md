@@ -2,13 +2,57 @@
 
 ## Info
 
-**Document version:** 2.3.0
+**Document version:** 2.6.1
 
-**Last updated:** 09/24/2018
+**Last updated:** 05/30/2019
 
 **Author:** Nolan O'Brien
 
 ## History
+
+### 2.6.1
+
+- Fix terrible bug where cancelling all request operations for *any* `TNLRequestOperationQueue` will cancel *all* request operations for *all* queues! 
+
+### 2.6.0
+
+- Move away from mach time for metrics to `NSDate` instances
+  - This better mirrors what Apple does
+  - Avoids the pitfall of using mach times as more than just measurements of durations and using them as reference timestamps (which is frought)
+  - Using `NSDate` now does have the problem of clock changes impacting timings, but this is so infrequent it practically won't ever affect metrics from **TNL**
+- Add `sessionId` to `TNLAttemptMetaData`
+  - Helps keep track of what `NSURLSession` was used
+- Add `taskResumePriority` to `TNLAttemptMetaData`
+  - Helps keep track of what QOS was used when `resume` was called for the underlying `NSURLSessionTask`
+- Add `taskResumeLatency` to `TNLAttemptMetaData`
+  - Helps diagnose if there is some unforseen stall between calling `resume` for the task and the fetching actuallying starting
+- Add `taskMetricsAfterCompletionLatency` and `taskWithoutMetricsCompletionLatency` to `TNLAttemptMetaData`
+  - Helps track when radar `#27098270` occurs 
+
+### 2.5.0
+
+- Add `[TNLGlobalConfiguration URLSessionPruneOptions]`
+  - These options offer ways for __TNL__ to prune inactive internal `NSURLSession` instances more aggressively than the 12 session limit does
+  - Options can be a combination of: on memory warning, on app background and/or after every network task
+  - Callers can also provide a special option to prune _now_
+- Add `[TNLGlobalConfiguration URLSessionInactivityThreshold]`
+  - Works with `URLSessionPruneOptions` by limiting what `NSURLSession` intances are _inactive_ by requiring a duration to elapse since the last network task ran
+- Add `[TNLGlobalConfiguration pruneURLSessionMatchingRequestConfiguration:operationQueueId:]`
+  - Offers a way to explicitely purge a specific underlying `NSURLSession` based on a given `TNLRequestConfiguration` and a `TNLRequestOperationQueue` instance's `identifier`
+
+### 2.4.1
+
+Author: Laurentiu Dascalu
+- Expose method on `TNLLogger` to redact desired header fields from being logged
+ - Good for redacting things you don't want to log like `Authorization` header field
+
+### 2.4.0
+- Add captive portal detection to `TNLCommunicationAgent`
+  - detects when a known HTTP (non-HTTPS) endpoint is intercepted via a captive portal
+  - this mechanism is a solid tradeoff in coverage vs complexity
+    - there are many ways captive portals can manifest beyond what _TNL_ detects
+    - a 100% coverage is extremely complicated and 100% accuracy is not feasible
+    - supporting the simplest mechanism for detection is sufficient for most detection use cases
 
 ### 2.3.0
 - Add background upload support using `HTTPBody`

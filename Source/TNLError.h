@@ -8,6 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
+@protocol TNLRequestOperationCancelSource;
+
 NS_ASSUME_NONNULL_BEGIN
 
 FOUNDATION_EXTERN NSString * const TNLErrorDomain;
@@ -215,6 +217,9 @@ FOUNDATION_EXTERN NSString * __nullable TNLErrorCodeToString(TNLErrorCode code);
 FOUNDATION_EXTERN BOOL TNLErrorCodeIsTerminal(TNLErrorCode code);
 //! Return `YES` if the `NSError` is a network security error, possibly due to Apple's _App Transport Security_
 FOUNDATION_EXTERN BOOL TNLErrorIsNetworkSecurityError(NSError * __nullable error);
+//! Create an `NSError` from a `TNLRequestOperationCancelSource`
+FOUNDATION_EXTERN NSError * __nonnull TNLErrorFromCancelSource(id<TNLRequestOperationCancelSource> __nullable cancelSource,
+                                                               NSError * __nullable underlyingError);
 
 #if APPLEDOC
 /**

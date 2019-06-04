@@ -6,6 +6,8 @@
 //  Copyright (c) 2014 Twitter, Inc. All rights reserved.
 //
 
+#import <mach/mach_time.h>
+
 #import "NSDictionary+TNLAdditions.h"
 #import "NSURLResponse+TNLAdditions.h"
 #import "NSURLSessionTaskMetrics+TNLAdditions.h"
@@ -368,16 +370,24 @@
 
 - (instancetype)init
 {
-    return [self initWithEnqueueTime:0 completeTime:0 attemptMetrics:nil];
+    return [self initWithEnqueueDate:[NSDate dateWithTimeIntervalSince1970:0]
+                         enqueueTime:0
+                        completeDate:nil
+                        completeTime:0
+                      attemptMetrics:nil];
 }
 
-- (instancetype)initWithEnqueueTime:(uint64_t)enqueueTime
+- (instancetype)initWithEnqueueDate:(NSDate *)enqueueDate
+                        enqueueTime:(uint64_t)enqueueTime
+                       completeDate:(nullable NSDate *)completeDate
                        completeTime:(uint64_t)completeTime
-                     attemptMetrics:(NSArray *)attemptMetrics
+                     attemptMetrics:(nullable NSArray<TNLAttemptMetrics *> *)attemptMetrics
 {
     if (self = [super init]) {
         _final = NO;
+        _enqueueDate = enqueueDate;
         _enqueueMachTime = enqueueTime;
+        _completeDate = completeDate;
         _completeMachTime = completeTime;
         _attemptMetrics = ([attemptMetrics mutableCopy]) ?: [NSMutableArray array];
         if (gTwitterNetworkLayerAssertEnabled) {
@@ -393,9 +403,16 @@
 {
     NSArray *attemptMetrics = [aDecoder decodeObjectOfClass:[NSArray class]
                                                      forKey:@"attemptMetrics"];
-    uint64_t enqueueTime = (uint64_t)[aDecoder decodeInt64ForKey:@"enqueueTime"];
-    uint64_t completeTime = (uint64_t)[aDecoder decodeInt64ForKey:@"completeTime"];
-    return [self initWithEnqueueTime:enqueueTime
+    NSDate *enqueueDate = [aDecoder decodeObjectOfClass:[NSDate class] forKey:@"enqueueDate"] ?: [NSDate dateWithTimeIntervalSince1970:0];
+    const uint64_t enqueueTime = (uint64_t)[aDecoder decodeInt64ForKey:@"enqueueTime"];
+    const uint64_t completeTime = (uint64_t)[aDecoder decodeInt64ForKey:@"completeTime"];
+    NSDate *completeDate = [aDecoder decodeObjectOfClass:[NSDate class] forKey:@"completeDate"];
+    if (!completeDate && completeTime) {
+        completeDate = [enqueueDate dateByAddingTimeInterval:TNLComputeDuration(enqueueTime, completeTime)];
+    }
+    return [self initWithEnqueueDate:enqueueDate
+                         enqueueTime:enqueueTime
+                        completeDate:completeDate
                         completeTime:completeTime
                       attemptMetrics:attemptMetrics];
 }
@@ -403,7 +420,9 @@
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
     [aCoder encodeObject:_attemptMetrics forKey:@"attemptMetrics"];
+    [aCoder encodeObject:_enqueueDate forKey:@"enqueueDate"];
     [aCoder encodeInt64:(int64_t)_enqueueMachTime forKey:@"enqueueTime"];
+    [aCoder encodeObject:_completeDate forKey:@"completeDate"];
     [aCoder encodeInt64:(int64_t)_completeMachTime forKey:@"completeTime"];
 }
 
@@ -449,59 +468,90 @@
     return count;
 }
 
-- (void)setEnqueueMachTime:(uint64_t)time
+- (void)didEnqueue
 {
     if (_final && _enqueueMachTime) {
         return;
     }
-    _enqueueMachTime = time;
+
+    _enqueueMachTime = mach_absolute_time();
+    _enqueueDate = [NSDate date];
 }
 
+- (nullable NSDate *)firstAttemptStartDate
+{
+    TNLAttemptMetrics *attemptMetrics = _attemptMetrics.firstObject;
+    return attemptMetrics.startDate;
+}
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-implementations"
 - (uint64_t)firstAttemptStartMachTime
+#pragma clang diagnostic pop
 {
     TNLAttemptMetrics *attemptMetrics = _attemptMetrics.firstObject;
     return attemptMetrics.startMachTime;
 }
 
+- (nullable NSDate *)currentAttemptStartDate
+{
+    TNLAttemptMetrics *attemptMetrics = _attemptMetrics.lastObject;
+    return attemptMetrics.startDate;
+}
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-implementations"
 - (uint64_t)currentAttemptStartMachTime
+#pragma clang diagnostic pop
 {
     TNLAttemptMetrics *attemptMetrics = _attemptMetrics.lastObject;
     return attemptMetrics.startMachTime;
 }
 
+- (nullable NSDate *)currentAttemptEndDate
+{
+    TNLAttemptMetrics *attemptMetrics = _attemptMetrics.lastObject;
+    return attemptMetrics.endDate;
+}
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-implementations"
 - (uint64_t)currentAttemptEndMachTime
+#pragma clang diagnostic pop
 {
     TNLAttemptMetrics *attemptMetrics = _attemptMetrics.lastObject;
     return attemptMetrics.endMachTime;
 }
 
-- (void)setCompleteMachTime:(uint64_t)time
+- (void)setCompleteDate:(NSDate *)date machTime:(uint64_t)time
 {
     // support providing a complete time if not already set when already final
     if (_final && _completeMachTime) {
         return;
     }
     _completeMachTime = time;
+    _completeDate = date;
 }
 
-- (void)addInitialStartWithMachTime:(uint64_t)machTime request:(NSURLRequest *)request
+- (void)addInitialStartWithDate:(NSDate *)date machTime:(uint64_t)machTime request:(NSURLRequest *)request
 {
     TNLAssert(_attemptMetrics.count == 0);
-    _addAttemptStart(self, TNLAttemptTypeInitial, machTime, request);
+    _addAttemptStart(self, TNLAttemptTypeInitial, date, machTime, request);
 }
 
-- (void)addRetryStartWithMachTime:(uint64_t)machTime request:(NSURLRequest *)request
+- (void)addRetryStartWithDate:(NSDate *)date machTime:(uint64_t)machTime request:(NSURLRequest *)request
 {
-    _addAttemptStart(self, TNLAttemptTypeRetry, machTime, request);
+    _addAttemptStart(self, TNLAttemptTypeRetry, date, machTime, request);
 }
 
-- (void)addRedirectStartWithMachTime:(uint64_t)machTime request:(NSURLRequest *)request
+- (void)addRedirectStartWithDate:(NSDate *)date machTime:(uint64_t)machTime request:(NSURLRequest *)request
 {
-    _addAttemptStart(self, TNLAttemptTypeRedirect, machTime, request);
+    _addAttemptStart(self, TNLAttemptTypeRedirect, date, machTime, request);
 }
 
 static void _addAttemptStart(PRIVATE_SELF(TNLResponseMetrics),
                              TNLAttemptType type,
+                             NSDate *date,
                              uint64_t machTime,
                              NSURLRequest *request)
 {
@@ -515,6 +565,7 @@ static void _addAttemptStart(PRIVATE_SELF(TNLResponseMetrics),
 
     TNLAssert(request != nil);
     TNLAssert(self->_attemptMetrics != nil);
+    TNLAssert(date != nil);
     TNLAttemptMetrics *lastMetrics = self->_attemptMetrics.lastObject;
     if (TNLAttemptTypeInitial == type) {
         TNLAssert(lastMetrics == nil);
@@ -522,12 +573,14 @@ static void _addAttemptStart(PRIVATE_SELF(TNLResponseMetrics),
         TNLAssert(lastMetrics != nil);
         TNLAssert(lastMetrics.endMachTime != 0 && "addEnd:response:operationError: should have been called first!");
         if (!lastMetrics.endMachTime) {
-            lastMetrics.endMachTime = machTime;
+            [lastMetrics setEndDate:date machTime:machTime];
         }
     }
 
     TNLAttemptMetrics *metrics = [[TNLAttemptMetrics alloc] initWithType:type
+                                                               startDate:date
                                                            startMachTime:machTime
+                                                                 endDate:nil
                                                              endMachTime:0
                                                                 metaData:nil
                                                               URLRequest:request
@@ -542,28 +595,26 @@ static void _addAttemptStart(PRIVATE_SELF(TNLResponseMetrics),
     [metrics updateRequest:request];
 }
 
-- (void)addEnd:(uint64_t)time
-      response:(NSHTTPURLResponse *)response
-operationError:(NSError *)error
+- (void)addEndDate:(NSDate *)date
+          machTime:(uint64_t)time
+          response:(NSHTTPURLResponse *)response
+    operationError:(NSError *)error
 {
     TNLAttemptMetrics *lastMetrics = _attemptMetrics.lastObject;
     if (lastMetrics && !lastMetrics.endMachTime) {
-        lastMetrics.endMachTime = time;
+        [lastMetrics setEndDate:date machTime:time];
         lastMetrics.URLResponse = response;
         lastMetrics.operationError = error;
     }
 }
 
-- (void)addMetaData:(TNLAttemptMetaData *)metaData
+- (void)addMetaData:(TNLAttemptMetaData *)metaData taskMetrics:(NSURLSessionTaskMetrics *)taskMetrics
 {
     TNLAttemptMetrics *lastMetrics = _attemptMetrics.lastObject;
     if (lastMetrics && !lastMetrics.metaData) {
         lastMetrics.metaData = metaData;
     }
-}
 
-- (void)addTaskMetrics:(NSURLSessionTaskMetrics *)taskMetrics
-{
     if (taskMetrics) {
         const NSUInteger transactionMetricsCount = taskMetrics.transactionMetrics.count;
         const NSUInteger attemptMetricsCount = self.attemptMetrics.count;
@@ -573,9 +624,9 @@ operationError:(NSError *)error
         NSUInteger attemptMetricsIndex = 0;
         while (taskMetricsIndex < transactionMetricsCount && attemptMetricsIndex < attemptMetricsCount) {
             NSURLSessionTaskTransactionMetrics *transactionMetrics = taskMetrics.transactionMetrics[transactionMetricsCount - taskMetricsIndex - 1];
-            if (NSURLSessionTaskMetricsResourceFetchTypeNetworkLoad == transactionMetrics.resourceFetchType) {
-                TNLAttemptMetrics *attemptMetrics = self.attemptMetrics[attemptMetricsCount - attemptMetricsIndex - 1];
-
+            TNLAttemptMetrics *attemptMetrics = self.attemptMetrics[attemptMetricsCount - attemptMetricsIndex - 1];
+            const NSURLSessionTaskMetricsResourceFetchType expectedFetchType = attemptMetrics.metaData.localCacheHit ? NSURLSessionTaskMetricsResourceFetchTypeLocalCache : NSURLSessionTaskMetricsResourceFetchTypeNetworkLoad;
+            if (expectedFetchType == transactionMetrics.resourceFetchType) {
                 if (followingType != TNLAttemptTypeRedirect) {
                     break;
                 }
@@ -653,8 +704,8 @@ operationError:(NSError *)error
     TNLAssert(self.attemptCount == self.attemptMetrics.count);
     TNLAssert(other.attemptCount == other.attemptMetrics.count);
 
-    const uint64_t selfStartTime = self.firstAttemptStartMachTime;
-    const uint64_t otherStartTime = other.firstAttemptStartMachTime;
+    NSDate *selfStartDate = self.firstAttemptStartDate;
+    NSDate *otherStartDate = other.firstAttemptStartDate;
     for (NSUInteger i = 0; i < self.attemptCount; i++) {
         TNLAttemptMetrics *selfAttemptMetrics = self.attemptMetrics[i];
         TNLAttemptMetrics *otherAttemptMetrics = other.attemptMetrics[i];
@@ -663,7 +714,7 @@ operationError:(NSError *)error
             return NO;
         }
 
-        if (fabs(TNLComputeDuration(selfStartTime, selfAttemptMetrics.startMachTime) - TNLComputeDuration(otherStartTime, otherAttemptMetrics.startMachTime)) > kTNLTimeEpsilon) {
+        if (fabs([selfAttemptMetrics.startDate timeIntervalSinceDate:selfStartDate] - [otherAttemptMetrics.startDate timeIntervalSinceDate:otherStartDate]) > kTNLTimeEpsilon) {
             return NO;
         }
     }
@@ -689,23 +740,22 @@ operationError:(NSError *)error
 
 - (NSTimeInterval)totalDuration
 {
-    return TNLComputeDuration((_enqueueMachTime > 0) ? _enqueueMachTime : self.firstAttemptStartMachTime, _completeMachTime);
+    return [(_completeDate ?: [NSDate date]) timeIntervalSinceDate:_enqueueDate];
 }
 
 - (NSTimeInterval)queuedDuration
 {
-    TNLAttemptMetrics *firstAttemptMetrics = _attemptMetrics.firstObject;
-    return TNLComputeDuration((_enqueueMachTime > 0) ? _enqueueMachTime : firstAttemptMetrics.startMachTime, (firstAttemptMetrics.startMachTime > 0) ? firstAttemptMetrics.startMachTime : _completeMachTime);
+    return [(self.firstAttemptStartDate ?: [NSDate date]) timeIntervalSinceDate:_enqueueDate];
 }
 
 - (NSTimeInterval)allAttemptsDuration
 {
-    return TNLComputeDuration(self.firstAttemptStartMachTime, self.currentAttemptEndMachTime);
+    return [self.currentAttemptEndDate ?: [NSDate date] timeIntervalSinceDate:self.firstAttemptStartDate ?: [NSDate date]];
 }
 
 - (NSTimeInterval)currentAttemptDuration
 {
-    return TNLComputeDuration(self.currentAttemptStartMachTime, self.currentAttemptEndMachTime);
+    return [self.currentAttemptEndDate ?: [NSDate date] timeIntervalSinceDate:self.currentAttemptStartDate ?: [NSDate date]];
 }
 
 - (TNLResponseMetrics *)deepCopyAndTrimIncompleteAttemptMetrics:(BOOL)trimIncompleteAttemptMetrics
@@ -719,8 +769,16 @@ operationError:(NSError *)error
         [dupeSubmetrics addObject:dupeSubmetric];
     }
 
-    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueTime:self.enqueueMachTime
+    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueDate:self.enqueueDate
+#pragma clang diagnostics push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+                                                                      enqueueTime:self.enqueueMachTime
+#pragma clang diagnostics pop
+                                                                     completeDate:self.completeDate
+#pragma clang diagnostics push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
                                                                      completeTime:self.completeMachTime
+#pragma clang diagnostics pop
                                                                    attemptMetrics:dupeSubmetrics];
     return metrics;
 }
@@ -735,14 +793,20 @@ operationError:(NSError *)error
                         operationError:(nullable NSError *)error
 {
     uint64_t absoluteDiff = TNLAbsoluteFromTimeInterval(duration);
-    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueTime:0
+    NSDate *startDate = [NSDate dateWithTimeIntervalSince1970:0];
+    NSDate *endDate = [startDate dateByAddingTimeInterval:duration];
+    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueDate:startDate
+                                                                      enqueueTime:0
+                                                                     completeDate:endDate
                                                                      completeTime:absoluteDiff
                                                                    attemptMetrics:nil];
-    [metrics addInitialStartWithMachTime:0
-                                 request:request];
-    [metrics addEnd:absoluteDiff
-           response:URLResponse
-     operationError:error];
+    [metrics addInitialStartWithDate:startDate
+                            machTime:0
+                             request:request];
+    [metrics addEndDate:endDate
+               machTime:absoluteDiff
+               response:URLResponse
+         operationError:error];
     return metrics;
 }
 

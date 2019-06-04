@@ -45,6 +45,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (BOOL)tnl_URLSessionSupportsDecodingBrotliContentEncoding;
 
+/**
+ Convenience method for appropriately mutating the session configuration's `protocolClasses`
+ */
+- (void)tnl_insertProtocolClasses:(nullable NSArray<Class> *)additionalClasses;
+
 @end
 
 NS_ASSUME_NONNULL_END

@@ -50,13 +50,30 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (nullable NSString *)tnl_localizedCancelSourceDescription;
 
+/**
+ An overriding error in the case that the "cancel" should not be treated with a `TNLErrorCodeRequestOperationCancelled` error.
+ @return an `NSError`, `nil` value will continue to treat the cancel source as a `TNLErrorCodeRequestOperationCancelled` error source.
+ */
+- (nullable NSError *)tnl_cancelSourceOverrideError;
+
 @end
 
 /**
  Category on NSString to adopt `TNLRequestOperationCancelSource` as a convenience.
  */
 @interface NSString (TNLRequestOperationCancelSource) <TNLRequestOperationCancelSource>
+/** returns `self` */
 - (NSString *)tnl_cancelSourceDescription;
+@end
+
+/**
+ Category on NSError to adopt `TNLRequestOperationCancelSource` as a convenience.
+ */
+@interface NSError (TNLRequestOperationCancelSource) <TNLRequestOperationCancelSource>
+/** returns `[self description]` */
+- (NSString *)tnl_cancelSourceDescription;
+/** returns `self` */
+- (NSString *)tnl_cancelSourceOverrideError;
 @end
 
 /**
