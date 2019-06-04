@@ -24,6 +24,9 @@
 		8B0DDD2519C7456A004BEE4B /* TNLNetwork.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B0DDD2319C7456A004BEE4B /* TNLNetwork.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B0DDD2619C7456A004BEE4B /* TNLNetwork.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B0DDD2419C7456A004BEE4B /* TNLNetwork.m */; };
 		8B0E0C4D1DE69C5700283B45 /* BingResults.json.base64 in Resources */ = {isa = PBXBuildFile; fileRef = 8B0E0C4C1DE69C5700283B45 /* BingResults.json.base64 */; };
+		8B10826E2252BC9B009C8ECB /* TNLURLSessionManagerTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B10826D2252BC9B009C8ECB /* TNLURLSessionManagerTest.m */; };
+		8B10826F2252BC9B009C8ECB /* TNLURLSessionManagerTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B10826D2252BC9B009C8ECB /* TNLURLSessionManagerTest.m */; };
+		8B1082702252BC9B009C8ECB /* TNLURLSessionManagerTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B10826D2252BC9B009C8ECB /* TNLURLSessionManagerTest.m */; };
 		8B13EB9F19C9F7580098E349 /* TNLResponse_Project.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B13EB9D19C9F7580098E349 /* TNLResponse_Project.h */; };
 		8B153162207D1DA400A1288F /* TNLAuthenticationChallengeHandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B153161207D1DA400A1288F /* TNLAuthenticationChallengeHandler.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B153163207D1DA400A1288F /* TNLAuthenticationChallengeHandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B153161207D1DA400A1288F /* TNLAuthenticationChallengeHandler.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -174,7 +177,6 @@
 		8B9EBDFA2135B4B100E6E466 /* TNLURLSessionManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BAFBF0E1BDABAB500F36EFF /* TNLURLSessionManager.h */; };
 		8B9EBDFB2135B4B100E6E466 /* TNLBackgroundURLSessionTaskOperationManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B2924BB1992E42900AC139A /* TNLBackgroundURLSessionTaskOperationManager.h */; };
 		8B9EBDFC2135B4B100E6E466 /* TNLHostSanitizer.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BB0E3A51A1FCFB6008CF992 /* TNLHostSanitizer.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8B9EBDFD2135B4B100E6E466 /* module.modulemap in Headers */ = {isa = PBXBuildFile; fileRef = B3B9E9FE1C3AEDE700B8A451 /* module.modulemap */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B9EBDFE2135B4B100E6E466 /* NSURLSessionConfiguration+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BFDF956199ADF4300248C3D /* NSURLSessionConfiguration+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B9EBDFF2135B4B100E6E466 /* TNLRequestHydrater.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B2DF7D0199D7F2600A064B3 /* TNLRequestHydrater.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B9EBE002135B4B100E6E466 /* TNLHTTP.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE4032319467A1400C7241E /* TNLHTTP.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -380,7 +382,6 @@
 		8BFDF9512135AB2C002F6A80 /* TNLURLSessionManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BAFBF0E1BDABAB500F36EFF /* TNLURLSessionManager.h */; };
 		8BFDF9522135AB2C002F6A80 /* TNLBackgroundURLSessionTaskOperationManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B2924BB1992E42900AC139A /* TNLBackgroundURLSessionTaskOperationManager.h */; };
 		8BFDF9532135AB2C002F6A80 /* TNLHostSanitizer.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BB0E3A51A1FCFB6008CF992 /* TNLHostSanitizer.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8BFDF9542135AB2C002F6A80 /* module.modulemap in Headers */ = {isa = PBXBuildFile; fileRef = B3B9E9FE1C3AEDE700B8A451 /* module.modulemap */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF9552135AB2C002F6A80 /* NSURLSessionConfiguration+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BFDF956199ADF4300248C3D /* NSURLSessionConfiguration+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF9562135AB2C002F6A80 /* TNLRequestHydrater.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B2DF7D0199D7F2600A064B3 /* TNLRequestHydrater.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF9572135AB2C002F6A80 /* TNLHTTP.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE4032319467A1400C7241E /* TNLHTTP.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -475,7 +476,6 @@
 		8BFE79DB21308A7B00E3B2AD /* TNLRequestRetryPolicyTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BFE79D9213076E600E3B2AD /* TNLRequestRetryPolicyTest.m */; };
 		8BFF0A1D19FF32D1001F42B7 /* NSDictionary+TNLAdditionsTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BFF0A1C19FF32D1001F42B7 /* NSDictionary+TNLAdditionsTest.m */; };
 		8BFF0A6319FFEFED001F42B7 /* NSURLSessionConfiguration+TNLAdditionsTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BFF0A6219FFEFED001F42B7 /* NSURLSessionConfiguration+TNLAdditionsTest.m */; };
-		B3B9EA031C3AF02100B8A451 /* module.modulemap in Headers */ = {isa = PBXBuildFile; fileRef = B3B9E9FE1C3AEDE700B8A451 /* module.modulemap */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4765FA1EEEFC8600A23506 /* TwitterNetworkLayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF4AA13B1EE61D47001647B5 /* TwitterNetworkLayer.framework */; };
 		BF4AA0C21EE61D46001647B5 /* NSURLResponse+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B3586A91A1551DB00E82D51 /* NSURLResponse+TNLAdditions.m */; };
 		BF4AA0C31EE61D46001647B5 /* TNLRequestOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE403021946794300C7241E /* TNLRequestOperation.m */; };
@@ -539,7 +539,6 @@
 		BF4AA1021EE61D46001647B5 /* TNLURLSessionManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BAFBF0E1BDABAB500F36EFF /* TNLURLSessionManager.h */; };
 		BF4AA1031EE61D46001647B5 /* TNLBackgroundURLSessionTaskOperationManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B2924BB1992E42900AC139A /* TNLBackgroundURLSessionTaskOperationManager.h */; };
 		BF4AA1041EE61D46001647B5 /* TNLHostSanitizer.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BB0E3A51A1FCFB6008CF992 /* TNLHostSanitizer.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		BF4AA1051EE61D46001647B5 /* module.modulemap in Headers */ = {isa = PBXBuildFile; fileRef = B3B9E9FE1C3AEDE700B8A451 /* module.modulemap */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4AA1061EE61D46001647B5 /* NSURLSessionConfiguration+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BFDF956199ADF4300248C3D /* NSURLSessionConfiguration+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4AA1071EE61D46001647B5 /* TNLRequestHydrater.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B2DF7D0199D7F2600A064B3 /* TNLRequestHydrater.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4AA1081EE61D46001647B5 /* TNLHTTP.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE4032319467A1400C7241E /* TNLHTTP.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -656,15 +655,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		8B9EBDEC2135B4B100E6E466 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "include/$(PRODUCT_NAME)";
-			dstSubfolderSpec = 16;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		8BDB97E71D24D28800861951 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -674,33 +664,6 @@
 				8BDB97E31D24D28700861951 /* TwitterNetworkLayer.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8BE402C41946743D00C7241E /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "include/$(PRODUCT_NAME)";
-			dstSubfolderSpec = 16;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8BFDF9432135AB2C002F6A80 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "include/$(PRODUCT_NAME)";
-			dstSubfolderSpec = 16;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BF4AA0F51EE61D46001647B5 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "include/$(PRODUCT_NAME)";
-			dstSubfolderSpec = 16;
-			files = (
-			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -725,6 +688,7 @@
 		8B0DDD2319C7456A004BEE4B /* TNLNetwork.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLNetwork.h; sourceTree = "<group>"; };
 		8B0DDD2419C7456A004BEE4B /* TNLNetwork.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLNetwork.m; sourceTree = "<group>"; };
 		8B0E0C4C1DE69C5700283B45 /* BingResults.json.base64 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = BingResults.json.base64; sourceTree = "<group>"; };
+		8B10826D2252BC9B009C8ECB /* TNLURLSessionManagerTest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TNLURLSessionManagerTest.m; sourceTree = "<group>"; };
 		8B109D6B20B63F15000D10AA /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		8B109D6C20B63F16000D10AA /* CHANGELOG.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
 		8B13EB9D19C9F7580098E349 /* TNLResponse_Project.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLResponse_Project.h; sourceTree = "<group>"; };
@@ -911,7 +875,6 @@
 		8BFE79D9213076E600E3B2AD /* TNLRequestRetryPolicyTest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TNLRequestRetryPolicyTest.m; sourceTree = "<group>"; };
 		8BFF0A1C19FF32D1001F42B7 /* NSDictionary+TNLAdditionsTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+TNLAdditionsTest.m"; sourceTree = "<group>"; };
 		8BFF0A6219FFEFED001F42B7 /* NSURLSessionConfiguration+TNLAdditionsTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSURLSessionConfiguration+TNLAdditionsTest.m"; sourceTree = "<group>"; };
-		B3B9E9FE1C3AEDE700B8A451 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		BF4AA13B1EE61D47001647B5 /* TwitterNetworkLayer.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TwitterNetworkLayer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF4AA16A1EE626ED001647B5 /* TwitterNetworkLayerTests MacOS.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "TwitterNetworkLayerTests MacOS.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -1145,7 +1108,6 @@
 				8B7106E920B99DF300A78535 /* LICENSE */,
 				8BE402C71946743D00C7241E /* Products */,
 				8B109D6B20B63F15000D10AA /* README.md */,
-				B3B9E9FD1C3AEDD700B8A451 /* Resources */,
 				8BE402CB1946743E00C7241E /* Source */,
 				8BDFFC0919814D3100F7F670 /* TNLExample */,
 				8BE402DF1946743E00C7241E /* TwitterNetworkLayerTests */,
@@ -1317,6 +1279,7 @@
 				8B8434891A13B8E500D006DA /* TNLResponseTest.m */,
 				8B227B831A004F97003B1C7C /* TNLTemporaryFileTest.m */,
 				8B84347B1A13B70C00D006DA /* TNLURLCodingTest.m */,
+				8B10826D2252BC9B009C8ECB /* TNLURLSessionManagerTest.m */,
 				8B6E34281DE35FCD004A35C7 /* TNLXContentEncoding.h */,
 				8B6E34291DE35FCD004A35C7 /* TNLXContentEncoding.m */,
 			);
@@ -1332,14 +1295,6 @@
 				8BE402E11946743E00C7241E /* TwitterNetworkLayerTests-Info.plist */,
 			);
 			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		B3B9E9FD1C3AEDD700B8A451 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				B3B9E9FE1C3AEDE700B8A451 /* module.modulemap */,
-			);
-			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1364,7 +1319,6 @@
 				8B9EBDFA2135B4B100E6E466 /* TNLURLSessionManager.h in Headers */,
 				8B9EBDFB2135B4B100E6E466 /* TNLBackgroundURLSessionTaskOperationManager.h in Headers */,
 				8B9EBDFC2135B4B100E6E466 /* TNLHostSanitizer.h in Headers */,
-				8B9EBDFD2135B4B100E6E466 /* module.modulemap in Headers */,
 				8B9EBDFE2135B4B100E6E466 /* NSURLSessionConfiguration+TNLAdditions.h in Headers */,
 				8B9EBDFF2135B4B100E6E466 /* TNLRequestHydrater.h in Headers */,
 				8B9EBE002135B4B100E6E466 /* TNLHTTP.h in Headers */,
@@ -1440,7 +1394,6 @@
 				8BAFBF111BDABAB500F36EFF /* TNLURLSessionManager.h in Headers */,
 				8B2924BD1992E42900AC139A /* TNLBackgroundURLSessionTaskOperationManager.h in Headers */,
 				8BB0E3A71A1FCFB6008CF992 /* TNLHostSanitizer.h in Headers */,
-				B3B9EA031C3AF02100B8A451 /* module.modulemap in Headers */,
 				8BFDF958199ADF4300248C3D /* NSURLSessionConfiguration+TNLAdditions.h in Headers */,
 				8B2DF7D1199D7F2600A064B3 /* TNLRequestHydrater.h in Headers */,
 				8BE4032519467A1400C7241E /* TNLHTTP.h in Headers */,
@@ -1516,7 +1469,6 @@
 				8BFDF9512135AB2C002F6A80 /* TNLURLSessionManager.h in Headers */,
 				8BFDF9522135AB2C002F6A80 /* TNLBackgroundURLSessionTaskOperationManager.h in Headers */,
 				8BFDF9532135AB2C002F6A80 /* TNLHostSanitizer.h in Headers */,
-				8BFDF9542135AB2C002F6A80 /* module.modulemap in Headers */,
 				8BFDF9552135AB2C002F6A80 /* NSURLSessionConfiguration+TNLAdditions.h in Headers */,
 				8BFDF9562135AB2C002F6A80 /* TNLRequestHydrater.h in Headers */,
 				8BFDF9572135AB2C002F6A80 /* TNLHTTP.h in Headers */,
@@ -1591,7 +1543,6 @@
 				BF4AA1021EE61D46001647B5 /* TNLURLSessionManager.h in Headers */,
 				BF4AA1031EE61D46001647B5 /* TNLBackgroundURLSessionTaskOperationManager.h in Headers */,
 				BF4AA1041EE61D46001647B5 /* TNLHostSanitizer.h in Headers */,
-				BF4AA1051EE61D46001647B5 /* module.modulemap in Headers */,
 				BF4AA1061EE61D46001647B5 /* NSURLSessionConfiguration+TNLAdditions.h in Headers */,
 				BF4AA1071EE61D46001647B5 /* TNLRequestHydrater.h in Headers */,
 				BF4AA1081EE61D46001647B5 /* TNLHTTP.h in Headers */,
@@ -1655,10 +1606,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8B9EBE332135B4B100E6E466 /* Build configuration list for PBXNativeTarget "TwitterNetworkLayer watchOS" */;
 			buildPhases = (
+				8B9EBDED2135B4B100E6E466 /* Headers */,
 				8B9EBDB62135B4B100E6E466 /* Sources */,
 				8B9EBDE32135B4B100E6E466 /* Frameworks */,
-				8B9EBDEC2135B4B100E6E466 /* CopyFiles */,
-				8B9EBDED2135B4B100E6E466 /* Headers */,
 			);
 			buildRules = (
 			);
@@ -1692,10 +1642,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8BE402E91946743E00C7241E /* Build configuration list for PBXNativeTarget "TwitterNetworkLayer" */;
 			buildPhases = (
+				8BE402F91946786900C7241E /* Headers */,
 				8BE402C21946743D00C7241E /* Sources */,
 				8BE402C31946743D00C7241E /* Frameworks */,
-				8BE402C41946743D00C7241E /* CopyFiles */,
-				8BE402F91946786900C7241E /* Headers */,
 			);
 			buildRules = (
 			);
@@ -1728,10 +1677,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8BFDF98A2135AB2C002F6A80 /* Build configuration list for PBXNativeTarget "TwitterNetworkLayer tvOS" */;
 			buildPhases = (
+				8BFDF9442135AB2C002F6A80 /* Headers */,
 				8BFDF90D2135AB2C002F6A80 /* Sources */,
 				8BFDF93A2135AB2C002F6A80 /* Frameworks */,
-				8BFDF9432135AB2C002F6A80 /* CopyFiles */,
-				8BFDF9442135AB2C002F6A80 /* Headers */,
 			);
 			buildRules = (
 			);
@@ -1764,10 +1712,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = BF4AA1381EE61D46001647B5 /* Build configuration list for PBXNativeTarget "TwitterNetworkLayer macOS" */;
 			buildPhases = (
+				BF4AA0F61EE61D46001647B5 /* Headers */,
 				BF4AA0C11EE61D46001647B5 /* Sources */,
 				BF4AA0ED1EE61D46001647B5 /* Frameworks */,
-				BF4AA0F51EE61D46001647B5 /* CopyFiles */,
-				BF4AA0F61EE61D46001647B5 /* Headers */,
 			);
 			buildRules = (
 			);
@@ -1803,7 +1750,7 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = TNL;
-				LastUpgradeCheck = 1000;
+				LastUpgradeCheck = 1020;
 				ORGANIZATIONNAME = Twitter;
 				TargetAttributes = {
 					8B9EBDB52135B4B100E6E466 = {
@@ -1835,9 +1782,10 @@
 			};
 			buildConfigurationList = 8BE402C11946743D00C7241E /* Build configuration list for PBXProject "TwitterNetworkLayer" */;
 			compatibilityVersion = "Xcode 3.2";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 				Base,
 			);
@@ -2038,6 +1986,7 @@
 				8B986C651BE3EF1D0053BB14 /* TNLHTTPTests.m in Sources */,
 				8B8FA3341AF426B200BC91DF /* TNLRequestOperationQueueTest.m in Sources */,
 				8B23E00D19FFF799007C1E35 /* TNLRequestTests.m in Sources */,
+				8B10826E2252BC9B009C8ECB /* TNLURLSessionManagerTest.m in Sources */,
 				8B227B841A004F97003B1C7C /* TNLTemporaryFileTest.m in Sources */,
 				8B8A683E19FEEB51008623E8 /* TNLParameterCollectionTests.m in Sources */,
 				8B84348C1A13BF3C00D006DA /* TNLRequestOperationTest.m in Sources */,
@@ -2119,6 +2068,7 @@
 				8BFDF9952135ACDB002F6A80 /* TNLHTTPTests.m in Sources */,
 				8BFDF9962135ACDB002F6A80 /* TNLRequestOperationQueueTest.m in Sources */,
 				8BFDF9972135ACDB002F6A80 /* TNLRequestTests.m in Sources */,
+				8B1082702252BC9B009C8ECB /* TNLURLSessionManagerTest.m in Sources */,
 				8BFDF9982135ACDB002F6A80 /* TNLTemporaryFileTest.m in Sources */,
 				8BFDF9992135ACDB002F6A80 /* TNLParameterCollectionTests.m in Sources */,
 				8BFDF99A2135ACDB002F6A80 /* TNLRequestOperationTest.m in Sources */,
@@ -2200,6 +2150,7 @@
 				BF4AA1431EE626ED001647B5 /* TNLHTTPTests.m in Sources */,
 				BF4AA1441EE626ED001647B5 /* TNLRequestOperationQueueTest.m in Sources */,
 				BF4AA1451EE626ED001647B5 /* TNLRequestTests.m in Sources */,
+				8B10826F2252BC9B009C8ECB /* TNLURLSessionManagerTest.m in Sources */,
 				BF4AA1461EE626ED001647B5 /* TNLTemporaryFileTest.m in Sources */,
 				BF4AA1481EE626ED001647B5 /* TNLParameterCollectionTests.m in Sources */,
 				BF4AA1491EE626ED001647B5 /* TNLRequestOperationTest.m in Sources */,
@@ -2385,7 +2336,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2.3;
+				CURRENT_PROJECT_VERSION = 2.6;
 				DEAD_CODE_STRIPPING = NO;
 				DYLIB_CURRENT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -2452,7 +2403,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 2.3;
+				CURRENT_PROJECT_VERSION = 2.6;
 				DEAD_CODE_STRIPPING = NO;
 				DYLIB_CURRENT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DYLIB_INSTALL_NAME_BASE = "@rpath";

@@ -42,6 +42,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 #define EXTRA_DOWNLOAD_BYTES_BUFFER (16)
 
+#define kTaskMetricsNotSeenOnCompletionDelayCompletionDuration (0.300)
+
 static NSString * const kTempFileDir = @"com.tnl.temp";
 
 static NSString *TNLWriteDataToTemporaryFile(NSData *data);
@@ -204,12 +206,19 @@ static void _network_idleTimerFired(SELF_ARG);
 
     // Timings
 
-    uint64_t _startMachTime;
-    uint64_t _endMachTime;
-    uint64_t _completeMachTime;
+    NSDate *_startDate;
+    uint64_t _startMachTime; // deprecated
+    NSDate *_endDate;
+    uint64_t _endMachTime; // deprecated
+    NSDate *_completeDate;
+    uint64_t _completeMachTime; // deprecated
 
-    uint64_t _responseBodyStartMachTime;
-    uint64_t _responseBodyEndMachTime;
+    TNLPriority _taskResumePriority;
+    NSDate *_taskResumeDate;
+    NSDate *_responseBodyStartDate;
+    NSDate *_responseBodyEndDate;
+    NSDate *_completionCallbackDate;
+    NSDate *_taskMetricsCallbackDate;
 
     // Timers
 
@@ -938,6 +947,10 @@ static void _network_handleRedirect(SELF_ARG,
 
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
 
+        if (!self->_completionCallbackDate && !self->_flags.encounteredCompletionBeforeTaskMetrics) {
+            self->_completionCallbackDate = [NSDate date];
+        }
+
         if (!self->_taskMetrics && !self->_flags.encounteredCompletionBeforeTaskMetrics) {
             TNLAssert([NSURLSessionTaskMetrics class] != Nil);
 
@@ -964,7 +977,7 @@ static void _network_handleRedirect(SELF_ARG,
             self->_cachedCompletionTask = task;
             self->_cachedCompletionError = theError;
 
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.300 * NSEC_PER_SEC)), tnl_network_queue(), ^{
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kTaskMetricsNotSeenOnCompletionDelayCompletionDuration * NSEC_PER_SEC)), tnl_network_queue(), ^{
                 _network_completeCachedCompletionIfPossible(self);
             });
 
@@ -1117,6 +1130,7 @@ static void _network_finalizeDidCompleteTask(SELF_ARG,
         didFinishCollectingMetrics:(NSURLSessionTaskMetrics *)metrics
 {
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
+        self->_taskMetricsCallbackDate = [NSDate date];
         self->_taskMetrics = metrics;
 
         /*
@@ -1365,6 +1379,7 @@ static void _network_setObservingURLSessionTask(SELF_ARG,
     NSURLSessionTask *task = self.URLSessionTask;
     TNLAttemptMetaData *metaData = [[TNLAttemptMetaData alloc] init];
     metaData.HTTPVersion = @"1.1";
+    metaData.sessionId = _URLSession.sessionDescription;
 
     if (task) {
 
@@ -1409,9 +1424,8 @@ static void _network_setObservingURLSessionTask(SELF_ARG,
 
         metaData.localCacheHit = response.tnl_wasCachedResponse;
 
-        if (_responseBodyEndMachTime && _responseBodyStartMachTime) {
-            metaData.responseContentDownloadDuration = TNLComputeDuration(_responseBodyStartMachTime,
-                                                                          _responseBodyEndMachTime);
+        if (_responseBodyEndDate && _responseBodyStartDate) {
+            metaData.responseContentDownloadDuration = [_responseBodyEndDate timeIntervalSinceDate:_responseBodyStartDate];
         }
 
         if (_responseDecodeLatency > 0) {
@@ -1419,6 +1433,36 @@ static void _network_setObservingURLSessionTask(SELF_ARG,
         }
         if (_layer8BodyBytesReceived > 0) {
             metaData.responseDecodedContentLength = _layer8BodyBytesReceived;
+        }
+
+        if (_taskResumeDate) {
+            // indicates we also have task resume priority
+            metaData.taskResumePriority = _taskResumePriority;
+        }
+
+        if (_taskMetrics && _taskResumeDate) {
+            const NSTimeInterval fetchResumeDelta = [_taskMetrics.transactionMetrics.firstObject.fetchStartDate timeIntervalSinceDate:_taskResumeDate];
+            if (fetchResumeDelta > 1.0 || fetchResumeDelta < -1.0) {
+                metaData.taskResumeLatency = fetchResumeDelta;
+            }
+        }
+
+        if (_completionCallbackDate) {
+            // we were going to capture task metrics, see if there's any discrepency
+            if (_taskMetricsCallbackDate) {
+                const NSTimeInterval taskMetricsLatency = [_taskMetricsCallbackDate timeIntervalSinceDate:_completionCallbackDate];
+                if (taskMetricsLatency > 0.0) {
+                    // should not get task metrics after completion!
+                    metaData.taskMetricsAfterCompletionLatency = taskMetricsLatency;
+                }
+            } else {
+                NSDate *dateNow = [NSDate date];
+                const NSTimeInterval latencySinceCompletion = [dateNow timeIntervalSinceDate:_completionCallbackDate];
+                if (latencySinceCompletion >= 0.100) {
+                    // should really be no latency, so capture any meaningful latency
+                    metaData.taskWithoutMetricsCompletionLatency = latencySinceCompletion;
+                }
+            }
         }
     }
 
@@ -1538,7 +1582,10 @@ static void _network_resumeSessionTask(SELF_ARG,
     // NSURLSessionTask's `resume` will capture the QOS of the calling queue for
     // reusing the same QOS for the execution of the task
 
-    dispatch_sync(dispatch_get_global_queue(TNLConvertTNLPriorityToGCDQOS(self.requestPriority), 0), ^{
+    const TNLPriority requestPriority = self.requestPriority;
+    dispatch_sync(dispatch_get_global_queue(TNLConvertTNLPriorityToGCDQOS(requestPriority), 0), ^{
+        self->_taskResumeDate = [NSDate date];
+        self->_taskResumePriority = requestPriority;
         [task resume];
     });
 }
@@ -1614,13 +1661,17 @@ static void _network_buildInternalResponse(SELF_ARG)
 
     TNLAttemptMetaData *metadata = [self network_metaData];
     TNLAttemptMetrics *attemptMetrics = [[TNLAttemptMetrics alloc] initWithType:TNLAttemptTypeInitial
+                                                                      startDate:self->_startDate
                                                                   startMachTime:self->_startMachTime
+                                                                        endDate:self->_endDate
                                                                     endMachTime:self->_endMachTime
                                                                        metaData:metadata
                                                                      URLRequest:self.currentURLRequest
                                                                     URLResponse:self.URLResponse
                                                                  operationError:self.error];
-    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueTime:0
+    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueDate:self->_startDate
+                                                                      enqueueTime:self->_startMachTime
+                                                                     completeDate:self->_completeDate
                                                                      completeTime:self->_completeMachTime
                                                                    attemptMetrics:@[attemptMetrics]];
     TNLResponse *response = [self->_responseClass responseWithRequest:self.originalRequest
@@ -1697,7 +1748,7 @@ static void _network_complete(SELF_ARG)
     self->_flags.shouldCaptureResponse = 0; // don't handle responses anymore
     self->_contentDecoderContext = nil; // don't decode anymore
     self->_contentDecoderRecentData = nil;
-    self->_responseBodyEndMachTime = mach_absolute_time();
+    self->_responseBodyEndDate = [NSDate date];
 
     _network_finishMD5(self, YES /*success*/);
     _network_buildResponseInfo(self);
@@ -1784,7 +1835,7 @@ static void _network_didReceiveResponse(SELF_ARG,
 
     self->_flags.shouldCaptureResponse = 0;
 
-    self->_responseBodyStartMachTime = mach_absolute_time();
+    self->_responseBodyStartDate = [NSDate date];
     _network_updateUploadProgress(self, _network_getUploadProgress(self));
     _network_updateDownloadProgress(self, _network_downloadProgress(self));
     [self->_requestOperation network_URLSessionTaskOperation:self
@@ -1969,6 +2020,7 @@ static void _network_finalizeWithResponseCompletion(SELF_ARG,
 
     self->_flags.isFinalizing = YES;
     self->_endMachTime = mach_absolute_time();
+    self->_endDate = [NSDate date];
 
     TNLRequestOperation *strongRequestOp = self->_requestOperation;
     if (strongRequestOp) {
@@ -2170,18 +2222,23 @@ static void _network_updateTimestamps(SELF_ARG,
     }
 
     if (!self->_startMachTime) {
+        self->_startDate = [NSDate date];
         self->_startMachTime = mach_absolute_time();
     }
 
     if (TNLRequestOperationStateIsFinal(state)) {
-        self->_completeMachTime = mach_absolute_time();
+        NSDate *dateNow = [NSDate date];
+        const uint64_t machTime = mach_absolute_time();
+        self->_completeMachTime = machTime;
+        self->_completeDate = dateNow;
         if (!self->_endMachTime) {
-            self->_endMachTime = self->_completeMachTime;
+            self->_endDate = dateNow;
+            self->_endMachTime = machTime;
         }
         TNLAssert(self->_finalResponse);
         TNLAssert(self->_completeMachTime > 0);
-        if (!self->_finalResponse.metrics.completeMachTime) {
-            self->_finalResponse.metrics.completeMachTime = self->_completeMachTime;
+        if (!self->_finalResponse.metrics.completeDate) {
+            [self->_finalResponse.metrics setCompleteDate:self->_completeDate machTime:self->_completeMachTime];
         }
     }
 }

@@ -37,22 +37,50 @@
     NSError *error = nil;
 
     uint64_t enqueueTime, firstAttemptStartTime, currentAttemptStartTime, currentAttemptEndTime, completeTime = 0;
+    NSDate *enqueueDate, *firstAttemptStartDate, *currentAttemptStartDate, *currentAttemptEndDate, *completeDate;
     TNLAttemptMetaData *metaData = [[TNLAttemptMetaData alloc] init];
     metaData.HTTPVersion = @"1.1";
 
     NSData *archive = nil;
 
+    // enqueue
+    enqueueDate = [NSDate date];
     enqueueTime = (UInt64)(NSEC_PER_SEC * CFAbsoluteTimeGetCurrent());
-    firstAttemptStartTime = currentAttemptStartTime = enqueueTime + (NSEC_PER_SEC * 1ULL); // 1 sec later
-    currentAttemptEndTime = currentAttemptStartTime + (NSEC_PER_SEC * 1ULL); // 1 sec later
-    completeTime = currentAttemptEndTime + NSEC_PER_MSEC; // 1 millisec later
 
-    TNLResponseInfo *info = [[TNLResponseInfo alloc] initWithFinalURLRequest:finalRequest URLResponse:urlResponse source:source data:data temporarySavedFile:tempFile];
-    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueTime:enqueueTime completeTime:completeTime attemptMetrics:nil];
-    [metrics addInitialStartWithMachTime:firstAttemptStartTime request:finalRequest];
-    [metrics addMetaData:metaData];
-    [metrics addEnd:currentAttemptEndTime response:info.URLResponse operationError:error];
-    TNLResponse *response = [TNLResponse responseWithRequest:request operationError:error info:info metrics:metrics];
+    // start, 1 sec later
+    firstAttemptStartDate = currentAttemptStartDate = [enqueueDate dateByAddingTimeInterval:1];
+    firstAttemptStartTime = currentAttemptStartTime = enqueueTime + (NSEC_PER_SEC * 1ULL);
+
+    // end, 1 second later
+    currentAttemptEndDate = [firstAttemptStartDate dateByAddingTimeInterval:1];
+    currentAttemptEndTime = currentAttemptStartTime + (NSEC_PER_SEC * 1ULL);
+
+    // complete, 1 ms later
+    completeDate = [currentAttemptEndDate dateByAddingTimeInterval:1.0 / 1000.0];
+    completeTime = currentAttemptEndTime + NSEC_PER_MSEC;
+
+    TNLResponseInfo *info = [[TNLResponseInfo alloc] initWithFinalURLRequest:finalRequest
+                                                                 URLResponse:urlResponse
+                                                                      source:source
+                                                                        data:data
+                                                          temporarySavedFile:tempFile];
+    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueDate:enqueueDate
+                                                                      enqueueTime:enqueueTime
+                                                                     completeDate:completeDate
+                                                                     completeTime:completeTime
+                                                                   attemptMetrics:nil];
+    [metrics addInitialStartWithDate:firstAttemptStartDate
+                            machTime:firstAttemptStartTime
+                             request:finalRequest];
+    [metrics addMetaData:metaData taskMetrics:nil];
+    [metrics addEndDate:currentAttemptEndDate
+               machTime:currentAttemptEndTime
+               response:info.URLResponse
+         operationError:error];
+    TNLResponse *response = [TNLResponse responseWithRequest:request
+                                              operationError:error
+                                                        info:info
+                                                     metrics:metrics];
 
     XCTAssertEqualWithAccuracy(response.metrics.totalDuration, 2.001, 0.0005);
     XCTAssertEqualWithAccuracy(response.metrics.queuedDuration, 1.0, 0.0005);

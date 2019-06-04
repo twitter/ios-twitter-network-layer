@@ -7,6 +7,7 @@
 //
 
 #import <TwitterNetworkLayer/TNLGlobalConfiguration.h>
+#import <TwitterNetworkLayer/TNLRequestConfiguration.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -14,7 +15,9 @@ NS_ASSUME_NONNULL_BEGIN
  * NOTE: this header is private to TNL
  */
 
+@class TNLMutableParameterCollection;
 @class TNLRequestOperationQueue;
+@class TNLResponse;
 @class TNLURLSessionTaskOperation;
 @protocol TNLRequestOperationCancelSource;
 
@@ -34,17 +37,20 @@ FOUNDATION_EXTERN NSTimeInterval TNLGlobalServiceUnavailableRetryAfterMaximumBac
 #pragma mark Declarations
 
 typedef void(^TNLRequestOperationQueueFindTaskOperationCompleteBlock)(TNLURLSessionTaskOperation * taskOp);
+typedef void(^TNLURLSessionManagerGetAllSessionsCallback)(NSArray<NSURLSession *> *foregroundSessions, NSArray<NSURLSession *> *backgroundSessions);
 
 #pragma mark TNLURLSessionManager
 
 @protocol TNLURLSessionManager <NSObject>
 
-- (void)cancelAllWithSource:(id<TNLRequestOperationCancelSource>)source
-            underlyingError:(nullable NSError *)optionalUnderlyingError;
+- (void)cancelAllForQueue:(TNLRequestOperationQueue *)queue
+                   source:(id<TNLRequestOperationCancelSource>)source
+          underlyingError:(nullable NSError *)optionalUnderlyingError;
 
 - (void)findURLSessionTaskOperationForRequestOperationQueue:(TNLRequestOperationQueue *)queue
                                            requestOperation:(TNLRequestOperation *)op
                                                    complete:(TNLRequestOperationQueueFindTaskOperationCompleteBlock)complete;
+- (void)getAllURLSessions:(TNLURLSessionManagerGetAllSessionsCallback)callback;
 - (BOOL)handleBackgroundURLSessionEvents:(NSString *)identifier
                        completionHandler:(dispatch_block_t)completionHandler;
 - (void)URLSessionDidCompleteBackgroundEvents:(NSURLSession *)session;
@@ -61,6 +67,10 @@ typedef void(^TNLRequestOperationQueueFindTaskOperationCompleteBlock)(TNLURLSess
 - (void)serviceUnavailableEncounteredForURL:(NSURL *)URL
                             retryAfterDelay:(NSTimeInterval)delay;
 @property (atomic) TNLGlobalConfigurationServiceUnavailableBackoffMode serviceUnavailableBackoffMode;
+
+- (void)pruneUnusedURLSessions;
+- (void)pruneURLSessionMatchingRequestConfiguration:(TNLRequestConfiguration *)config
+                                   operationQueueId:(nullable NSString *)operationQueueId;
 
 @end
 

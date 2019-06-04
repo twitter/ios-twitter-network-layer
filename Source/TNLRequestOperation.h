@@ -147,10 +147,10 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
  @param delegate    The *weakly held delegate* for the operation, can be `nil`.
  @return A new operation
  */
-+ (TNLRequestOperation *)operationWithRequest:(nullable id<TNLRequest>)request
-                                responseClass:(nullable Class)responseClass
-                                configuration:(nullable TNLRequestConfiguration *)config
-                                     delegate:(nullable id<TNLRequestDelegate>)delegate;
++ (instancetype)operationWithRequest:(nullable id<TNLRequest>)request
+                       responseClass:(nullable Class)responseClass
+                       configuration:(nullable TNLRequestConfiguration *)config
+                            delegate:(nullable id<TNLRequestDelegate>)delegate;
 
 
 /**
@@ -256,16 +256,16 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
  @param delegate The *weakly held delegate* for the operation, can be `nil`.
  @return A new operation
  */
-+ (TNLRequestOperation *)operationWithRequest:(nullable id<TNLRequest>)request
-                                configuration:(nullable TNLRequestConfiguration *)config
-                                     delegate:(nullable id<TNLRequestDelegate>)delegate;
++ (instancetype)operationWithRequest:(nullable id<TNLRequest>)request
+                       configuration:(nullable TNLRequestConfiguration *)config
+                            delegate:(nullable id<TNLRequestDelegate>)delegate;
 
 /**
  Same as calling `operationWithRequest:configuration:delegate:` with `[NRURLRequest requestWithURL:url]` as the _request_
  */
-+ (TNLRequestOperation *)operationWithURL:(nullable NSURL *)url
-                            configuration:(nullable TNLRequestConfiguration *)config
-                                 delegate:(nullable id<TNLRequestDelegate>)delegate;
++ (instancetype)operationWithURL:(nullable NSURL *)url
+                   configuration:(nullable TNLRequestConfiguration *)config
+                        delegate:(nullable id<TNLRequestDelegate>)delegate;
 
 /**
  Convenience constructor that doesn't need a `TNLRequestConfiguration` nor a `TNLRequestDelegate`
@@ -279,8 +279,8 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
 
  @return the `TNLRequestOperation` to schedule.  See `[TNLRequestOperationQueue enqueueRequestOperation:]`.
  */
-+ (TNLRequestOperation *)operationWithRequest:(nullable id<TNLRequest>)request
-                                   completion:(nullable TNLRequestDidCompleteBlock)completion;
++ (instancetype)operationWithRequest:(nullable id<TNLRequest>)request
+                          completion:(nullable TNLRequestDidCompleteBlock)completion;
 
 /**
  Convenience constructor that doesn't need a `TNLRequestDelegate`
@@ -295,9 +295,9 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
 
  @return the `TNLRequestOperation` to schedule.  See `[TNLRequestOperationQueue enqueueRequestOperation:]`.
  */
-+ (TNLRequestOperation *)operationWithRequest:(nullable id<TNLRequest>)request
-                                configuration:(nullable TNLRequestConfiguration *)config
-                                   completion:(nullable TNLRequestDidCompleteBlock)completion;
++ (instancetype)operationWithRequest:(nullable id<TNLRequest>)request
+                       configuration:(nullable TNLRequestConfiguration *)config
+                          completion:(nullable TNLRequestDidCompleteBlock)completion;
 
 /**
  Convenience constructor that doesn't need a `TNLRequestDelegate`
@@ -313,17 +313,17 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
 
  @return the `TNLRequestOperation` to schedule.  See `[TNLRequestOperationQueue enqueueRequestOperation:]`.
  */
-+ (TNLRequestOperation *)operationWithRequest:(nullable id<TNLRequest>)request
-                                responseClass:(nullable Class)responseClass
-                                configuration:(nullable TNLRequestConfiguration *)config
-                                   completion:(nullable TNLRequestDidCompleteBlock)completion;
++ (instancetype)operationWithRequest:(nullable id<TNLRequest>)request
+                       responseClass:(nullable Class)responseClass
+                       configuration:(nullable TNLRequestConfiguration *)config
+                          completion:(nullable TNLRequestDidCompleteBlock)completion;
 
 /**
  Same as `[TNLRequestOperation operationWithRequest:completion:]` with _request_ being
  `[NSURLRequest requestWithURL:`_url_`]`
  */
-+ (TNLRequestOperation *)operationWithURL:(nullable NSURL *)url
-                               completion:(nullable TNLRequestDidCompleteBlock)completion;
++ (instancetype)operationWithURL:(nullable NSURL *)url
+                      completion:(nullable TNLRequestDidCompleteBlock)completion;
 
 @end
 

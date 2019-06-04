@@ -1,8 +1,0 @@
-framework module TwitterNetworkLayer {
-    umbrella header "TwitterNetworkLayer.h"
-
-    export *
-    module * {
-        export *
-    }
-}

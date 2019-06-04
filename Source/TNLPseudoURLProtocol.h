@@ -63,6 +63,16 @@ FOUNDATION_EXTERN NSString * const TNLPseudoURLProtocolErrorDomain;
 
 @end
 
+//! Behavior for how the pseudo protocol should handle an observed redirect
+typedef NS_ENUM(NSUInteger, TNLPseudoURLProtocolRedirectBehavior) {
+    /** Follow redirect when `Location` header field is provided */
+    TNLPseudoURLProtocolRedirectBehaviorFollowLocation = 0,
+    /** Return the 3xx HTTP response, don't follow the redirect */
+    TNLPseudoURLProtocolRedirectBehaviorDontFollowLocation = 1,
+    /** Follow redirect when `Location` header field's value is registered with a response too, otherwise return the 3xx response */
+    TNLPseudoURLProtocolRedirectBehaviorFollowLocationIfRedirectResponseIsRegistered = 2,
+};
+
 /**
  The configuration for how the response should behave when registering a pseudo-URLResponse with
  `TNLPseudoURLProtocol`
@@ -107,6 +117,11 @@ FOUNDATION_EXTERN NSString * const TNLPseudoURLProtocolErrorDomain;
  otherwise == the given string will be matched with `isEqualToString:`
  */
 @property (nonatomic, copy, nullable) NSString *stringForIfRange;
+/**
+ Redirect behavior.
+ `TNLPseudoURLProtocolRedirectBehaviorFollowLocation` == default
+ */
+@property (nonatomic) TNLPseudoURLProtocolRedirectBehavior redirectBehavior;
 
 /**
  Any additional headers that the `TNLPseudoURLProtocol` should coerse the request to have

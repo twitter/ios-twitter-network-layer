@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #define SELF_ARG PRIVATE_SELF(TNLGlobalConfiguration)
 
+NSTimeInterval const TNLGlobalConfigurationURLSessionInactivityThresholdDefault = 60.0 * 4.0; // four minutes
 const TNLBackgroundTaskIdentifier TNLBackgroundTaskInvalid = 0;
 static const TNLBackgroundTaskIdentifier TNLBackgroundTaskInitial = 1;
 
@@ -75,6 +76,7 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
         _idleTimeoutMode = TNLGlobalConfigurationIdleTimeoutModeDefault;
         _timeoutIntervalBetweenDataTransfer = 0.0;
         _operationAutomaticDependencyPriorityThreshold = (TNLPriority)NSIntegerMax;
+        _internalURLSessionInactivityThreshold = TNLGlobalConfigurationURLSessionInactivityThresholdDefault;
 
 #if TARGET_OS_IOS || TARGET_OS_TV
         _sharedUIApplicationBackgroundTaskIdentifier = 0;
@@ -102,6 +104,10 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
             [nc addObserver:self
                    selector:@selector(_tnl_applicationDidEnterBackground:)
                        name:UIApplicationDidEnterBackgroundNotification
+                     object:nil];
+            [nc addObserver:self
+                   selector:@selector(_tnl_applicationDidReceiveMemoryWarning:)
+                       name:UIApplicationDidReceiveMemoryWarningNotification
                      object:nil];
 
             UIApplication *sharedUIApplication = TNLDynamicUIApplicationSharedApplication();
@@ -150,18 +156,33 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
 - (void)_tnl_applicationDidEnterBackground:(NSNotification *)note
 {
     self.lastApplicationState = UIApplicationStateBackground;
+
+    if (TNL_BITMASK_INTERSECTS_FLAGS(self.internalURLSessionPruneOptions, TNLGlobalConfigurationURLSessionPruneOptionOnApplicationBackground)) {
+        [[TNLURLSessionManager sharedInstance] pruneUnusedURLSessions];
+    }
+}
+
+- (void)_tnl_applicationDidReceiveMemoryWarning:(NSNotification *)note
+{
+    if (TNL_BITMASK_INTERSECTS_FLAGS(self.internalURLSessionPruneOptions, TNLGlobalConfigurationURLSessionPruneOptionOnMemoryWarning)) {
+        [[TNLURLSessionManager sharedInstance] pruneUnusedURLSessions];
+    }
 }
 
 #endif // IOS + TV
 
 - (void)addNetworkObserver:(id<TNLNetworkObserver>)observer
 {
-    [TNLRequestOperationQueue addGlobalNetworkObserver:observer];
+    if (observer) {
+        [TNLRequestOperationQueue addGlobalNetworkObserver:observer];
+    }
 }
 
 - (void)removeNetworkObserver:(id<TNLNetworkObserver>)observer
 {
-    [TNLRequestOperationQueue removeGlobalNetworkObserver:observer];
+    if (observer) {
+        [TNLRequestOperationQueue removeGlobalNetworkObserver:observer];
+    }
 }
 
 - (NSArray<id<TNLNetworkObserver>> *)allNetworkObservers
@@ -196,6 +217,41 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
 - (void)setServiceUnavailableBackoffMode:(TNLGlobalConfigurationServiceUnavailableBackoffMode)mode
 {
     [TNLURLSessionManager sharedInstance].serviceUnavailableBackoffMode = mode;
+}
+
+- (TNLGlobalConfigurationURLSessionPruneOptions)URLSessionPruneOptions
+{
+    return self.internalURLSessionPruneOptions;
+}
+
+- (void)setURLSessionPruneOptions:(TNLGlobalConfigurationURLSessionPruneOptions)URLSessionPruneOptions
+{
+    if (TNLGlobalConfigurationURLSessionPruneOptionNow == URLSessionPruneOptions) {
+        [[TNLURLSessionManager sharedInstance] pruneUnusedURLSessions];
+        return;
+    }
+
+    self.internalURLSessionPruneOptions = URLSessionPruneOptions;
+}
+
+- (NSTimeInterval)URLSessionInactivityThreshold
+{
+    return self.internalURLSessionInactivityThreshold;
+}
+
+- (void)setURLSessionInactivityThreshold:(NSTimeInterval)URLSessionInactivityThreshold
+{
+    if (URLSessionInactivityThreshold < 0.0) {
+        URLSessionInactivityThreshold = TNLGlobalConfigurationURLSessionInactivityThresholdDefault;
+    }
+    self.internalURLSessionInactivityThreshold = URLSessionInactivityThreshold;
+}
+
+- (void)pruneURLSessionMatchingRequestConfiguration:(TNLRequestConfiguration *)config
+                                   operationQueueId:(nullable NSString *)operationQueueId
+{
+    [[TNLURLSessionManager sharedInstance] pruneURLSessionMatchingRequestConfiguration:config
+                                                                      operationQueueId:operationQueueId];
 }
 
 - (void)setLogger:(nullable id<TNLLogger>)logger

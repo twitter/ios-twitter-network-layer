@@ -25,23 +25,26 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface TNLResponseMetrics ()
 
-- (void)setEnqueueMachTime:(uint64_t)time;
+- (void)didEnqueue;
 
-- (void)addInitialStartWithMachTime:(uint64_t)machTime
-                            request:(NSURLRequest *)request;
-- (void)addRetryStartWithMachTime:(uint64_t)machTime
-                          request:(NSURLRequest *)request;
-- (void)addRedirectStartWithMachTime:(uint64_t)machTime
-                             request:(NSURLRequest *)request;
-- (void)addEnd:(uint64_t)time
-      response:(nullable NSHTTPURLResponse *)response
-operationError:(nullable NSError *)error;
-- (void)addMetaData:(nullable TNLAttemptMetaData *)metaData;
-- (void)addTaskMetrics:(nullable NSURLSessionTaskMetrics *)metrics;
+- (void)addInitialStartWithDate:(NSDate *)date
+                       machTime:(uint64_t)machTime
+                        request:(NSURLRequest *)request;
+- (void)addRetryStartWithDate:(NSDate *)date
+                     machTime:(uint64_t)machTime
+                      request:(NSURLRequest *)request;
+- (void)addRedirectStartWithDate:(NSDate *)date
+                        machTime:(uint64_t)machTime
+                         request:(NSURLRequest *)request;
+- (void)addEndDate:(NSDate *)date
+          machTime:(uint64_t)time
+          response:(nullable NSHTTPURLResponse *)response
+    operationError:(nullable NSError *)error;
+- (void)addMetaData:(nullable TNLAttemptMetaData *)metaData taskMetrics:(nullable NSURLSessionTaskMetrics *)metrics;
 
 - (void)updateCurrentRequest:(NSURLRequest *)request;
 
-- (void)setCompleteMachTime:(uint64_t)time;
+- (void)setCompleteDate:(NSDate *)date machTime:(uint64_t)time;
 
 - (TNLResponseMetrics *)deepCopyAndTrimIncompleteAttemptMetrics:(BOOL)trimIncompleteAttemptMetrics;
 

@@ -363,7 +363,21 @@ typedef NSString *(^TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock)(
                      options:(TNLURLDecodingOptions)options
 {
     if (TNL_BITMASK_HAS_SUBSET_FLAGS(types, TNLParameterTypeURLParameterString)) {
-        [self addParametersWithURLEncodedString:URL.parameterString options:options];
+        NSString *parameterString;
+        if (tnl_available_ios_13) {
+            // parameter string is no longer considered valid according to Apple, which is wise
+            // ... but we'll still support parsing it
+            NSString *path = URL.path;
+            if (path) {
+                NSRange range = [path rangeOfString:@";"];
+                if (range.location != NSNotFound) {
+                    parameterString = [path substringFromIndex:range.location + 1];
+                }
+            }
+        } else {
+            parameterString = URL.parameterString;
+        }
+        [self addParametersWithURLEncodedString:parameterString options:options];
     }
     if (TNL_BITMASK_HAS_SUBSET_FLAGS(types, TNLParameterTypeURLQuery)) {
         [self addParametersWithURLEncodedString:URL.query options:options];

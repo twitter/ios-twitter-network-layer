@@ -6,7 +6,7 @@
 //  Copyright (c) 2015 Twitter. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
+#import <TwitterNetworkLayer/TNLPriority.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -28,6 +28,50 @@ NS_ASSUME_NONNULL_BEGIN
 /** The HTTP version.  Usually `@"1.1"`. TODO: replace this with "protocol version" */
 @property (nonatomic, copy, readonly, nullable) NSString *HTTPVersion;
 - (BOOL)hasHTTPVersion;
+
+/** The session identifier used for the network transaction (translates to an `NSURLSession` instance) */
+@property (nonatomic, copy, readonly, nullable) NSString *sessionId;
+- (BOOL)hasSessionId;
+
+/** The latency between when the `resume` was called on the underlying task and when the task actually began fetching */
+@property (nonatomic, readonly) NSTimeInterval taskResumeLatency;
+- (BOOL)hasTaskResumeLatency;
+
+/** The priority that `resume` was called with, indicative of the priority the task will execute with */
+@property (nonatomic, readonly) TNLPriority taskResumePriority;
+- (BOOL)hasTaskResumePriority;
+
+/**
+ The latency between task completion and task metrics being delivered.
+ Task metrics, per docs, are to be delivered BEFORE the completion callback.
+ However, due to radar #27098270, this order can end up being mixed up.
+ The presence of this meta data indicates the issue was encountered.
+
+ Apple documentation in `NSURLSession.h`:
+
+     // Sent as the last message related to a specific task.  Error may be
+     // nil, which implies that no error occurred and this task is complete.
+     - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(nullable NSError *)error;
+*/
+@property (nonatomic, readonly) NSTimeInterval taskMetricsAfterCompletionLatency;
+- (BOOL)hasTaskMetricsAfterCompletionLatency;
+
+/**
+ The latency between the task completion and meta data being constructed (actual completion)
+ when there are no task metrics delivered.
+ Task metrics, per docs, are to be delivered BEFORE the completion callback.
+ However, due to radar #27098270, this order can end up being mixed up.
+ The presence of this meta data indicates the issue was encountered AND the metrics did not come sufficiently soon enough.
+
+ Apple documentation in `NSURLSession.h`:
+
+     // Sent as the last message related to a specific task.  Error may be
+     // nil, which implies that no error occurred and this task is complete.
+     - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(nullable NSError *)error;
+ */
+@property (nonatomic, readonly) NSTimeInterval taskWithoutMetricsCompletionLatency;
+- (BOOL)hasTaskWithoutMetricsCompletionLatency;
+
 
 /**
  The number of bytes received in the response body at OSI layer 8.

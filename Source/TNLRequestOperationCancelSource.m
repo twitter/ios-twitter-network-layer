@@ -19,6 +19,20 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+@implementation NSError (TNLRequestOperationCancelSource)
+
+- (NSString *)tnl_cancelSourceDescription
+{
+    return [self description];
+}
+
+- (NSError *)tnl_cancelSourceOverrideError
+{
+    return self;
+}
+
+@end
+
 @implementation TNLOperationCancelMethodCancelSource
 
 - (NSString *)tnl_cancelSourceDescription

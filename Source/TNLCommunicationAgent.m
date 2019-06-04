@@ -6,12 +6,21 @@
 //  Copyright © 2016 Twitter. All rights reserved.
 //
 
+#import "NSDictionary+TNLAdditions.h"
+#import "NSURLSessionConfiguration+TNLAdditions.h"
 #import "TNL_Project.h"
 #import "TNLCommunicationAgent_Project.h"
+#import "TNLHTTP.h"
+#import "TNLPseudoURLProtocol.h"
 
 #if !TARGET_OS_WATCH // no communication agent for watchOS
 
 #define SELF_ARG PRIVATE_SELF(TNLCommunicationAgent)
+
+#define FORCE_LOG_REACHABILITY_CHANGE 0
+
+static const NSTimeInterval kCaptivePortalQuietTime = 60.0;
+static NSString * const kCaptivePortalCheckEndpoint = @"http://connectivitycheck.gstatic.com/generate_204";
 
 static void _ReachabilityCallback(__unused SCNetworkReachabilityRef target,
                                   const SCNetworkReachabilityFlags flags,
@@ -27,6 +36,7 @@ static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(SCNetwor
 @property (atomic) TNLNetworkReachabilityStatus currentReachabilityStatus;
 @property (atomic) SCNetworkReachabilityFlags currentReachabilityFlags;
 @property (atomic, copy, nullable) NSString *currentWWANRadioAccessTechnology;
+@property (atomic) TNLCaptivePortalStatus currentCaptivePortalStatus;
 @property (atomic, nullable) id<TNLCarrierInfo> currentCarrierInfo;
 
 @end
@@ -49,6 +59,14 @@ static void _agent_identifyCarrierInfo(SELF_ARG,
                                        TNLCommunicationAgentIdentifyCarrierInfoCallback callback);
 static void _agent_identifyWWANRadioAccessTechnology(SELF_ARG,
                                                      TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback callback);
+static void _agent_identifyCaptivePortalStatus(SELF_ARG,
+                                               TNLCommunicationAgentIdentifyCaptivePortalStatusCallback callback);
+
+static void _agent_handleCaptivePortalResponse(SELF_ARG,
+                                               NSURLSessionDataTask * __nonnull dataTask,
+                                               NSData * __nullable data,
+                                               NSURLResponse * __nullable response,
+                                               NSError * __nullable error);
 
 @end
 
@@ -66,6 +84,9 @@ static void _updateCarrier(SELF_ARG,
     NSMutableArray<TNLCommunicationAgentIdentifyReachabilityCallback> *_queuedReachabilityCallbacks;
     NSMutableArray<TNLCommunicationAgentIdentifyCarrierInfoCallback> *_queuedCarrierInfoCallbacks;
     NSMutableArray<TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback> *_queuedRadioTechInfoCallbacks;
+    NSMutableArray<TNLCommunicationAgentIdentifyCaptivePortalStatusCallback> *_queuedCaptivePortalCallbacks;
+
+    NSMutableArray<TNLCommunicationAgentIdentifyCaptivePortalStatusCallback> *_captivePortalCheckCallbacks;
 
     NSHashTable<id<TNLCommunicationAgentObserver>> *_observers;
 
@@ -77,6 +98,9 @@ static void _updateCarrier(SELF_ARG,
 #if TARGET_OS_IOS
     CTTelephonyNetworkInfo *_internalTelephonyNetworkInfo;
 #endif
+    NSURLSessionConfiguration *_captivePortalSessionConfiguration;
+    NSURLSessionDataTask *_captivePortalTask;
+    NSDate *_lastCaptivePortalCheck;
     struct {
         BOOL initialized:1;
         BOOL initializedReachability:1;
@@ -99,6 +123,8 @@ static void _updateCarrier(SELF_ARG,
         _queuedReachabilityCallbacks = [[NSMutableArray alloc] init];
         _queuedCarrierInfoCallbacks = [[NSMutableArray alloc] init];
         _queuedRadioTechInfoCallbacks = [[NSMutableArray alloc] init];
+        _queuedCaptivePortalCallbacks = [[NSMutableArray alloc] init];
+        _captivePortalCheckCallbacks = [[NSMutableArray alloc] init];
         _agentQueue = dispatch_queue_create("TNLCommunicationAgent.queue", DISPATCH_QUEUE_SERIAL);
         _agentOperationQueue = [[NSOperationQueue alloc] init];
         _agentOperationQueue.name = @"TNLCommunicationAgent.queue";
@@ -187,6 +213,13 @@ static void _updateCarrier(SELF_ARG,
     });
 }
 
+- (void)identifyCaptivePortalStatus:(TNLCommunicationAgentIdentifyCaptivePortalStatusCallback)callback
+{
+    dispatch_async(_agentQueue, ^{
+        _agent_identifyCaptivePortalStatus(self, callback);
+    });
+}
+
 @end
 
 @implementation TNLCommunicationAgent (Agent)
@@ -261,6 +294,35 @@ static void _agent_initializeTelephony(SELF_ARG)
     self->_flags.initializedRadioTech = 1;
 }
 
+static void _agent_initializeCaptivePortalStatus(SELF_ARG)
+{
+    if (!self) {
+        return;
+    }
+
+    self.currentCaptivePortalStatus = TNLCaptivePortalStatusUndetermined;
+
+    NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+    config.timeoutIntervalForRequest = 30;
+    config.timeoutIntervalForResource = 30;
+    config.URLCache = nil;
+    config.URLCredentialStorage = nil;
+    config.HTTPCookieStorage = nil;
+    config.TLSMinimumSupportedProtocol = kSSLProtocolUnknown;
+    config.TLSMaximumSupportedProtocol = kSSLProtocolUnknown;
+    config.allowsCellularAccess = YES;
+    config.requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
+    config.HTTPShouldSetCookies = NO;
+    config.HTTPMaximumConnectionsPerHost = 1;
+    [config tnl_insertProtocolClasses:@[[TNLPseudoURLProtocol class]]];
+
+    self->_captivePortalSessionConfiguration = [config copy];
+    TNLCommunicationAgentIdentifyCaptivePortalStatusCallback callback = ^(TNLCaptivePortalStatus status) {
+        // nothing
+    };
+    [self->_queuedCaptivePortalCallbacks addObject:[callback copy]];
+}
+
 static void _agent_initialize(SELF_ARG)
 {
     if (!self) {
@@ -275,16 +337,19 @@ static void _agent_initialize(SELF_ARG)
 
     _agent_initializeReachability(self);
     _agent_initializeTelephony(self);
+    _agent_initializeCaptivePortalStatus(self);
 
     NSArray<id<TNLCommunicationAgentObserver>> *queuedObservers = [self->_queuedObservers copy];
     NSArray<TNLCommunicationAgentIdentifyReachabilityCallback> *reachBlocks = [self->_queuedReachabilityCallbacks copy];
     NSArray<TNLCommunicationAgentIdentifyCarrierInfoCallback> *carrierBlocks = [self->_queuedCarrierInfoCallbacks copy];
     NSArray<TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback> *radioBlocks = [self->_queuedRadioTechInfoCallbacks copy];
+    NSArray<TNLCommunicationAgentIdentifyCaptivePortalStatusCallback> *captivePortalBlocks = [self->_queuedCaptivePortalCallbacks copy];
 
     self->_queuedObservers = nil;
     self->_queuedReachabilityCallbacks = nil;
     self->_queuedCarrierInfoCallbacks = nil;
     self->_queuedRadioTechInfoCallbacks = nil;
+    self->_queuedCaptivePortalCallbacks = nil;
 
     self->_flags.initialized = 1;
 
@@ -299,6 +364,9 @@ static void _agent_initialize(SELF_ARG)
     }
     for (TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback block in radioBlocks) {
         _agent_identifyWWANRadioAccessTechnology(self, block);
+    }
+    for (TNLCommunicationAgentIdentifyCaptivePortalStatusCallback block in captivePortalBlocks) {
+        _agent_identifyCaptivePortalStatus(self, block);
     }
 }
 
@@ -316,18 +384,31 @@ static void _agent_addObserver(SELF_ARG,
 
     [self->_observers addObject:observer];
 
-    if ([observer respondsToSelector:@selector(tnl_communicationAgent:didRegisterObserverWithInitialReachabilityFlags:status:carrierInfo:WWANRadioAccessTechnology:)]) {
+    static SEL legacySelector = nil;
+    static SEL modernSelector = nil;
+    if (!legacySelector || !modernSelector) {
+        legacySelector = NSSelectorFromString(@"tnl_communicationAgent:didRegisterObserverWithInitialReachabilityFlags:status:carrierInfo:WWANRadioAccessTechnology:");
+        modernSelector = @selector(tnl_communicationAgent:didRegisterObserverWithInitialReachabilityFlags:status:carrierInfo:WWANRadioAccessTechnology:captivePortalStatus:);
+        // TODO: once TNL moves to version 3.0, remove this legacy selector safety check
+    }
+
+    if ([observer respondsToSelector:modernSelector]) {
         SCNetworkReachabilityFlags flags = self.currentReachabilityFlags;
         TNLNetworkReachabilityStatus status = self.currentReachabilityStatus;
         id<TNLCarrierInfo> info = self.currentCarrierInfo;
         NSString *radioTech = self.currentWWANRadioAccessTechnology;
+        TNLCaptivePortalStatus portalStatus = self.currentCaptivePortalStatus;
         tnl_dispatch_async_autoreleasing(dispatch_get_main_queue(), ^{
             [observer tnl_communicationAgent:self
                       didRegisterObserverWithInitialReachabilityFlags:flags
                       status:status
                       carrierInfo:info
-                      WWANRadioAccessTechnology:radioTech];
+                      WWANRadioAccessTechnology:radioTech
+                      captivePortalStatus:portalStatus];
         });
+    } else if ([observer respondsToSelector:legacySelector]) {
+        TNLLogError(@"Method signature of TNLCommunicationAgentObserver callback has changed!  Please update from `%@` to `%@`", NSStringFromSelector(legacySelector), NSStringFromSelector(modernSelector));
+        TNLAssertMessage(NO, @"Method signature of TNLCommunicationAgentObserver callback has changed!  Please update from `%@` to `%@`", NSStringFromSelector(legacySelector), NSStringFromSelector(modernSelector));
     }
 }
 
@@ -354,7 +435,7 @@ static void _agent_identifyReachability(SELF_ARG,
     }
 
     if (!self->_flags.initialized) {
-        [self->_queuedReachabilityCallbacks addObject:[callback copy]];
+        [self->_queuedReachabilityCallbacks addObject:callback];
         return;
     }
 
@@ -373,7 +454,7 @@ static void _agent_identifyCarrierInfo(SELF_ARG,
     }
 
     if (!self->_flags.initialized) {
-        [self->_queuedCarrierInfoCallbacks addObject:[callback copy]];
+        [self->_queuedCarrierInfoCallbacks addObject:callback];
         return;
     }
 
@@ -391,13 +472,141 @@ static void _agent_identifyWWANRadioAccessTechnology(SELF_ARG,
     }
 
     if (!self->_flags.initialized) {
-        [self->_queuedRadioTechInfoCallbacks addObject:[callback copy]];
+        [self->_queuedRadioTechInfoCallbacks addObject:callback];
         return;
     }
 
     NSString *radioTech = self.currentWWANRadioAccessTechnology;
     tnl_dispatch_async_autoreleasing(dispatch_get_main_queue(), ^{
         callback(radioTech);
+    });
+}
+
+static void _agent_identifyCaptivePortalStatus(SELF_ARG,
+                                               TNLCommunicationAgentIdentifyCaptivePortalStatusCallback callback)
+{
+    if (!self) {
+        return;
+    }
+
+    if (!self->_flags.initialized) {
+        [self->_queuedCaptivePortalCallbacks addObject:callback];
+        return;
+    }
+
+    const TNLCaptivePortalStatus status = self.currentCaptivePortalStatus;
+    if (status != TNLCaptivePortalStatusUndetermined) {
+        callback(status);
+        return;
+    }
+
+    [self->_captivePortalCheckCallbacks addObject:callback];
+    _agent_triggerCaptivePortalCheckIfNeeded(self);
+}
+
+static void _agent_startCaptivePortalCheckTimer(SELF_ARG, NSTimeInterval delay)
+{
+    if (!self) {
+        return;
+    }
+
+    __weak typeof(self) weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), self->_agentQueue, ^{
+        _agent_triggerCaptivePortalCheckIfNeeded(weakSelf);
+    });
+}
+
+static void _agent_triggerCaptivePortalCheck(SELF_ARG)
+{
+    if (!self) {
+        return;
+    }
+
+    self->_lastCaptivePortalCheck = nil; // clear to force the check
+    _agent_triggerCaptivePortalCheckIfNeeded(self);
+}
+
+static void _agent_triggerCaptivePortalCheckIfNeeded(SELF_ARG)
+{
+    if (!self) {
+        return;
+    }
+
+    if (self->_captivePortalTask) {
+        // already running
+        return;
+    }
+
+    if (self->_lastCaptivePortalCheck) {
+        const NSTimeInterval delay = kCaptivePortalQuietTime - [[NSDate date] timeIntervalSinceDate:self->_lastCaptivePortalCheck];
+        if (delay > 0.0) {
+            // ran recently
+            _agent_startCaptivePortalCheckTimer(self, delay);
+            return;
+        }
+    }
+
+    // create a new session every time we check the captive portal state to avoid reusing connections
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:self->_captivePortalSessionConfiguration
+                                                          delegate:nil
+                                                     delegateQueue:self->_agentOperationQueue];
+    __weak typeof(self) weakSelf = self;
+    __block NSURLSessionDataTask *dataTask = nil;
+    dataTask = [session dataTaskWithURL:[NSURL URLWithString:kCaptivePortalCheckEndpoint]
+                      completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+                          _agent_handleCaptivePortalResponse(weakSelf, dataTask, data, response, error);
+                      }];
+    self->_captivePortalTask = dataTask;
+    [dataTask resume];
+}
+
+static void _agent_handleCaptivePortalResponse(SELF_ARG,
+                                               NSURLSessionDataTask * __nonnull dataTask,
+                                               NSData * __nullable data,
+                                               NSHTTPURLResponse * __nullable response,
+                                               NSError * __nullable error)
+{
+    if (!self || dataTask != self->_captivePortalTask) {
+        return;
+    }
+
+    self->_captivePortalTask = nil;
+    self->_lastCaptivePortalCheck = [NSDate date];
+    _agent_startCaptivePortalCheckTimer(self, kCaptivePortalQuietTime);
+
+    TNLCaptivePortalStatus status = TNLCaptivePortalStatusNoCaptivePortal;
+    if ([error.domain isEqualToString:NSURLErrorDomain] && error.code == NSURLErrorAppTransportSecurityRequiresSecureConnection) {
+        status = TNLCaptivePortalStatusDetectionBlockedByAppTransportSecurity;
+    } else if (response) {
+        const BOOL captive = (response.statusCode != TNLHTTPStatusCodeNoContent) ||
+        (data.length > 0) ||
+        ([[response.allHeaderFields tnl_objectsForCaseInsensitiveKey:@"content-length"].firstObject integerValue] > 0);
+        if (captive) {
+            status = TNLCaptivePortalStatusCaptivePortalDetected;
+        }
+    }
+
+    const TNLCaptivePortalStatus oldStatus = self.currentCaptivePortalStatus;
+    if (oldStatus == status) {
+        return;
+    }
+
+    self.currentCaptivePortalStatus = status;
+    NSArray<TNLCommunicationAgentIdentifyCaptivePortalStatusCallback> *callbacks = [self->_captivePortalCheckCallbacks copy];
+    [self->_captivePortalCheckCallbacks removeAllObjects];
+
+    NSArray<id<TNLCommunicationAgentObserver>> *observers = self->_observers.allObjects;
+    tnl_dispatch_async_autoreleasing(dispatch_get_main_queue(), ^{
+        for (TNLCommunicationAgentIdentifyCaptivePortalStatusCallback callback in callbacks) {
+            callback(status);
+        }
+        for (id<TNLCommunicationAgentObserver> observer in observers) {
+            if ([observer respondsToSelector:@selector(tnl_communicationAgent:didUpdateCaptivePortalStatusFromPreviousStatus:toCurrentStatus:)]) {
+                [observer tnl_communicationAgent:self
+  didUpdateCaptivePortalStatusFromPreviousStatus:oldStatus
+                                 toCurrentStatus:status];
+            }
+        }
     });
 }
 
@@ -419,6 +628,12 @@ static void _agent_updateReachabilityFlags(SELF_ARG,
 
     self.currentReachabilityStatus = newStatus;
     self.currentReachabilityFlags = newFlags;
+
+#if FORCE_LOG_REACHABILITY_CHANGE
+    NSLog(@"reachability change: %@", TNLDebugStringFromNetworkReachabilityFlags(newFlags));
+#endif
+
+    _agent_triggerCaptivePortalCheck(self);
 
     NSArray<id<TNLCommunicationAgentObserver>> *observers = self->_observers.allObjects;
     tnl_dispatch_async_autoreleasing(dispatch_get_main_queue(), ^{
@@ -474,6 +689,8 @@ static void _updateCarrier(SELF_ARG,
             return;
         }
         self.currentWWANRadioAccessTechnology = newTech;
+
+        _agent_triggerCaptivePortalCheck(self);
 
         NSArray<id<TNLCommunicationAgentObserver>> *observers = self->_observers.allObjects;
         tnl_dispatch_async_autoreleasing(dispatch_get_main_queue(), ^{
@@ -741,6 +958,22 @@ NSString *TNLNetworkReachabilityStatusToString(TNLNetworkReachabilityStatus stat
             return @"wwan";
         case TNLNetworkReachabilityUndetermined:
             break;
+    }
+
+    return @"undetermined";
+}
+
+NSString *TNLCaptivePortalStatusToString(TNLCaptivePortalStatus status)
+{
+    switch (status) {
+        case TNLCaptivePortalStatusUndetermined:
+            break;
+        case TNLCaptivePortalStatusNoCaptivePortal:
+            return @"not_captive";
+        case TNLCaptivePortalStatusCaptivePortalDetected:
+            return @"captive";
+        case TNLCaptivePortalStatusDetectionBlockedByAppTransportSecurity:
+            return @"ats_blocked";
     }
 
     return @"undetermined";

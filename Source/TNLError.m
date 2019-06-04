@@ -8,6 +8,7 @@
 
 #import "TNL_Project.h"
 #import "TNLError.h"
+#import "TNLRequestOperationCancelSource.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -175,6 +176,31 @@ BOOL TNLErrorIsNetworkSecurityError(NSError * __nullable error)
     }
 
     return NO;
+}
+
+NSError * __nonnull TNLErrorFromCancelSource(id<TNLRequestOperationCancelSource> __nullable source,
+                                             NSError * __nullable underlyingError)
+{
+    NSError *error = [source respondsToSelector:@selector(tnl_cancelSourceOverrideError)] ? [source tnl_cancelSourceOverrideError] : nil;
+
+    if (!error) {
+        NSMutableDictionary *errorInfo = [NSMutableDictionary dictionary];
+        if (underlyingError) {
+            errorInfo[NSUnderlyingErrorKey] = underlyingError;
+        }
+        errorInfo[TNLErrorCancelSourceKey] = source;
+        errorInfo[TNLErrorCancelSourceDescriptionKey] = [source tnl_cancelSourceDescription];
+        if ([source respondsToSelector:@selector(tnl_localizedCancelSourceDescription)]) {
+            NSString *localizedDescription = [source tnl_localizedCancelSourceDescription];
+            if (localizedDescription) {
+                errorInfo[TNLErrorCancelSourceLocalizedDescriptionKey] = localizedDescription;
+            }
+        }
+
+        error = TNLErrorCreateWithCodeAndUserInfo(TNLErrorCodeRequestOperationCancelled, errorInfo);
+    }
+
+    return error;
 }
 
 #pragma mark - NSError helpers

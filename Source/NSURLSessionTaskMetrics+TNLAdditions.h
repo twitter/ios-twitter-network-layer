@@ -37,6 +37,28 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (NSDictionary<NSString *, id> *)tnl_dictionaryValue;
 
+/**
+ returns the earliest date of all the timing dates
+ */
+- (nullable NSDate *)tnl_earliestDate;
+
+/**
+ return the latest date of all the timing dates
+ */
+- (nullable NSDate *)tnl_latestDate;
+
+/**
+ The known duration of the task.
+ If a task is cancelled/fails midway through a phase, the timing metrics can be cut off.
+ If a task completes, the duration will be accurate.
+ */
+- (NSTimeInterval)tnl_knownDuration;
+
+/**
+ returns a string describing the timings
+ */
+- (NSString *)tnl_timingDescription;
+
 /** convenience method for TCP start if connect includes TCP connect */
 @property (nonatomic, readonly, nullable) NSDate *tnl_transportConnectionStartDate;
 /** convenience method for TCP end if connect includes TCP connect */

@@ -32,7 +32,7 @@ static const TNLRequestAnatomyTimeouts kAnatomyTimeouts[] = {
     // TNLRequestAnatomySmallRequestSmallResponse
     { .idleTimeout = 30, .attemptTimeout = 30, .operationTimeout = 90 },
 
-    // TNLRequestAnatomySmallRequestLargeResponse
+    // TNLRequestAnatomySmallRequestLargeResponse (default)
     { .idleTimeout = 30, .attemptTimeout = 60, .operationTimeout = 180 },
 
     // TNLRequestAnatomyLargeRequestSmallResponse
@@ -51,7 +51,7 @@ static const TNLRequestAnatomyTimeouts kAnatomyTimeouts[] = {
     { .idleTimeout = 30, .attemptTimeout = NSTimeIntervalSince1970, .operationTimeout = NSTimeIntervalSince1970 },
 };
 
-static const NSUInteger kMaxAnatomyTimeouts = TNLRequestAnatomySmallRequestStreamingResponse + 1;
+static const NSInteger kMaxAnatomyTimeouts = TNLRequestAnatomySmallRequestStreamingResponse + 1;
 
 TNLStaticAssert((sizeof(kAnatomyTimeouts) / sizeof(kAnatomyTimeouts[0])) == kMaxAnatomyTimeouts, ANATOMY_TIMEOUT_COUNT_MISSMATCH);
 
@@ -222,12 +222,6 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
         _URLCache = config->_URLCache;
         _cookieStorage = config->_cookieStorage;
         _sharedContainerIdentifier = [config->_sharedContainerIdentifier copy];
-#if TARGET_OS_IOS
-        if (tnl_available_ios_11) {
-            _ivars.multipathServiceType = NSURLSessionMultipathServiceTypeNone;
-        }
-#endif
-        _ivars.connectivityOptions = TNLRequestConnectivityOptionsDefault;
 
         memcpy(&_ivars, &(config->_ivars), sizeof(_ivars));
     }

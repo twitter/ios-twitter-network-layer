@@ -34,7 +34,9 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 }
 
 - (instancetype)initWithType:(TNLAttemptType)type
+                   startDate:(NSDate *)startDate
                startMachTime:(uint64_t)startMachTime
+                     endDate:(nullable NSDate *)endDate
                  endMachTime:(uint64_t)endMachTime
                     metaData:(nullable TNLAttemptMetaData *)metaData
                   URLRequest:(NSURLRequest *)request URLResponse:(nullable NSHTTPURLResponse *)response
@@ -45,7 +47,9 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 
     return [self initWithAttemptId:attemptId
                               type:type
+                         startDate:startDate
                      startMachTime:startMachTime
+                           endDate:endDate
                        endMachTime:endMachTime
                           metaData:metaData
                         URLRequest:request
@@ -55,7 +59,9 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 
 - (instancetype)initWithAttemptId:(int64_t)attemptId
                              type:(TNLAttemptType)type
+                        startDate:(NSDate *)startDate
                     startMachTime:(uint64_t)startMachTime
+                          endDate:(nullable NSDate *)endDate
                       endMachTime:(uint64_t)endMachTime
                          metaData:(nullable TNLAttemptMetaData *)metaData
                        URLRequest:(NSURLRequest *)request
@@ -65,10 +71,13 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     if (self = [super init]) {
 #if !TARGET_OS_WATCH
         _reachabilityStatus = TNLNetworkReachabilityUndetermined;
+        _captivePortalStatus = TNLCaptivePortalStatusUndetermined;
 #endif
         _attemptId = attemptId;
         _attemptType = type;
+        _startDate = startDate;
         _startMachTime = startMachTime;
+        _endDate = endDate;
         _endMachTime = endMachTime;
         _metaData = metaData;
         _URLRequest = [request copy];
@@ -80,10 +89,12 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 
 - (nullable instancetype)initWithCoder:(NSCoder *)aDecoder
 {
-    int64_t attemptId = [aDecoder decodeInt64ForKey:@"attemptId"];
-    TNLAttemptType type = [aDecoder decodeIntegerForKey:@"attemptType"];
-    uint64_t startMachTime = (uint64_t)[aDecoder decodeInt64ForKey:@"startMachTime"];
-    uint64_t endMachTime = (uint64_t)[aDecoder decodeInt64ForKey:@"endMachTime"];
+    const int64_t attemptId = [aDecoder decodeInt64ForKey:@"attemptId"];
+    const TNLAttemptType type = [aDecoder decodeIntegerForKey:@"attemptType"];
+    NSDate *startDate = [aDecoder decodeObjectOfClass:[NSDate class] forKey:@"startDate"] ?: [NSDate dateWithTimeIntervalSince1970:0];
+    const uint64_t startMachTime = (uint64_t)[aDecoder decodeInt64ForKey:@"startMachTime"];
+    NSDate *endDate = [aDecoder decodeObjectOfClass:[NSDate class] forKey:@"endDate"];
+    const uint64_t endMachTime = (uint64_t)[aDecoder decodeInt64ForKey:@"endMachTime"];
     TNLAttemptMetaData *metaData = [aDecoder decodeObjectOfClass:[TNLAttemptMetaData class] forKey:@"metaData"];
     NSURLRequest *request = [aDecoder decodeObjectOfClass:[NSURLRequest class] forKey:@"URLRequest"];
     NSHTTPURLResponse *response = [aDecoder decodeObjectOfClass:[NSHTTPURLResponse class] forKey:@"URLResponse"];
@@ -91,7 +102,9 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 
     self = [self initWithAttemptId:attemptId
                               type:type
+                         startDate:startDate
                      startMachTime:startMachTime
+                           endDate:endDate
                        endMachTime:endMachTime
                           metaData:metaData
                         URLRequest:request
@@ -100,18 +113,22 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     if (self) {
         _final = YES;
 
-        _APIErrors = [[aDecoder decodeObjectOfClass:[NSArray class]
-                                             forKey:@"APIErrors"] copy];
-        _responseBodyParseError = [aDecoder decodeObjectOfClass:[NSError class]
-                                                         forKey:@"parseError"];
+        _APIErrors = [[aDecoder decodeObjectOfClass:[NSArray class] forKey:@"APIErrors"] copy];
+        _responseBodyParseError = [aDecoder decodeObjectOfClass:[NSError class] forKey:@"parseError"];
 
 #if !TARGET_OS_WATCH
-        _reachabilityStatus = [(NSNumber *)[aDecoder decodeObjectOfClass:[NSNumber class]
-                                                                  forKey:@"reachabilityStatus"] integerValue];
-        _reachabilityFlags = [(NSNumber *)[aDecoder decodeObjectOfClass:[NSNumber class]
-                                                                 forKey:@"reachabilityFlags"] unsignedIntValue];
-        _WWANRadioAccessTechnology = [aDecoder decodeObjectOfClass:[NSString class]
-                                                            forKey:@"WWANRadioAccessTechnology"];
+        NSNumber *number;
+        number = [aDecoder decodeObjectOfClass:[NSNumber class] forKey:@"reachabilityStatus"];
+        _reachabilityStatus = (number) ? [number integerValue] : TNLNetworkReachabilityUndetermined;
+
+        number = [aDecoder decodeObjectOfClass:[NSNumber class] forKey:@"reachabilityFlags"];
+        _reachabilityFlags = [number unsignedIntValue];
+
+        number = [aDecoder decodeObjectOfClass:[NSNumber class] forKey:@"captivePortalStatus"];
+        _captivePortalStatus = (number) ? [number integerValue] : TNLCaptivePortalStatusUndetermined;
+
+        _WWANRadioAccessTechnology = [aDecoder decodeObjectOfClass:[NSString class] forKey:@"WWANRadioAccessTechnology"];
+
 #endif
 #if TARGET_OS_IOS
         _carrierInfo = TNLCarrierInfoFromDictionary([aDecoder decodeObjectOfClass:[NSDictionary class]
@@ -125,7 +142,9 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 {
     [aCoder encodeInt64:_attemptId forKey:@"attemptId"];
     [aCoder encodeInteger:_attemptType forKey:@"attemptType"];
+    [aCoder encodeObject:_startDate forKey:@"startDate"];
     [aCoder encodeInt64:(int64_t)_startMachTime forKey:@"startMachTime"];
+    [aCoder encodeObject:_endDate forKey:@"endDate"];
     [aCoder encodeInt64:(int64_t)_endMachTime forKey:@"endMachTime"];
     [aCoder encodeObject:_metaData forKey:@"metaData"];
     [aCoder encodeObject:_URLRequest forKey:@"URLRequest"];
@@ -137,6 +156,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 #if !TARGET_OS_WATCH
     [aCoder encodeObject:@(_reachabilityStatus) forKey:@"reachabilityStatus"];
     [aCoder encodeObject:@(_reachabilityFlags) forKey:@"reachabilityFlags"];
+    [aCoder encodeObject:@(_captivePortalStatus) forKey:@"captivePortalStatus"];
     [aCoder encodeObject:_WWANRadioAccessTechnology forKey:@"WWANRadioAccessTechnology"];
 #endif
 #if TARGET_OS_IOS
@@ -168,6 +188,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     _reachabilityFlags = agent.currentReachabilityFlags;
     _WWANRadioAccessTechnology = [agent.currentWWANRadioAccessTechnology copy];
     _carrierInfo = agent.currentCarrierInfo;
+    _captivePortalStatus = agent.currentCaptivePortalStatus;
 }
 #endif
 
@@ -190,7 +211,10 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 
 - (NSTimeInterval)duration
 {
-    return TNLComputeDuration(_startMachTime, _endMachTime);
+    const NSTimeInterval duration = [(_endDate ?: [NSDate date]) timeIntervalSinceDate:_startDate];
+
+    TNLAssertMessage(duration >= 0, @"-[%@ %@] is negative! %f", NSStringFromClass([self class]), NSStringFromSelector(_cmd), duration);
+    return duration;
 }
 
 - (NSUInteger)hash
@@ -311,12 +335,13 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     _metaData = metaData;
 }
 
-- (void)setEndMachTime:(uint64_t)time
+- (void)setEndDate:(nonnull NSDate *)endDate machTime:(uint64_t)time
 {
     if (_final && _endMachTime) {
         return;
     }
     _endMachTime = time;
+    _endDate = endDate;
 #if !TARGET_OS_WATCH
     [self setCommunicationMetricsWithAgent:[TNLGlobalConfiguration sharedInstance].metricProvidingCommunicationAgent];
 #endif
@@ -380,7 +405,9 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     TNLAttemptMetaData *metaData = _metaData ? [[TNLAttemptMetaData allocWithZone:zone] initWithMetaDataDictionary:_metaData.metaDataDictionary] : nil;
     TNLAttemptMetrics *dupeSubmetric = [[TNLAttemptMetrics allocWithZone:zone] initWithAttemptId:_attemptId
                                                                                             type:_attemptType
+                                                                                       startDate:_startDate
                                                                                    startMachTime:_startMachTime
+                                                                                         endDate:_endDate
                                                                                      endMachTime:_endMachTime
                                                                                         metaData:metaData
                                                                                       URLRequest:_URLRequest
@@ -394,6 +421,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     dupeSubmetric->_reachabilityFlags = _reachabilityFlags;
     dupeSubmetric->_WWANRadioAccessTechnology = [_WWANRadioAccessTechnology copyWithZone:zone];
     dupeSubmetric->_carrierInfo = _carrierInfo;
+    dupeSubmetric->_captivePortalStatus = _captivePortalStatus;
 #endif
     dupeSubmetric->_final = NO;
     return dupeSubmetric;

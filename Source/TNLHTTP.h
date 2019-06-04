@@ -228,7 +228,7 @@ FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeMultipartFormData;
 FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeOctetStream;
 FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeURLEncodedString;
 
-//! Is the content type a textual format, helpful for determining if something is printable or compressable
+//! Is the content type a textual format (limited to UTF8 [default] and ASCII currently), helpful for determining if something is printable or compressable
 FOUNDATION_EXTERN BOOL TNLHTTPContentTypeIsTextual(NSString * __nullable contentType);
 
 /**

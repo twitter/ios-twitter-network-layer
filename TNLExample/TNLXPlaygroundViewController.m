@@ -118,9 +118,6 @@ typedef NS_ENUM(NSInteger, TNLXRedirectTestPolicy)
     NSFileManager *fm = [NSFileManager defaultManager];
     [fm createDirectoryAtPath:[_fileDestination stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:NULL];
     _queue = [[TNLRequestOperationQueue alloc] initWithIdentifier:NSStringFromClass([self class]).lowercaseString];
-    if ([_queue respondsToSelector:@selector(setQualityOfService:)]) {
-        _queue.qualityOfService = NSQualityOfServiceUtility;
-    }
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(backgroundRequestDidDownloadNotification:) name:TNLBackgroundRequestOperationDidCompleteNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didEnterBackground:) name:UIApplicationDidEnterBackgroundNotification object:nil];

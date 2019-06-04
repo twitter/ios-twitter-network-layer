@@ -109,6 +109,17 @@ NS_INLINE void TNLLRUCacheAssertHeadAndTail(TNLLRUCache *cache)
 
     NSString *identifier = entry.LRUEntryIdentifier;
     TNLAssert(identifier != nil);
+#ifndef __clang_analyzer__
+    // clang analyzer reports identifier can be nil for the check   if (... && _cache[identifier]) {
+    // just below.  (and then, if we ignore only that with #ifndef __clang_analyzer__, then it reports
+    // _cache[identifier] within the TNLAssert() protected by the if stmt.)
+    // however, in real life, the TNLAssert(identifier != nil) just above will prevent control from getting to
+    // the if stmt at all when the global AssertEnabled variable is true, and when it is false, then the 2nd
+    // part of the condition (and the stmts protected by the condition) will never be executed and won't crash.
+    if (gTwitterNetworkLayerAssertEnabled && _cache[identifier]) {
+        TNLAssert((id)_cache[identifier] == (id)entry);
+    }
+#endif
 
     _tailEntry.nextLRUEntry = entry;
     entry.previousLRUEntry = _tailEntry;

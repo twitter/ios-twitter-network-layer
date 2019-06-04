@@ -21,7 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface TNLAttemptMetrics (Project)
 
 - (void)setMetaData:(nullable TNLAttemptMetaData *)metaData;
-- (void)setEndMachTime:(uint64_t)time;
+- (void)setEndDate:(nonnull NSDate *)endDate machTime:(uint64_t)time;
 - (void)setURLResponse:(nullable NSHTTPURLResponse *)response;
 - (void)setOperationError:(nullable NSError *)error;
 - (void)setTaskTransactionMetrics:(nullable NSURLSessionTaskTransactionMetrics *)taskMetrics NS_AVAILABLE(10_12, 10_0);

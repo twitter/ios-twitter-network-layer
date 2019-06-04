@@ -38,12 +38,8 @@ NSString * const TNLHTTPContentTypeMultipartFormData = @"multipart/form-data";
 NSString * const TNLHTTPContentTypeOctetStream = @"application/octet-stream";
 NSString * const TNLHTTPContentTypeURLEncodedString = @"application/x-www-form-urlencoded";
 
-BOOL TNLHTTPContentTypeIsTextual(NSString * __nullable contentType)
+static BOOL TNLHTTPContentTypeIsTextualInternal(NSString * __nonnull contentType)
 {
-    if (!contentType) {
-        return NO;
-    }
-
     if ([contentType hasPrefix:@"text/"]) {
         return YES;
     }
@@ -66,6 +62,48 @@ BOOL TNLHTTPContentTypeIsTextual(NSString * __nullable contentType)
     }
 
     return NO;
+}
+
+BOOL TNLHTTPContentTypeIsTextual(NSString * __nullable contentType)
+{
+    if (!contentType) {
+        return NO;
+    }
+
+    // Is this a componentized mimetype? e.g. "application/json;charset=utf-8"
+    NSArray<NSString *> *components = [contentType componentsSeparatedByString:@";"];
+    if (components.count <= 1) {
+        // nope, do the easy check
+        return TNLHTTPContentTypeIsTextualInternal(contentType);
+    }
+
+    // It is componentized, get the content type and check it
+    contentType = [components.firstObject stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    if (!TNLHTTPContentTypeIsTextualInternal(contentType)) {
+        // content type is not textual
+        return NO;
+    }
+
+    // Content type is textual, need to confirm the character set is acceptable (we restrict to utf-8 and ascii for simplicity)
+    for (NSUInteger i = 1; i < components.count; i++) {
+        NSString *extraInfo = components[i].lowercaseString;
+        NSArray<NSString *> *extraComponents = [extraInfo componentsSeparatedByString:@"="];
+        NSString *key = [extraComponents.firstObject stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+        if ([key isEqualToString:@"charset"]) {
+            // charset was provided, so check it and return if the character set is utf8/ascii
+            NSString *value = [extraComponents.lastObject stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+            if ([value isEqualToString:@"utf-8"]) {
+                return YES;
+            } else if ([value isEqualToString:@"ascii"] || [value isEqualToString:@"us-ascii"]) {
+                return YES;
+            }
+
+            return NO;
+        }
+    }
+
+    // no charset provided, presume utf-8
+    return YES;
 }
 
 NSString *TNLHTTPMethodToString(TNLHTTPMethod method)
