@@ -7,6 +7,7 @@
 //
 
 #import "NSURLResponse+TNLAdditions.h"
+#import "TNL_Project.h"
 #import "TNLAttemptMetaData.h"
 #import "TNLAttemptMetaData_Project.h"
 #import "TNLAttemptMetrics_Project.h"
@@ -18,6 +19,78 @@
 // we need a leaway of at least 1 second since the timing is only to the 1 second granularity level
 // that means rounding/truncation of the time could have the timing be up to a second off
 #define ACCURACY_LEEWAY (1.15)
+
+@interface TNLResponseEncodedRequestTest : NSObject <TNLRequest, NSSecureCoding>
+
+/** The name of the source `TNLRequest` class that was encoded */
+@property (nonatomic, readonly, copy, nullable) NSString *encodedSourceRequestClassName;
+/** If the encoded source request has a body */
+@property (nonatomic, readonly) BOOL encodedSourceRequestHadBody;
+
+/** Unavailable */
+- (instancetype)init NS_UNAVAILABLE;
+/** Unavailable */
++ (instancetype)new NS_UNAVAILABLE;
+
+@end
+
+@implementation TNLResponseEncodedRequestTest
+{
+    NSURL *_URL;
+    TNLHTTPMethod _HTTPMethodValue;
+    NSDictionary<NSString *, NSString *> *_allHTTPHeaderFields;
+}
+
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+    if (self = [super init]) {
+        _encodedSourceRequestHadBody = [coder decodeBoolForKey:@"hasBody"];
+        _encodedSourceRequestClassName = [coder decodeObjectOfClass:[NSString class] forKey:@"sourceClass"];
+        _URL = [coder decodeObjectOfClass:[NSURL class] forKey:@"URL"];
+        _HTTPMethodValue = [coder decodeIntegerForKey:@"HTTPMethod"];
+        _allHTTPHeaderFields = [coder decodeObjectOfClass:[NSDictionary class] forKey:@"HTTPHeaders"];
+    }
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    [coder encodeBool:_encodedSourceRequestHadBody forKey:@"hasBody"];
+    [coder encodeObject:_encodedSourceRequestClassName forKey:@"sourceClass"];
+    [coder encodeObject:_URL forKey:@"URL"];
+    [coder encodeInteger:_HTTPMethodValue forKey:@"HTTPMethod"];
+    [coder encodeObject:_allHTTPHeaderFields forKey:@"HTTPHeaders"];
+}
+
+- (nullable NSURL *)URL
+{
+    return _URL;
+}
+
+- (TNLHTTPMethod)HTTPMethodValue
+{
+    return _HTTPMethodValue;
+}
+
+- (nullable NSDictionary<NSString *, NSString *> *)allHTTPHeaderFields
+{
+    return _allHTTPHeaderFields;
+}
+
+- (nullable NSData *)HTTPBody
+{
+    if (_encodedSourceRequestHadBody) {
+        return [@"{\"body\":true}" dataUsingEncoding:NSUTF8StringEncoding];
+    }
+    return nil;
+}
+
+@end
 
 @interface TNLResponseTest : XCTestCase
 
@@ -33,8 +106,16 @@
     TNLResponseSource source = TNLResponseSourceNetworkRequest;
     NSData *data = [@"{ success: true }" dataUsingEncoding:NSUTF8StringEncoding];
 
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://www.dummy.co"]];
-    NSError *error = nil;
+    NSMutableURLRequest *mRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://www.dummy.co"]];
+    [mRequest setValue:@"dummy" forHTTPHeaderField:@"X-Dummy"];
+    mRequest.HTTPMethod = @"POST";
+    mRequest.HTTPBody = [@"{\"dummy\":true}" dataUsingEncoding:NSUTF8StringEncoding];
+    NSURLRequest *request = [mRequest copy];
+    NSDictionary *userInfo = @{
+                               NSUnderlyingErrorKey : [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorCannotConnectToHost userInfo:@{ NSDebugDescriptionErrorKey: @"Error with Host", @"tnl.debug" : @"not debuggable" }],
+                               @"level" : @"top"
+                               };
+    NSError *error = TNLErrorCreateWithCodeAndUserInfo(TNLErrorCodeGlobalHostWasBlocked, userInfo);
 
     uint64_t enqueueTime, firstAttemptStartTime, currentAttemptStartTime, currentAttemptEndTime, completeTime = 0;
     NSDate *enqueueDate, *firstAttemptStartDate, *currentAttemptStartDate, *currentAttemptEndDate, *completeDate;
@@ -42,6 +123,7 @@
     metaData.HTTPVersion = @"1.1";
 
     NSData *archive = nil;
+    TNLResponse *decodedResponse = nil;
 
     // enqueue
     enqueueDate = [NSDate date];
@@ -87,9 +169,22 @@
     XCTAssertEqualWithAccuracy(response.metrics.allAttemptsDuration, 1.0, 0.0005);
     XCTAssertEqualWithAccuracy(response.metrics.currentAttemptDuration, 1.0, 0.0005);
 
-    archive = [NSKeyedArchiver archivedDataWithRootObject:response];
+    if (tnl_available_ios_11) {
+        error = nil;
+        archive = [NSKeyedArchiver archivedDataWithRootObject:response requiringSecureCoding:YES error:&error];
+    } else {
+        archive = [NSKeyedArchiver archivedDataWithRootObject:response];
+    }
+
     XCTAssertNotEqual(0UL, archive.length);
-    TNLResponse *decodedResponse = [NSKeyedUnarchiver unarchiveObjectWithData:archive];
+
+    if (tnl_available_ios_11) {
+        error = nil;
+        decodedResponse = [NSKeyedUnarchiver unarchivedObjectOfClass:[TNLResponse class] fromData:archive error:&error];
+    } else {
+        decodedResponse = [NSKeyedUnarchiver unarchiveObjectWithData:archive];
+    }
+
     XCTAssertTrue([decodedResponse isKindOfClass:[TNLResponse class]]);
     if (![decodedResponse isKindOfClass:[TNLResponse class]]) {
         return;
@@ -113,9 +208,44 @@
     XCTAssertEqualObjects(response.info, decodedResponse.info);
 
     // base
-    XCTAssertEqualObjects(response.operationError, decodedResponse.operationError);
-    XCTAssertEqualObjects(response.originalRequest, decodedResponse.originalRequest);
+    XCTAssertEqualObjects(TNLErrorToSecureCodingError(response.operationError), decodedResponse.operationError);
+    XCTAssertTrue([TNLRequest isRequest:response.originalRequest equalTo:decodedResponse.originalRequest quickBodyComparison:YES], @"%@ must be equal to %@", response.originalRequest, decodedResponse.originalRequest);
     XCTAssertEqualObjects(response, decodedResponse);
+
+    /// Try decoding with a mapping
+    TNLResponseEncodedRequest *encodedRequest = [[TNLResponseEncodedRequest alloc] initWithSourceRequest:request];
+    response = [TNLResponse responseWithRequest:encodedRequest
+                                 operationError:error
+                                           info:info
+                                        metrics:metrics];
+
+    [NSKeyedUnarchiver setClass:[TNLResponseEncodedRequestTest class] forClassName:@"TNLResponseEncodedRequest"];
+    tnl_defer(^{
+        [NSKeyedUnarchiver setClass:Nil forClassName:@"TNLResponseEncodedRequest"];
+    });
+
+    if (tnl_available_ios_11) {
+        error = nil;
+        archive = [NSKeyedArchiver archivedDataWithRootObject:response requiringSecureCoding:YES error:&error];
+    } else {
+        archive = [NSKeyedArchiver archivedDataWithRootObject:response];
+    }
+
+    XCTAssertNotEqual(0UL, archive.length);
+
+    if (tnl_available_ios_11) {
+        error = nil;
+        decodedResponse = [NSKeyedUnarchiver unarchivedObjectOfClass:[TNLResponse class] fromData:archive error:&error];
+    } else {
+        decodedResponse = [NSKeyedUnarchiver unarchiveObjectWithData:archive];
+    }
+
+    XCTAssertTrue([decodedResponse isKindOfClass:[TNLResponse class]]);
+    if (![decodedResponse isKindOfClass:[TNLResponse class]]) {
+        return;
+    }
+
+    XCTAssertTrue([TNLRequest isRequest:response.originalRequest equalTo:decodedResponse.originalRequest quickBodyComparison:YES]);
 }
 
 - (void)testRetryAfterMethods

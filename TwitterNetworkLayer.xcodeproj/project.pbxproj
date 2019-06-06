@@ -56,6 +56,14 @@
 		8B3DB55E1A699C8D00FFF836 /* TNLAttemptMetaData.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B3DB55A1A699C8D00FFF836 /* TNLAttemptMetaData.m */; };
 		8B427D551FB53DBF00C9E5CE /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B427D541FB53DBF00C9E5CE /* Security.framework */; };
 		8B472C4A1BC41CB900DEA3BF /* NSOperationQueue+TNLSafetyTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B472C491BC41CB900DEA3BF /* NSOperationQueue+TNLSafetyTest.m */; };
+		8B490DD722A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B490DD522A82B9D002D2296 /* NSCoder+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8B490DD822A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B490DD522A82B9D002D2296 /* NSCoder+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8B490DD922A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B490DD522A82B9D002D2296 /* NSCoder+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8B490DDA22A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B490DD522A82B9D002D2296 /* NSCoder+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8B490DDB22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B490DD622A82B9D002D2296 /* NSCoder+TNLAdditions.m */; };
+		8B490DDC22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B490DD622A82B9D002D2296 /* NSCoder+TNLAdditions.m */; };
+		8B490DDD22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B490DD622A82B9D002D2296 /* NSCoder+TNLAdditions.m */; };
+		8B490DDE22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B490DD622A82B9D002D2296 /* NSCoder+TNLAdditions.m */; };
 		8B4AA7621E1F297C00BF7EA0 /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B4AA75D1E1F28DF00BF7EA0 /* CoreTelephony.framework */; };
 		8B4CBEA91A169A6800230318 /* TNLRequestRetryPolicyConfigurationTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B4CBEA81A169A6800230318 /* TNLRequestRetryPolicyConfigurationTest.m */; };
 		8B4DEFF91986AA64008A31EB /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B4DEFF81986AA64008A31EB /* SystemConfiguration.framework */; };
@@ -719,6 +727,8 @@
 		8B3DB55A1A699C8D00FFF836 /* TNLAttemptMetaData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLAttemptMetaData.m; sourceTree = "<group>"; };
 		8B427D541FB53DBF00C9E5CE /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		8B472C491BC41CB900DEA3BF /* NSOperationQueue+TNLSafetyTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSOperationQueue+TNLSafetyTest.m"; sourceTree = "<group>"; };
+		8B490DD522A82B9D002D2296 /* NSCoder+TNLAdditions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSCoder+TNLAdditions.h"; sourceTree = "<group>"; };
+		8B490DD622A82B9D002D2296 /* NSCoder+TNLAdditions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSCoder+TNLAdditions.m"; sourceTree = "<group>"; };
 		8B4AA75D1E1F28DF00BF7EA0 /* CoreTelephony.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreTelephony.framework; path = System/Library/Frameworks/CoreTelephony.framework; sourceTree = SDKROOT; };
 		8B4CBEA81A169A6800230318 /* TNLRequestRetryPolicyConfigurationTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLRequestRetryPolicyConfigurationTest.m; sourceTree = "<group>"; };
 		8B4DEFF81986AA64008A31EB /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
@@ -1158,6 +1168,8 @@
 			children = (
 				8B277E471C022B5C00279EA9 /* NSCachedURLResponse+TNLAdditions.h */,
 				8B277E481C022B5C00279EA9 /* NSCachedURLResponse+TNLAdditions.m */,
+				8B490DD522A82B9D002D2296 /* NSCoder+TNLAdditions.h */,
+				8B490DD622A82B9D002D2296 /* NSCoder+TNLAdditions.m */,
 				8BB1190E1D83537C00E75CD9 /* NSData+TNLAdditions.m */,
 				8B022A8119AAD2F800DB3052 /* NSDictionary+TNLAdditions.h */,
 				8B022A8219AAD2F800DB3052 /* NSDictionary+TNLAdditions.m */,
@@ -1332,6 +1344,7 @@
 				8B9EBE082135B4B100E6E466 /* TNLRequestAuthorizer.h in Headers */,
 				8B9EBE092135B4B100E6E466 /* TNLRequest.h in Headers */,
 				8B9EBE0A2135B4B100E6E466 /* TNL_Project.h in Headers */,
+				8B490DDA22A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */,
 				8B9EBE0B2135B4B100E6E466 /* TNL_ProjectCommon.h in Headers */,
 				8B9EBE0C2135B4B100E6E466 /* TNLNetworkObserver.h in Headers */,
 				8B9EBE0D2135B4B100E6E466 /* TNLTiming.h in Headers */,
@@ -1407,6 +1420,7 @@
 				8B2DF7D7199D7F9F00A064B3 /* TNLRequestAuthorizer.h in Headers */,
 				8BE403171946794300C7241E /* TNLRequest.h in Headers */,
 				8BE4030F1946794300C7241E /* TNL_Project.h in Headers */,
+				8B490DD722A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */,
 				8BD500F51D87762200D828C7 /* TNL_ProjectCommon.h in Headers */,
 				8B82A5A71948D3E900A16237 /* TNLNetworkObserver.h in Headers */,
 				8B5141231CE530E100830987 /* TNLTiming.h in Headers */,
@@ -1482,6 +1496,7 @@
 				8BFDF95F2135AB2C002F6A80 /* TNLRequestAuthorizer.h in Headers */,
 				8BFDF9602135AB2C002F6A80 /* TNLRequest.h in Headers */,
 				8BFDF9612135AB2C002F6A80 /* TNL_Project.h in Headers */,
+				8B490DD922A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */,
 				8BFDF9622135AB2C002F6A80 /* TNL_ProjectCommon.h in Headers */,
 				8BFDF9632135AB2C002F6A80 /* TNLNetworkObserver.h in Headers */,
 				8BFDF9642135AB2C002F6A80 /* TNLTiming.h in Headers */,
@@ -1567,6 +1582,7 @@
 				BF4AA11B1EE61D46001647B5 /* TNLAttemptMetrics.h in Headers */,
 				BF4AA11C1EE61D46001647B5 /* TNLPriority.h in Headers */,
 				BF4AA11D1EE61D46001647B5 /* NSURLRequest+TNLAdditions.h in Headers */,
+				8B490DD822A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */,
 				BF4AA11E1EE61D46001647B5 /* NSOperationQueue+TNLSafety.h in Headers */,
 				BF4AA11F1EE61D46001647B5 /* NSCachedURLResponse+TNLAdditions.h in Headers */,
 				BF4AA1201EE61D46001647B5 /* NSData+TNLAdditions.h in Headers */,
@@ -1883,6 +1899,7 @@
 				8B9EBDD12135B4B100E6E466 /* TNLPriority.m in Sources */,
 				8B9EBDD22135B4B100E6E466 /* TNLRequest.m in Sources */,
 				8B9EBDD32135B4B100E6E466 /* NSURL+TNLAdditions.m in Sources */,
+				8B490DDE22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */,
 				8B9EBDD42135B4B100E6E466 /* NSNumber+TNLURLCoding.m in Sources */,
 				8B9EBDD52135B4B100E6E466 /* NSOperationQueue+TNLSafety.m in Sources */,
 				8B9EBDD62135B4B100E6E466 /* TNLAttemptMetrics.m in Sources */,
@@ -1959,6 +1976,7 @@
 				8BDA9D351978822300678D90 /* TNLPriority.m in Sources */,
 				8BE403181946794300C7241E /* TNLRequest.m in Sources */,
 				8B87BA401E09DA20005A8926 /* NSURL+TNLAdditions.m in Sources */,
+				8B490DDB22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */,
 				8B959C2B1BAB6BA3007858C0 /* NSNumber+TNLURLCoding.m in Sources */,
 				8BE68D021B7E421100A0F853 /* NSOperationQueue+TNLSafety.m in Sources */,
 				8BF953E01A67DD3F00E9C1AA /* TNLAttemptMetrics.m in Sources */,
@@ -2041,6 +2059,7 @@
 				8BFDF9282135AB2C002F6A80 /* TNLPriority.m in Sources */,
 				8BFDF9292135AB2C002F6A80 /* TNLRequest.m in Sources */,
 				8BFDF92A2135AB2C002F6A80 /* NSURL+TNLAdditions.m in Sources */,
+				8B490DDD22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */,
 				8BFDF92B2135AB2C002F6A80 /* NSNumber+TNLURLCoding.m in Sources */,
 				8BFDF92C2135AB2C002F6A80 /* NSOperationQueue+TNLSafety.m in Sources */,
 				8BFDF92D2135AB2C002F6A80 /* TNLAttemptMetrics.m in Sources */,
@@ -2123,6 +2142,7 @@
 				BF4AA0DC1EE61D46001647B5 /* TNLPriority.m in Sources */,
 				BF4AA0DD1EE61D46001647B5 /* TNLRequest.m in Sources */,
 				BF4AA0DE1EE61D46001647B5 /* NSURL+TNLAdditions.m in Sources */,
+				8B490DDC22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */,
 				BF4AA0DF1EE61D46001647B5 /* NSNumber+TNLURLCoding.m in Sources */,
 				BF4AA0E01EE61D46001647B5 /* NSOperationQueue+TNLSafety.m in Sources */,
 				BF4AA0E11EE61D46001647B5 /* TNLAttemptMetrics.m in Sources */,

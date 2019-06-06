@@ -6,6 +6,7 @@
 //  Copyright (c) 2015 Twitter. All rights reserved.
 //
 
+#import "NSCoder+TNLAdditions.h"
 #import "TNL_Project.h"
 #import "TNLAttemptMetaData_Project.h"
 #import "TNLAttemptMetrics_Project.h"
@@ -113,7 +114,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     if (self) {
         _final = YES;
 
-        _APIErrors = [[aDecoder decodeObjectOfClass:[NSArray class] forKey:@"APIErrors"] copy];
+        _APIErrors = [[aDecoder tnl_decodeArrayOfItemsOfClass:[NSError class] forKey:@"APIErrors"] copy];
         _responseBodyParseError = [aDecoder decodeObjectOfClass:[NSError class] forKey:@"parseError"];
 
 #if !TARGET_OS_WATCH
@@ -130,7 +131,8 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
         _WWANRadioAccessTechnology = [aDecoder decodeObjectOfClass:[NSString class] forKey:@"WWANRadioAccessTechnology"];
 
 #endif
-#if TARGET_OS_IOS
+
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
         _carrierInfo = TNLCarrierInfoFromDictionary([aDecoder decodeObjectOfClass:[NSDictionary class]
                                                                            forKey:@"carrierInfo"]);
 #endif
@@ -149,9 +151,14 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     [aCoder encodeObject:_metaData forKey:@"metaData"];
     [aCoder encodeObject:_URLRequest forKey:@"URLRequest"];
     [aCoder encodeObject:_URLResponse forKey:@"URLResponse"];
-    [aCoder encodeObject:_operationError forKey:@"error"]; // FIXME:[nobrien] - the userInfo could have content that is not encodable
-    [aCoder encodeObject:_APIErrors forKey:@"APIErrors"];
-    [aCoder encodeObject:_responseBodyParseError forKey:@"parseError"];
+
+    [aCoder encodeObject:TNLErrorToSecureCodingError(_operationError) forKey:@"operationError"];
+    [aCoder encodeObject:TNLErrorToSecureCodingError(_responseBodyParseError) forKey:@"parseError"];
+    NSMutableArray<NSError *> *apiErrors = (_APIErrors) ? [[NSMutableArray alloc] initWithCapacity:_APIErrors.count] : nil;
+    for (NSError *apiError in _APIErrors) {
+        [apiErrors addObject:TNLErrorToSecureCodingError(apiError)];
+    }
+    [aCoder encodeObject:[apiErrors copy] forKey:@"APIErrors"];
 
 #if !TARGET_OS_WATCH
     [aCoder encodeObject:@(_reachabilityStatus) forKey:@"reachabilityStatus"];
@@ -159,7 +166,8 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     [aCoder encodeObject:@(_captivePortalStatus) forKey:@"captivePortalStatus"];
     [aCoder encodeObject:_WWANRadioAccessTechnology forKey:@"WWANRadioAccessTechnology"];
 #endif
-#if TARGET_OS_IOS
+
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
     [aCoder encodeObject:TNLCarrierInfoToDictionary(_carrierInfo) forKey:@"carrierInfo"];
 #endif
 }
@@ -219,7 +227,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 
 - (NSUInteger)hash
 {
-    return (NSUInteger)_startMachTime;
+    return (NSUInteger)_startDate.hash;
 }
 
 - (BOOL)isEqual:(id)object
@@ -247,10 +255,8 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
         }
     }
 
-    if (self.operationError != other.operationError) {
-        if (![self.operationError isEqual:other.operationError]) {
-            return NO;
-        }
+    if (!TNLSecureCodingErrorsAreEqual(self.operationError, other.operationError)) {
+        return NO;
     }
 
     if (self.URLResponse != other.URLResponse) {
@@ -285,15 +291,19 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 #endif // !WATCH
 
     if (self.APIErrors != other.APIErrors) {
-        if (![self.APIErrors isEqualToArray:other.APIErrors]) {
+        if (self.APIErrors.count != other.APIErrors.count) {
             return NO;
+        }
+        // just compare error codes and domains
+        for (NSUInteger i = 0; i < self.APIErrors.count; i++) {
+            if (!TNLSecureCodingErrorsAreEqual(self.APIErrors[i], other.APIErrors[i])) {
+                return NO;
+            }
         }
     }
 
-    if (self.responseBodyParseError != other.responseBodyParseError) {
-        if (![self.responseBodyParseError isEqual:other.responseBodyParseError]) {
-            return NO;
-        }
+    if (!TNLSecureCodingErrorsAreEqual(self.responseBodyParseError, other.responseBodyParseError)) {
+        return NO;
     }
 
 #if !TARGET_OS_WATCH

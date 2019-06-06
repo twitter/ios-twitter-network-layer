@@ -166,8 +166,29 @@ static NSUInteger const kMaxBytesToCompare = 1024;
     return method;
 }
 
++ (BOOL)requestHasBody:(nullable id<TNLRequest>)request
+{
+    if ([request respondsToSelector:@selector(HTTPBody)] && request.HTTPBody != nil) {
+        return YES;
+    }
+    if ([request respondsToSelector:@selector(HTTPBodyFilePath)] && request.HTTPBodyFilePath != nil) {
+        return YES;
+    }
+    if ([request respondsToSelector:@selector(HTTPBodyStream)] && request.HTTPBodyStream != nil) {
+        return YES;
+    }
+    return NO;
+}
+
 + (BOOL)isRequest:(nullable id<TNLRequest>)request1
           equalTo:(nullable id<TNLRequest>)request2
+{
+    return [self isRequest:request1 equalTo:request2 quickBodyComparison:NO];
+}
+
+  + (BOOL)isRequest:(nullable id<TNLRequest>)request1
+            equalTo:(nullable id<TNLRequest>)request2
+quickBodyComparison:(BOOL)quickBodyCheck;
 {
     if (request1 == request2) {
         return YES;
@@ -198,6 +219,10 @@ static NSUInteger const kMaxBytesToCompare = 1024;
         if (![lowerCaseHeaders1 isEqualToDictionary:lowerCaseHeaders2]) {
             return NO;
         }
+    }
+
+    if (quickBodyCheck) {
+        return [TNLRequest requestHasBody:request1] == [TNLRequest requestHasBody:request2];
     }
 
     NSData *data1 = [request1 respondsToSelector:@selector(HTTPBody)] ? [request1 HTTPBody] : nil;

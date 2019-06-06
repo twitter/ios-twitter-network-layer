@@ -236,4 +236,9 @@ FOUNDATION_EXTERN NSArray<NSNumber *> *TNLStandardRetriableURLErrorCodes(void);
 //! Standard error codes for `NSPOSIXErrorDomain` errors that can be retried
 FOUNDATION_EXTERN NSArray<NSNumber *> *TNLStandardRetriablePOSIXErrorCodes(void);
 
+//! Convert an NSError to be NSSecureCoding safe (strip unsafe values from userInfo).  Only returns `nil` if provided _error_ is `nil`.
+FOUNDATION_EXTERN NSError * __nullable TNLErrorToSecureCodingError(NSError * __nullable error);
+//! Check if the given NSError objects are equal by just checking their domain+code & underlying errors the same way.  Both provided errors being `nil` will also count as being equal.
+FOUNDATION_EXTERN BOOL TNLSecureCodingErrorsAreEqual(NSError * __nullable error1, NSError * __nullable error2);
+
 NS_ASSUME_NONNULL_END

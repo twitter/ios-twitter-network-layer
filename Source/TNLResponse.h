@@ -7,11 +7,11 @@
 //
 
 #import <TwitterNetworkLayer/TNLHTTP.h>
+#import <TwitterNetworkLayer/TNLRequest.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol TNLTemporaryFile;
-@protocol TNLRequest;
 @class TNLAttemptMetrics;
 @class TNLResponseMetrics;
 @class TNLResponseInfo;
@@ -40,8 +40,8 @@ typedef NS_ENUM(NSInteger, TNLResponseSource) {
 
  __See also__: `TNLResponseInfo` and `TNLResponseMetrics`
 
- @warning `[TNLResponse supportsSecureCoding]` returns `NO` since `originalRequest` is not
- guaranteed to support `NSSecureCoding`.
+ @warning `[TNLResponse supportsSecureCoding]` returns `YES` even if `originalRequest` does not
+ support secure coding and will encode the `originalRequest` as a `TNLResponseEncodedRequest`.
  */
 @interface TNLResponse : NSObject <NSSecureCoding>
 {
@@ -244,6 +244,23 @@ NS_SWIFT_NAME(response(request:operationError:info:metrics:));
  Value can be negative if it occurs in the past.
  */
 - (NSTimeInterval)retryAfterDelayFromNow;
+
+@end
+
+/**
+ Converted request for Secure Coding
+ */
+@interface TNLResponseEncodedRequest : NSObject <TNLRequest, NSSecureCoding>
+
+/** The name of the source `TNLRequest` class that was encoded */
+@property (nonatomic, readonly, copy, nullable) NSString *encodedSourceRequestClassName;
+/** If the encoded source request has a body */
+@property (nonatomic, readonly) BOOL encodedSourceRequestHadBody;
+
+/** Unavailable */
+- (instancetype)init NS_UNAVAILABLE;
+/** Unavailable */
++ (instancetype)new NS_UNAVAILABLE;
 
 @end
 

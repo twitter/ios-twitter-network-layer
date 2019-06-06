@@ -2243,10 +2243,10 @@ static void _network_updateMetrics(SELF_ARG,
         if (TNLRequestOperationStateIsFinal(newState)) {
             if (attemptMetrics.completeDate) {
                 [self->_metrics setCompleteDate:attemptMetrics.completeDate
-#pragma clang diagnostics push
+#pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
                                        machTime:attemptMetrics.completeMachTime];
-#pragma clang diagnostics pop
+#pragma clang diagnostic pop
             } else {
                 [self->_metrics setCompleteDate:dateNow machTime:machTime];
                 [attemptMetrics setCompleteDate:dateNow machTime:machTime];
@@ -2664,7 +2664,12 @@ static BOOL _network_shouldForciblyRetryInvalidatedURLSessionRequest(SELF_ARG,
 
     const unsigned int maxInvalidSessionRetryCount = 4;
     TNLStaticAssert(maxInvalidSessionRetryCount < 0b1111, Max_Invalid_Session_Retry_Count_must_be_within_4_bits);
-    const NSTimeInterval latestAttemptDuration = TNLComputeDuration(attemptResponse.metrics.currentAttemptStartMachTime, mach_absolute_time());
+    const NSTimeInterval latestAttemptDuration = TNLComputeDuration(
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+                                                                    attemptResponse.metrics.currentAttemptStartMachTime,
+#pragma clang diagnostic pop
+                                                                    mach_absolute_time());
     const BOOL forciblyRetry = (attemptResponse.info.URLResponse == nil) &&
                                (latestAttemptDuration < 1.0) &&
                                (self->_backgroundFlags.invalidSessionRetryCount < maxInvalidSessionRetryCount);
@@ -2759,7 +2764,10 @@ static void _network_retryDuringStateTransition(SELF_ARG,
 
     const BOOL hasCachedCancel = self->_cachedCancelError != nil;
     const id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     const uint64_t enqueueMachTime = self->_metrics.enqueueMachTime;
+#pragma clang diagnostic pop
     TNLRequestConfiguration *requestConfig = self->_requestConfiguration;
 
     // Dispatch to the retry queue to get retry policy info

@@ -11,7 +11,7 @@
 
 #import <TwitterNetworkLayer/TNLCommunicationAgent.h>
 
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 
 #pragma mark IOS only imports
 
@@ -40,4 +40,4 @@ FOUNDATION_EXTERN id<TNLCarrierInfo> __nullable TNLCarrierInfoFromDictionary(NSD
 
 NS_ASSUME_NONNULL_END
 
-#endif // TARGET_OS_IOS
+#endif // TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC

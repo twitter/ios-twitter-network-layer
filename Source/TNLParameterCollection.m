@@ -374,8 +374,10 @@ typedef NSString *(^TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock)(
                     parameterString = [path substringFromIndex:range.location + 1];
                 }
             }
+#if !TARGET_OS_UIKITFORMAC
         } else {
             parameterString = URL.parameterString;
+#endif
         }
         [self addParametersWithURLEncodedString:parameterString options:options];
     }

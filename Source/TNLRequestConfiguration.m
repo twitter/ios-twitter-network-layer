@@ -118,9 +118,9 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
     return _ivars.skipHostSanitization;
 }
 
-- (BOOL)computeMD5
+- (TNLResponseHashComputeAlgorithm)responseComputeHashAlgorithm
 {
-    return _ivars.computeMD5;
+    return _ivars.responseComputeHashAlgorithm;
 }
 
 - (NSTimeInterval)idleTimeout
@@ -282,7 +282,7 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
     D_SET(connectivityOptions);
     D_SET(contributeToExecutingNetworkConnectionsCount);
     D_SET(skipHostSanitization);
-    D_SET(computeMD5);
+    D_SET(responseComputeHashAlgorithm);
 
     D_SET(attemptTimeout);
     D_SET(idleTimeout);
@@ -329,10 +329,10 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
     TNLMutableParameterCollection *params = TNLMutableParametersFromRequestConfiguration(self, nil, nil, nil);
     TNLMutableParametersStripURLCacheAndURLCredentialStorageAndCookieStorage(params);
     return params.hash +
-           (NSUInteger)(self.executionMode) +
+           (NSUInteger)(self.responseComputeHashAlgorithm) +
            (NSUInteger)(self.contributeToExecutingNetworkConnectionsCount * 7) +
            (NSUInteger)(self.skipHostSanitization * 11) +
-           (NSUInteger)(self.computeMD5 * 17);
+           (NSUInteger)(self.executionMode * 17);
 }
 
 - (BOOL)isEqual:(id)object
@@ -382,7 +382,7 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
 
 @dynamic contributeToExecutingNetworkConnectionsCount;
 @dynamic skipHostSanitization;
-@dynamic computeMD5;
+@dynamic responseComputeHashAlgorithm;
 
 @dynamic executionMode;
 @dynamic redirectPolicy;
@@ -453,9 +453,9 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
     _ivars.skipHostSanitization = (skipHostSanitization != NO);
 }
 
-- (void)setComputeMD5:(BOOL)computeMD5
+- (void)setResponseComputeHashAlgorithm:(TNLResponseHashComputeAlgorithm)responseComputeHashAlgorithm
 {
-    _ivars.computeMD5 = (computeMD5 != NO);
+    _ivars.responseComputeHashAlgorithm = responseComputeHashAlgorithm;
 }
 
 - (void)setRetryPolicyProvider:(nullable id<TNLRequestRetryPolicyProvider>)retryPolicyProvider
@@ -785,7 +785,7 @@ TNLMutableParameterCollection * __nullable TNLMutableParametersFromRequestConfig
      Note:
      config.contributeToExecutingNetworkConnectionsCount,
      config.skipHostSanitization,
-     config.computeMD5,
+     config.responseComputeHashAlgorithm,
      config.contentEncoder,
      config.additionContentDecoders,
      config.retryPolicyProvider and

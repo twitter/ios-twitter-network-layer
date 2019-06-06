@@ -80,6 +80,9 @@ FOUNDATION_EXTERN NSString * __nonnull TNLCaptivePortalStatusToString(TNLCaptive
 typedef NS_ENUM(NSInteger, TNLWWANRadioAccessTechnologyValue) {
     /** Unknown radio access tech */
     TNLWWANRadioAccessTechnologyValueUnknown    = 0,
+
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+
     /** 2G, `CTRadioAccessTechnologyGPRS` */
     TNLWWANRadioAccessTechnologyValueGPRS       = 1,
     /** 2G, `CTRadioAccessTechnologyEdge` */
@@ -110,6 +113,8 @@ typedef NS_ENUM(NSInteger, TNLWWANRadioAccessTechnologyValue) {
     TNLWWANRadioAccessTechnologyValueEHRPD      = 14,
     /** 4G, Not defined in `CTTelephonyNetworkInfo.h` */
     TNLWWANRadioAccessTechnologyValueHSPAP      = 15
+
+#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 };
 
 //! Convert a WWAN radio access technololgy `NSString` into a `TNLWWANRadioAccessTechnologyValue`
@@ -218,12 +223,12 @@ typedef void(^TNLCommunicationAgentIdentifyCaptivePortalStatusCallback)(TNLCapti
 @property (atomic, readonly) TNLNetworkReachabilityStatus currentReachabilityStatus;
 /** cached reachability flags */
 @property (atomic, readonly) SCNetworkReachabilityFlags currentReachabilityFlags;
-/** cached radio access technology */
+/** cached radio access technology. Note: `nil` for macOS and UIKit for Mac */
 @property (atomic, copy, readonly, nullable) NSString *currentWWANRadioAccessTechnology;
 /** cached captive portal status */
 @property (atomic, readonly) TNLCaptivePortalStatus currentCaptivePortalStatus;
 
-/** cached carrier info. Note: `nil` for macOS as there is no cellular carrier information */
+/** cached carrier info. Note: `nil` for macOS and UIKit for Mac as there is no cellular carrier information */
 @property (atomic, readonly, nullable) id<TNLCarrierInfo> currentCarrierInfo; // or use `synchronousCarrierInfo`, which is more robust but can be slower
 
 @end

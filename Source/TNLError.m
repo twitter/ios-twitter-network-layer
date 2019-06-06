@@ -247,5 +247,83 @@ NSArray<NSNumber *> *TNLStandardRetriablePOSIXErrorCodes()
              ];
 }
 
+NSError * __nullable TNLErrorToSecureCodingError(NSError * __nullable error)
+{
+    NSDictionary *userInfo = error.userInfo;
+    if (0 == userInfo.count) {
+        return error;
+    }
+
+    NSMutableDictionary *safeUserInfo = [[NSMutableDictionary alloc] init];
+
+    // A bunch of permitted string values
+
+    NSArray *stringKeys = @[
+                            NSLocalizedDescriptionKey,
+                            NSLocalizedFailureReasonErrorKey,
+                            NSLocalizedRecoverySuggestionErrorKey,
+                            NSHelpAnchorErrorKey,
+                            NSDebugDescriptionErrorKey,
+                            NSFilePathErrorKey
+                            ];
+    if (tnl_available_ios_11) {
+        stringKeys = [stringKeys arrayByAddingObject:NSLocalizedFailureErrorKey];
+    }
+    for (NSString *key in stringKeys) {
+        NSString *value = userInfo[key];
+        if ([value isKindOfClass:[NSString class]]) {
+            safeUserInfo[key] = [value copy];
+        }
+    }
+
+    // Underlying error value
+
+    NSError *underlyingError = userInfo[NSUnderlyingErrorKey];
+    if ([underlyingError isKindOfClass:[NSError class]]) {
+        safeUserInfo[NSUnderlyingErrorKey] = TNLErrorToSecureCodingError(underlyingError);
+    }
+
+    // Other specific keys that are OK
+
+    NSURL *URL = userInfo[NSURLErrorKey];
+    if ([URL isKindOfClass:[NSURL class]]) {
+        safeUserInfo[NSURLErrorKey] = URL;
+    }
+
+    NSNumber *stringEncoding = userInfo[NSStringEncodingErrorKey];
+    if ([stringEncoding isKindOfClass:[NSNumber class]]) {
+        safeUserInfo[NSStringEncodingErrorKey] = stringEncoding;
+    }
+
+    return [NSError errorWithDomain:error.domain
+                               code:error.code
+                           userInfo:safeUserInfo];
+}
+
+BOOL TNLSecureCodingErrorsAreEqual(NSError * __nullable error1, NSError * __nullable error2)
+{
+    if (error1 == error2) {
+        return YES;
+    }
+
+    if (!error1 || !error2) {
+        return NO;
+    }
+
+    if (error1.code != error2.code) {
+        return NO;
+    }
+
+    if (![error1.domain isEqualToString:error2.domain]) {
+        return NO;
+    }
+
+    if (!TNLSecureCodingErrorsAreEqual(error1.userInfo[NSUnderlyingErrorKey], error2.userInfo[NSUnderlyingErrorKey])) {
+        return NO;
+    }
+
+    return YES;
+}
+
 NS_ASSUME_NONNULL_END
 

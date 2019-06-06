@@ -49,6 +49,7 @@
 #pragma Categories
 
 #import <TwitterNetworkLayer/NSCachedURLResponse+TNLAdditions.h>
+#import <TwitterNetworkLayer/NSCoder+TNLAdditions.h>
 #import <TwitterNetworkLayer/NSDictionary+TNLAdditions.h>
 #import <TwitterNetworkLayer/NSHTTPCookieStorage+TNLAdditions.h>
 #import <TwitterNetworkLayer/NSNumber+TNLURLCoding.h>

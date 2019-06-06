@@ -23,6 +23,12 @@ NS_ASSUME_NONNULL_BEGIN
                                 metrics:(TNLResponseMetrics *)metrics NS_DESIGNATED_INITIALIZER;
 @end
 
+@interface TNLResponseEncodedRequest ()
+
+- (instancetype)initWithSourceRequest:(id<TNLRequest>)request;
+
+@end
+
 @interface TNLResponseMetrics ()
 
 - (void)didEnqueue;

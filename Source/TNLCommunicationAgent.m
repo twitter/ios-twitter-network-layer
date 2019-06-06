@@ -71,7 +71,7 @@ static void _agent_handleCaptivePortalResponse(SELF_ARG,
 @end
 
 @interface TNLCommunicationAgent (Private)
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 static void _updateCarrier(SELF_ARG,
                            CTCarrier *carrier);
 #endif
@@ -95,7 +95,7 @@ static void _updateCarrier(SELF_ARG,
     TNLCommunicationAgentWeakWrapper *_agentWrapper;
 
     SCNetworkReachabilityRef _reachabilityRef;
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
     CTTelephonyNetworkInfo *_internalTelephonyNetworkInfo;
 #endif
     NSURLSessionConfiguration *_captivePortalSessionConfiguration;
@@ -152,7 +152,7 @@ static void _updateCarrier(SELF_ARG,
         CFRelease(_reachabilityRef);
     }
 
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
     [[NSNotificationCenter defaultCenter] removeObserver:self
                                                     name:CTRadioAccessTechnologyDidChangeNotification
                                                   object:nil];
@@ -276,7 +276,7 @@ static void _agent_initializeTelephony(SELF_ARG)
         return;
     }
 
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
     __weak typeof(self) weakSelf = self;
 
     self->_internalTelephonyNetworkInfo = [[CTTelephonyNetworkInfo alloc] init];
@@ -288,7 +288,7 @@ static void _agent_initializeTelephony(SELF_ARG)
                                                  name:CTRadioAccessTechnologyDidChangeNotification object:nil];
     self.currentCarrierInfo = [TNLCarrierInfoInternal carrierWithCarrier:self->_internalTelephonyNetworkInfo.subscriberCellularProvider];
     self.currentWWANRadioAccessTechnology = [self->_internalTelephonyNetworkInfo.currentRadioAccessTechnology copy];
-#endif
+#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 
     self->_flags.initializedCarrier = 1;
     self->_flags.initializedRadioTech = 1;
@@ -308,8 +308,8 @@ static void _agent_initializeCaptivePortalStatus(SELF_ARG)
     config.URLCache = nil;
     config.URLCredentialStorage = nil;
     config.HTTPCookieStorage = nil;
-    config.TLSMinimumSupportedProtocol = kSSLProtocolUnknown;
-    config.TLSMaximumSupportedProtocol = kSSLProtocolUnknown;
+    config.TLSMinimumSupportedProtocol = 0;
+    config.TLSMaximumSupportedProtocol = 0;
     config.allowsCellularAccess = YES;
     config.requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
     config.HTTPShouldSetCookies = NO;
@@ -653,7 +653,7 @@ static void _agent_updateReachabilityFlags(SELF_ARG,
 
 @implementation TNLCommunicationAgent (Private)
 
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 static void _updateCarrier(SELF_ARG,
                            CTCarrier *carrier)
 {
@@ -678,7 +678,7 @@ static void _updateCarrier(SELF_ARG,
         });
     });
 }
-#endif
+#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 
 - (void)private_updateRadioAccessTechnology:(NSNotification *)note
 {
@@ -707,7 +707,7 @@ static void _updateCarrier(SELF_ARG,
 
 @end
 
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 @implementation TNLCarrierInfoInternal
 
 @synthesize carrierName = _carrierName;
@@ -776,7 +776,7 @@ static void _updateCarrier(SELF_ARG,
 }
 
 @end
-#endif
+#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 
 @implementation TNLCommunicationAgent (UnsafeSynchronousAccess)
 
@@ -845,7 +845,7 @@ TNLWWANRadioAccessTechnologyValue TNLWWANRadioAccessTechnologyValueFromString(NS
 
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
         sTechStringToValueMap = @{
                                   CTRadioAccessTechnologyGPRS : @(TNLWWANRadioAccessTechnologyValueGPRS),
                                   CTRadioAccessTechnologyEdge: @(TNLWWANRadioAccessTechnologyValueEDGE),
@@ -870,8 +870,8 @@ TNLWWANRadioAccessTechnologyValue TNLWWANRadioAccessTechnologyValueFromString(NS
 
 NSString *TNLWWANRadioAccessTechnologyValueToString(TNLWWANRadioAccessTechnologyValue value)
 {
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
     switch (value) {
-#if TARGET_OS_IOS
         case TNLWWANRadioAccessTechnologyValueGPRS:
             return CTRadioAccessTechnologyGPRS;
         case TNLWWANRadioAccessTechnologyValueEDGE:
@@ -894,19 +894,6 @@ NSString *TNLWWANRadioAccessTechnologyValueToString(TNLWWANRadioAccessTechnology
             return CTRadioAccessTechnologyLTE;
         case TNLWWANRadioAccessTechnologyValueEHRPD:
             return CTRadioAccessTechnologyeHRPD;
-#else
-        case TNLWWANRadioAccessTechnologyValueGPRS:
-        case TNLWWANRadioAccessTechnologyValueEDGE:
-        case TNLWWANRadioAccessTechnologyValueUMTS:
-        case TNLWWANRadioAccessTechnologyValueHSDPA:
-        case TNLWWANRadioAccessTechnologyValueHSUPA:
-        case TNLWWANRadioAccessTechnologyValueEVDO_0:
-        case TNLWWANRadioAccessTechnologyValueEVDO_A:
-        case TNLWWANRadioAccessTechnologyValueEVDO_B:
-        case TNLWWANRadioAccessTechnologyValue1xRTT:
-        case TNLWWANRadioAccessTechnologyValueLTE:
-        case TNLWWANRadioAccessTechnologyValueEHRPD:
-#endif
         case TNLWWANRadioAccessTechnologyValueHSPA:
         case TNLWWANRadioAccessTechnologyValueCDMA:
         case TNLWWANRadioAccessTechnologyValueIDEN:
@@ -914,12 +901,14 @@ NSString *TNLWWANRadioAccessTechnologyValueToString(TNLWWANRadioAccessTechnology
         case TNLWWANRadioAccessTechnologyValueUnknown:
             break;
     }
+#endif // TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 
     return @"unknown";
 }
 
 TNLWWANRadioAccessGeneration TNLWWANRadioAccessGenerationForTechnologyValue(TNLWWANRadioAccessTechnologyValue value)
 {
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
     switch (value) {
         case TNLWWANRadioAccessTechnologyValueEVDO_0:
         case TNLWWANRadioAccessTechnologyValue1xRTT:
@@ -943,6 +932,7 @@ TNLWWANRadioAccessGeneration TNLWWANRadioAccessGenerationForTechnologyValue(TNLW
         case TNLWWANRadioAccessTechnologyValueUnknown:
             break;
     }
+#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 
     return TNLWWANRadioAccessGenerationUnknown;
 }
@@ -979,7 +969,7 @@ NSString *TNLCaptivePortalStatusToString(TNLCaptivePortalStatus status)
     return @"undetermined";
 }
 
-#if TARGET_OS_IOS
+#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 
 NSDictionary * __nullable TNLCarrierInfoToDictionary(id<TNLCarrierInfo> __nullable carrierInfo)
 {
@@ -1017,7 +1007,7 @@ id<TNLCarrierInfo> __nullable TNLCarrierInfoFromDictionary(NSDictionary * __null
                                                     allowsVOIP:[dict[@"allowsVOIP"] boolValue]];
 }
 
-#endif // TARGET_OS_IOS
+#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
 
 NS_INLINE const char _DebugCharFromReachabilityFlag(SCNetworkReachabilityFlags flags, uint32_t flag, const char presentChar)
 {

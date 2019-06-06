@@ -205,11 +205,14 @@ typedef NS_ENUM(NSInteger, TNLXRedirectTestPolicy)
         self->_goWithoutRedirectsButton.enabled = YES;
         self->_goWithRedirectsButton.enabled = YES;
 
-        [[[UIAlertView alloc] initWithTitle:@"Response"
-                                    message:[NSString stringWithFormat:@"Redirect Count: %tu\nHeaders: %@\nMetrics: %@", response.metrics.redirectCount, response.info.allHTTPHeaderFields, response.metrics]
-                                   delegate:nil
-                          cancelButtonTitle:@"OK"
-                          otherButtonTitles:nil] show];
+        NSString *message = [NSString stringWithFormat:@"Redirect Count: %tu\nHeaders: %@\nMetrics: %@", response.metrics.redirectCount, response.info.allHTTPHeaderFields, response.metrics];
+        UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:@"Response"
+                                                                         message:message
+                                                                  preferredStyle:UIAlertControllerStyleAlert];
+        [alertVC addAction:[UIAlertAction actionWithTitle:@"OK"
+                                                    style:UIAlertActionStyleCancel
+                                                  handler:nil]];
+        [self presentViewController:alertVC animated:YES completion:nil];
     };
     [testObj start];
 }
@@ -273,9 +276,12 @@ typedef NS_ENUM(NSInteger, TNLXRedirectTestPolicy)
     request.URL = [NSURL URLWithString:DOWNLOAD_URL];
     request.timeoutInterval = 10;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     _fileDownloadConnection = [[NSURLConnection alloc] initWithRequest:request
                                                               delegate:self
                                                       startImmediately:NO];
+#pragma clang diagnostic pop
     [_fileDownloadConnection setDelegateQueue:[NSOperationQueue mainQueue]];
     [self fileDownloadStarting];
     [_fileDownloadConnection start];
@@ -394,7 +400,12 @@ typedef NS_ENUM(NSInteger, TNLXRedirectTestPolicy)
     TNLRequestOperation *op = [TNLRequestOperation operationWithURL:[NSURL URLWithString:URLString]
                                                          completion:^(TNLRequestOperation *innerOp, TNLResponse *response) {
         self->_httpTestButton.enabled = YES;
-        [[[UIAlertView alloc] initWithTitle:@"HTTP Response" message:[NSString stringWithFormat:@"Status Code: %td", response.info.statusCode] delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
+        NSString *message = [NSString stringWithFormat:@"Status Code: %td", response.info.statusCode];
+        UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:@"HTTP Response"
+                                                                         message:message
+                                                                  preferredStyle:UIAlertControllerStyleAlert];
+        [alertVC addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:alertVC animated:YES completion:nil];
     }];
     [[TNLRequestOperationQueue defaultOperationQueue] enqueueRequestOperation:op];
 }
@@ -432,11 +443,12 @@ typedef NS_ENUM(NSInteger, TNLXRedirectTestPolicy)
     TNLXCompletionBlock block = ^(TNLRequestOperation *innerOp, TNLResponse *response) {
         assert([NSThread isMainThread]);
         self->_httpsTwitterTestButton.enabled = YES;
-        [[[UIAlertView alloc] initWithTitle:@"HTTP Response"
-                                    message:[NSString stringWithFormat:@"Metrics: %@", response.metrics]
-                                   delegate:nil
-                          cancelButtonTitle:@"OK"
-                          otherButtonTitles:nil] show];
+        NSString *message = [NSString stringWithFormat:@"Metrics: %@", response.metrics];
+        UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:@"HTTP Response"
+                                                                         message:message
+                                                                  preferredStyle:UIAlertControllerStyleAlert];
+        [alertVC addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:alertVC animated:YES completion:nil];
         NSLog(@"(%zi) (CL: %@) %@ %@", response.info.statusCode, [response.info valueForResponseHeaderField:@"Content-Length"], response.operationError ?: @"", response.metrics);
         // TLSLogDebug(NSStringFromClass([self class]), @"Headers: %@", response.info.allHTTPHeaderFields);
     };
@@ -514,12 +526,11 @@ typedef NS_ENUM(NSInteger, TNLXRedirectTestPolicy)
     NSURL *originalURL = [op.originalRequest respondsToSelector:@selector(URL)] ? [(id)op.originalRequest URL] : nil;
     if ([originalURL.absoluteString isEqualToString:DOWNLOAD_URL]) {
         NSLog(@"[BG_DOWNLOAD] - %@ %@", op.originalRequest, response);
-        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"BG Download"
-                                                        message:[NSString stringWithFormat:@"%@", response]
-                                                       delegate:NULL
-                                              cancelButtonTitle:@"Close"
-                                              otherButtonTitles:nil];
-        [alert show];
+        UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:@"BG Download"
+                                                                         message:[NSString stringWithFormat:@"%@", response]
+                                                                  preferredStyle:UIAlertControllerStyleAlert];
+        [alertVC addAction:[UIAlertAction actionWithTitle:@"Close" style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:alertVC animated:YES completion:nil];
         return;
     }
 
@@ -594,12 +605,11 @@ didReceiveResponse:(NSURLResponse *)response
         info[@"error"] = error;
     }
     info[@"URL"] = connection.originalRequest.URL;
-    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"BG Download"
-                                                    message:[NSString stringWithFormat:@"%@", info]
-                                                   delegate:nil
-                                          cancelButtonTitle:@"Close"
-                                          otherButtonTitles:nil];
-    [alert show];
+    UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:@"BG Download"
+                                                                     message:[NSString stringWithFormat:@"%@", info]
+                                                              preferredStyle:UIAlertControllerStyleAlert];
+    [alertVC addAction:[UIAlertAction actionWithTitle:@"Close" style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:alertVC animated:YES completion:nil];
 }
 
 @end
