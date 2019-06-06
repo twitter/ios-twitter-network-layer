@@ -48,7 +48,8 @@ static NSArray *_ExtractAPIErrors(id parsedObject);
 {
     self = [super initWithCoder:coder];
     if (self) {
-        _parsedObject = [coder decodeObjectForKey:@"parsedObject"];
+        _parsedObject = [coder decodeObjectOfClasses:[NSSet setWithObjects:[NSString class], [NSNumber class], [NSArray class], [NSDictionary class], nil]
+                                              forKey:@"parsedObject"];
         _parseError = [coder decodeObjectOfClass:[NSError class] forKey:@"parseError"];
         _apiError = [coder decodeObjectOfClass:[NSError class] forKey:@"apiError"];
     }
@@ -58,9 +59,9 @@ static NSArray *_ExtractAPIErrors(id parsedObject);
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
     [super encodeWithCoder:aCoder];
-    [aCoder encodeObject:_parsedObject forKey:@"parsedObject"];
-    [aCoder encodeObject:_apiError forKey:@"apiError"];
-    [aCoder encodeObject:_parseError forKey:@"parseError"];
+    [aCoder encodeObject:TNLErrorToSecureCodingError(_parsedObject) forKey:@"parsedObject"];
+    [aCoder encodeObject:TNLErrorToSecureCodingError(_apiError) forKey:@"apiError"];
+    [aCoder encodeObject:TNLErrorToSecureCodingError(_parseError) forKey:@"parseError"];
 }
 
 - (NSError *)anyError

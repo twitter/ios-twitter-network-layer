@@ -49,7 +49,7 @@ static NSString * const kFinalKey = @"final";
 
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
-    [aCoder encodeObject:_metaDataDictionary forKey:kMetaDataDictionaryKey];
+    [aCoder encodeObject:[_metaDataDictionary copy] forKey:kMetaDataDictionaryKey];
     [aCoder encodeBool:_final forKey:kFinalKey];
 }
 

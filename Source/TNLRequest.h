@@ -514,6 +514,11 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSString *)HTTPMethodForRequest:(nullable id<TNLRequest>)request;
 
 /**
+ Convenience method to check if a given `TNLRequest` has an HTTP Body
+ */
++ (BOOL)requestHasBody:(nullable id<TNLRequest>)request;
+
+/**
  Convenience method for comparing two `TNLRequest` conforming objects that doesn't use the
  `[TNLRequest isEqualToRequest:]` method
 
@@ -524,6 +529,20 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (BOOL)isRequest:(nullable id<TNLRequest>)request1
           equalTo:(nullable id<TNLRequest>)request2;
+
+/**
+ Like `[TNLRequest isRequest:equalTo:]` method, but with a faster HTTP Body check.
+ Instead of checking the full bytes of the body, just check if there body exists or not.
+
+ @param request1 The first request
+ @param request2 The second request
+ @param quickBodyCheck Pass `YES` to just validate that both requests either had a body or both did not have a body
+
+ @return `YES` if equal, `NO` otherwise.
+ */
+  + (BOOL)isRequest:(nullable id<TNLRequest>)request1
+            equalTo:(nullable id<TNLRequest>)request2
+quickBodyComparison:(BOOL)quickBodyCheck;
 
 @end
 

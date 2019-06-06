@@ -121,7 +121,13 @@ NSString *TNLXCommunicationStatusUpdatedNotification = @"TNLXCommunicationStatus
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-    application.networkActivityIndicatorVisible = [TNLNetwork hasExecutingNetworkConnections];
+#if !TARGET_OS_UIKITFORMAC
+    if (@available(iOS 13, *)) {
+
+    } else {
+        application.networkActivityIndicatorVisible = [TNLNetwork hasExecutingNetworkConnections];
+    }
+#endif
 }
 
 - (void)tnl_requestOperation:(TNLRequestOperation *)op
@@ -173,8 +179,10 @@ NSString *TNLXCommunicationStatusUpdatedNotification = @"TNLXCommunicationStatus
 - (void)networkingDidChange:(NSNotification *)note
 {
     assert([NSThread isMainThread]);
+#if !TARGET_OS_UIKITFORMAC
     BOOL on = [note.userInfo[TNLNetworkExecutingNetworkConnectionsExecutingKey] boolValue];
     [UIApplication sharedApplication].networkActivityIndicatorVisible = on;
+#endif
 }
 
 - (void)promptForTwitterAPIAccess:(TAPILoginAccessCompletionBlock)completion
@@ -191,6 +199,11 @@ NSString *TNLXCommunicationStatusUpdatedNotification = @"TNLXCommunicationStatus
 
 - (void)warnThatConsumerCredentialsAreMissing
 {
+    if (![NSThread isMainThread]) {
+        [self performSelectorOnMainThread:_cmd withObject:nil waitUntilDone:NO];
+        return;
+    }
+
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Missing Consumer Key & Secret"
                                                                    message:@"Twitter API credentials can be obtained by going to apps.twitter.com.\nPut them in TNLExample-Info.plist under `tnlx_oauth_consumer_key` and `tnlx_oauth_consumer_secret`."
                                                             preferredStyle:UIAlertControllerStyleAlert];
@@ -202,6 +215,11 @@ NSString *TNLXCommunicationStatusUpdatedNotification = @"TNLXCommunicationStatus
 
 - (void)warnThatAccessCredentialsAreMissing
 {
+    if (![NSThread isMainThread]) {
+        [self performSelectorOnMainThread:_cmd withObject:nil waitUntilDone:NO];
+        return;
+    }
+
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Enter Access Token & Secret"
                                                                    message:@"Twitter API credentials can be obtained by going to apps.twitter.com.\nPut them in TNLExample-Info.plist under `tnlx_oauth_access_token` and `tnlx_oauth_access_secret`."
                                                             preferredStyle:UIAlertControllerStyleAlert];

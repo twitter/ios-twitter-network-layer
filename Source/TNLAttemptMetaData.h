@@ -7,6 +7,7 @@
 //
 
 #import <TwitterNetworkLayer/TNLPriority.h>
+#import <TwitterNetworkLayer/TNLRequestConfiguration.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -92,13 +93,13 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) BOOL localCacheHit;
 - (BOOL)hasLocalCacheHit;
 
-/** Expected MD5 Hash of the response body */
-@property (nonatomic, readonly, nullable) NSData *expectedMD5Hash;
-- (BOOL)hasExpectedMD5Hash;
+/** The hash alogorithm of the response body */
+@property (nonatomic, readonly) TNLResponseHashComputeAlgorithm responseBodyHashAlgorithm;
+- (BOOL)hasResponseBodyHashAlgorithm;
 
-/** The MD5 Hash of the response body */
-@property (nonatomic, readonly, nullable) NSData *MD5Hash;
-- (BOOL)hasMD5Hash;
+/** The hash of the response body */
+@property (nonatomic, readonly, nullable) NSData *responseBodyHash;
+- (BOOL)hasResponseBodyHash;
 
 /** The Content-Length in the request */
 @property (nonatomic, readonly) SInt64 requestContentLength;

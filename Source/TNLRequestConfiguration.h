@@ -155,6 +155,19 @@ typedef NS_OPTIONS(NSInteger, TNLRequestConnectivityOptions) {
 };
 
 /**
+ The algorithm to compute a hash for the response body
+ */
+typedef NS_ENUM(NSInteger, TNLResponseHashComputeAlgorithm) {
+    TNLResponseHashComputeAlgorithmNone = 0,
+    TNLResponseHashComputeAlgorithmMD2 __attribute__((deprecated)) = 'md_2',
+    TNLResponseHashComputeAlgorithmMD4 __attribute__((deprecated)) = 'md_4',
+    TNLResponseHashComputeAlgorithmMD5 __attribute__((deprecated)) = 'md_5',
+    TNLResponseHashComputeAlgorithmSHA1 = 'sha1',
+    TNLResponseHashComputeAlgorithmSHA256 = 's256',
+    TNLResponseHashComputeAlgorithmSHA512 = 's512',
+};
+
+/**
  The expected anatomy of how a request will break down
  */
 typedef NS_ENUM(NSInteger, TNLRequestAnatomy) {
@@ -212,6 +225,7 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
         TNLResponseDataConsumptionMode responseDataConsumptionMode:8;
         TNLRequestProtocolOptions protocolOptions:8;
         TNLRequestConnectivityOptions connectivityOptions:8;
+        TNLResponseHashComputeAlgorithm responseComputeHashAlgorithm;
 
         // Timeout settings
         NSTimeInterval idleTimeout;
@@ -228,7 +242,6 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
         // TNL BOOLs
         BOOL contributeToExecutingNetworkConnectionsCount:1;
         BOOL skipHostSanitization:1;
-        BOOL computeMD5:1;
 
         // NSURLSessionConfiguration BOOLs
         BOOL allowsCellularAccess:1;
@@ -299,13 +312,13 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
 @property (nonatomic, readonly) BOOL skipHostSanitization;
 
 /**
- Whether the request operation should compute the md5 hash of the response body.
+ The algorithm the request operation should compute a hash of the response body with.
  `executionMode` MUST NOT be `TNLRequestExecutionModeBackground` and
  `responseDataConsumptionMode` MUST NOT be `TNLResponseDataConsumptionModeSaveToDisk`.
 
- Default is `NO`
+ Default is `TNLResponseHashComputeAlgorithmNone` (aka disabled)
  */
-@property (nonatomic, readonly) BOOL computeMD5;
+@property (nonatomic, readonly) TNLResponseHashComputeAlgorithm responseComputeHashAlgorithm;
 
 /**
  The retry policy provider to use.
@@ -512,13 +525,13 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
 
 @property (nonatomic, readwrite) BOOL contributeToExecutingNetworkConnectionsCount;
 @property (nonatomic, readwrite) BOOL skipHostSanitization;
-@property (nonatomic, readwrite) BOOL computeMD5;
 
 @property (nonatomic, readwrite) TNLRequestExecutionMode executionMode;
 @property (nonatomic, readwrite) TNLRequestRedirectPolicy redirectPolicy;
 @property (nonatomic, readwrite) TNLResponseDataConsumptionMode responseDataConsumptionMode;
 @property (nonatomic, readwrite) TNLRequestProtocolOptions protocolOptions;
 @property (nonatomic, readwrite) TNLRequestConnectivityOptions connectivityOptions;
+@property (nonatomic, readwrite) TNLResponseHashComputeAlgorithm responseComputeHashAlgorithm;
 
 @property (nonatomic, strong, readwrite, nullable) id<TNLRequestRetryPolicyProvider> retryPolicyProvider;
 @property (nonatomic, readwrite, nullable) id<TNLContentEncoder> contentEncoder;

@@ -173,10 +173,17 @@ NSURLCache *TNLGetURLCacheDemuxProxy()
     return self;
 }
 
+- (id)initWithMemoryCapacity:(NSUInteger)memoryCapacity diskCapacity:(NSUInteger)diskCapacity directoryURL:(nullable NSURL *)url
+{
+    return [self init];
+}
+
+#if !TARGET_OS_UIKITFORMAC
 - (id)initWithMemoryCapacity:(NSUInteger)memoryCapacity diskCapacity:(NSUInteger)diskCapacity diskPath:(nullable NSString *)path
 {
     return [self init];
 }
+#endif
 
 - (nullable NSCachedURLResponse *)cachedResponseForRequest:(NSURLRequest *)request
 {

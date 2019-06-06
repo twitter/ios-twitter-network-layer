@@ -42,8 +42,8 @@ PRIMITIVE_FIELD(layer8BodyBytesReceived, Layer8BodyBytesReceived, SInt64, longLo
 PRIMITIVE_FIELD(layer8BodyBytesTransmitted, Layer8BodyBytesTransmitted, SInt64, longLongValue) \
 PRIMITIVE_FIELD(serverResponseTime, ServerResponseTime, SInt64, longLongValue) \
 PRIMITIVE_FIELD(localCacheHit, LocalCacheHit, BOOL, boolValue) \
-OBJECT_FIELD(expectedMD5Hash, ExpectedMD5Hash, NSData) \
-OBJECT_FIELD(MD5Hash, MD5Hash, NSData) \
+PRIMITIVE_FIELD(responseBodyHashAlgorithm, ResponseBodyHashAlgorithm, TNLResponseHashComputeAlgorithm, integerValue) \
+OBJECT_FIELD(responseBodyHash, ResponseBodyHash, NSData) \
 OBJECT_FIELD(sessionId, SessionId, NSString) \
 \
 PRIMITIVE_FIELD(taskResumeLatency, TaskResumeLatency, NSTimeInterval, doubleValue) \

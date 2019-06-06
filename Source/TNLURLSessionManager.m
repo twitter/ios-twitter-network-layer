@@ -1330,7 +1330,7 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
         _ivars.protocolOptions = TNLRequestProtocolOptionsDefault;
         _ivars.contributeToExecutingNetworkConnectionsCount = YES;
         _ivars.skipHostSanitization = NO;
-        _ivars.computeMD5 = NO;
+        _ivars.responseComputeHashAlgorithm = TNLResponseHashComputeAlgorithmNone;
 
         [self applyDefaultTimeouts];
 

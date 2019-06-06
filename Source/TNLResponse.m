@@ -8,6 +8,7 @@
 
 #import <mach/mach_time.h>
 
+#import "NSCoder+TNLAdditions.h"
 #import "NSDictionary+TNLAdditions.h"
 #import "NSURLResponse+TNLAdditions.h"
 #import "NSURLSessionTaskMetrics+TNLAdditions.h"
@@ -82,7 +83,39 @@
                                                    forKey:@"info"];
     TNLResponseMetrics *metrics = [aDecoder decodeObjectOfClass:[TNLResponseMetrics class]
                                                          forKey:@"metrics"];
-    id<TNLRequest> request = [aDecoder decodeObjectForKey:@"originalRequest"];
+
+    id<TNLRequest> request = nil;
+    {
+        NSString *originalRequestClassName = [aDecoder decodeObjectOfClass:[NSString class]
+                                                                    forKey:@"originalRequestClass"];
+        Class originalRequestClass = Nil;
+        if (originalRequestClassName != nil) {
+            // we have an archived "request class name", try to convert into a concrete class to decode
+
+            // does the decoder support "class name to class" mapping?
+            if ([aDecoder respondsToSelector:@selector(classForClassName:)]) {
+                // has mapping support, load via mapping
+                originalRequestClass = [(id)aDecoder classForClassName:originalRequestClassName];
+            }
+            // did we not load a mapping and have a class level mapping?
+            if (Nil == originalRequestClass && [[aDecoder class] respondsToSelector:@selector(classForClassName:)]) {
+                // has class level mapping support, load via mapping
+                originalRequestClass = [[aDecoder class] classForClassName:originalRequestClassName];
+            }
+            // did we not load via any mappings?
+            if (Nil == originalRequestClass) {
+                // load directly via NSClassFromString
+                originalRequestClass = NSClassFromString(originalRequestClassName);
+            }
+        }
+
+        // If we have a class...
+        if (originalRequestClass != Nil) {
+            // ... try to decode the request
+            request = [aDecoder decodeObjectOfClass:originalRequestClass
+                                             forKey:@"originalRequest"];
+        }
+    }
 
     self = [self initInternalWithRequest:request
                           operationError:operationError
@@ -97,18 +130,18 @@
 
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
-    [aCoder encodeObject:_operationError forKey:@"operationError"];
+    [aCoder encodeObject:TNLErrorToSecureCodingError(_operationError) forKey:@"operationError"];
     [aCoder encodeObject:_info forKey:@"info"];
     [aCoder encodeObject:_metrics forKey:@"metrics"];
 
-    if ([_originalRequest conformsToProtocol:@protocol(NSCoding)]) {
-        [aCoder encodeObject:_originalRequest forKey:@"originalRequest"];
-    } else if (_originalRequest) {
-        NSURLRequest *request = [TNLRequest URLRequestForRequest:_originalRequest error:NULL];
-        if (request) {
-            [aCoder encodeObject:request forKey:@"originalRequest"];
-        }
+    id<TNLRequest, NSSecureCoding> originalRequest = nil;
+    if ([_originalRequest conformsToProtocol:@protocol(NSSecureCoding)] && [[_originalRequest class] supportsSecureCoding]) {
+        originalRequest = (id<TNLRequest, NSSecureCoding>)_originalRequest;
+    } else {
+        originalRequest = [[TNLResponseEncodedRequest alloc] initWithSourceRequest:_originalRequest];
     }
+    [aCoder encodeObject:NSStringFromClass([originalRequest class]) forKey:@"originalRequestClass"];
+    [aCoder encodeObject:originalRequest forKey:@"originalRequest"];
 }
 
 - (void)prepare
@@ -117,7 +150,7 @@
 
 + (BOOL)supportsSecureCoding
 {
-    return NO; // originalRequest might not be secure coding compliant
+    return YES;
 }
 
 - (NSString *)description
@@ -154,7 +187,7 @@
 
 - (NSUInteger)hash
 {
-    return self.operationError.hash +
+    return (NSUInteger)((NSInteger)self.operationError.domain.hash + self.operationError.code) +
            self.info.hash +
            self.metrics.hash; // ignore the original request hash
 }
@@ -170,19 +203,21 @@
         return NO;
     }
 
-    IS_EQUAL_OBJ_PROP_CHECK(self, other, operationError);
+    if (!TNLSecureCodingErrorsAreEqual(self.operationError, other.operationError)) {
+        return NO;
+    }
 
-    if (self.originalRequest) {
+    if (self.originalRequest != nil) {
         if ([self.originalRequest respondsToSelector:@selector(isEqualToRequest:)]) {
             if (![self.originalRequest isEqualToRequest:other.originalRequest]) {
                 return NO;
             }
         } else {
-            if (![TNLRequest isRequest:self.originalRequest equalTo:other.originalRequest]) {
+            if (![TNLRequest isRequest:self.originalRequest equalTo:other.originalRequest quickBodyComparison:YES]) {
                 return NO;
             }
         }
-    } else if (other.originalRequest) {
+    } else if (other.originalRequest != nil) {
         return NO;
     }
 
@@ -360,10 +395,87 @@
 
 @end
 
+@implementation TNLResponseEncodedRequest
+{
+    NSURL *_URL;
+    TNLHTTPMethod _HTTPMethodValue;
+    NSDictionary<NSString *, NSString *> *_allHTTPHeaderFields;
+}
+
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
+- (instancetype)initWithSourceRequest:(id<TNLRequest>)request
+{
+    if (self = [super init]) {
+        _encodedSourceRequestHadBody = [TNLRequest requestHasBody:request];
+        _encodedSourceRequestClassName = [NSStringFromClass([request class]) copy];
+        _URL = request.URL;
+        _HTTPMethodValue = [TNLRequest HTTPMethodValueForRequest:request];
+        _allHTTPHeaderFields = [request respondsToSelector:@selector(allHTTPHeaderFields)] ? [request.allHTTPHeaderFields copy] : nil;
+    }
+    return self;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+    if (self = [super init]) {
+        _encodedSourceRequestHadBody = [coder decodeBoolForKey:@"hasBody"];
+        _encodedSourceRequestClassName = [coder decodeObjectOfClass:[NSString class] forKey:@"sourceClass"];
+        _URL = [coder decodeObjectOfClass:[NSURL class] forKey:@"URL"];
+        _HTTPMethodValue = [coder decodeIntegerForKey:@"HTTPMethod"];
+        _allHTTPHeaderFields = [coder decodeObjectOfClass:[NSDictionary class] forKey:@"HTTPHeaders"];
+    }
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    [coder encodeBool:_encodedSourceRequestHadBody forKey:@"hasBody"];
+    [coder encodeObject:_encodedSourceRequestClassName forKey:@"sourceClass"];
+    [coder encodeObject:_URL forKey:@"URL"];
+    [coder encodeInteger:_HTTPMethodValue forKey:@"HTTPMethod"];
+    [coder encodeObject:_allHTTPHeaderFields forKey:@"HTTPHeaders"];
+}
+
+- (nullable NSURL *)URL
+{
+    return _URL;
+}
+
+- (TNLHTTPMethod)HTTPMethodValue
+{
+    return _HTTPMethodValue;
+}
+
+- (nullable NSDictionary<NSString *, NSString *> *)allHTTPHeaderFields
+{
+    return _allHTTPHeaderFields;
+}
+
+- (nullable NSData *)HTTPBody
+{
+    if (_encodedSourceRequestHadBody) {
+        /*
+         In order to preserve "isEqual" comparison between the encoded request
+         and the source request, we need to have a non-empty body.
+
+         We're arbitrarily using a valid JSON payload as the body, but it could
+         really be any payload.
+         */
+        return [@"{\"body\":true}" dataUsingEncoding:NSUTF8StringEncoding];
+    }
+    return nil;
+}
+
+@end
+
 @implementation TNLResponseMetrics
 {
     BOOL _final;
-    NSArray *_attemptMetrics;
+    NSArray<TNLAttemptMetrics *> *_attemptMetrics;
 }
 
 @synthesize attemptMetrics = _attemptMetrics;
@@ -389,7 +501,7 @@
         _enqueueMachTime = enqueueTime;
         _completeDate = completeDate;
         _completeMachTime = completeTime;
-        _attemptMetrics = ([attemptMetrics mutableCopy]) ?: [NSMutableArray array];
+        _attemptMetrics = [attemptMetrics mutableCopy] ?: [NSMutableArray array];
         if (gTwitterNetworkLayerAssertEnabled) {
             if (_attemptMetrics.count > 0) {
                 TNLAssert([_attemptMetrics[0] attemptType] == TNLAttemptTypeInitial);
@@ -401,8 +513,7 @@
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder
 {
-    NSArray *attemptMetrics = [aDecoder decodeObjectOfClass:[NSArray class]
-                                                     forKey:@"attemptMetrics"];
+    NSArray<TNLAttemptMetrics *> *attemptMetrics = [aDecoder tnl_decodeArrayOfItemsOfClass:[TNLAttemptMetrics class] forKey:@"attemptMetrics"];
     NSDate *enqueueDate = [aDecoder decodeObjectOfClass:[NSDate class] forKey:@"enqueueDate"] ?: [NSDate dateWithTimeIntervalSince1970:0];
     const uint64_t enqueueTime = (uint64_t)[aDecoder decodeInt64ForKey:@"enqueueTime"];
     const uint64_t completeTime = (uint64_t)[aDecoder decodeInt64ForKey:@"completeTime"];
@@ -770,15 +881,15 @@ static void _addAttemptStart(PRIVATE_SELF(TNLResponseMetrics),
     }
 
     TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueDate:self.enqueueDate
-#pragma clang diagnostics push
+#pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
                                                                       enqueueTime:self.enqueueMachTime
-#pragma clang diagnostics pop
+#pragma clang diagnostic pop
                                                                      completeDate:self.completeDate
-#pragma clang diagnostics push
+#pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
                                                                      completeTime:self.completeMachTime
-#pragma clang diagnostics pop
+#pragma clang diagnostic pop
                                                                    attemptMetrics:dupeSubmetrics];
     return metrics;
 }

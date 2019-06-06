@@ -170,8 +170,8 @@ static NSURLSessionTask *_network_populateURLSessionTask(SELF_ARG,
 static NSError * __nullable _network_appendDecodedData(SELF_ARG,
                                                        NSData * __nullable data);
 static void _network_didStartTask(SELF_ARG, BOOL isBackgroundRequest);
-static void _network_updateMD5(SELF_ARG, NSData *data);
-static void _network_finishMD5(SELF_ARG, BOOL success);
+static void _network_updateHash(SELF_ARG, NSData *data);
+static void _network_finishHash(SELF_ARG, BOOL success);
 
 #pragma mark Idle Timeout
 
@@ -234,8 +234,9 @@ static void _network_idleTimerFired(SELF_ARG);
 
     // Gathered State
 
-    CC_MD5_CTX _md5Context;
-    NSData *_md5HashData;
+    void *_hashContextRef;
+    NSData *_hashData;
+    TNLResponseHashComputeAlgorithm _hashAlgo;
     NSDictionary *_authChallengeCancelledUserInfo;
     NSMutableData *_storedData;
     TNLTemporaryFile *_tempFile;
@@ -254,8 +255,8 @@ static void _network_idleTimerFired(SELF_ARG);
         BOOL didCancel:1;
         BOOL didStart:1;
         BOOL didIncrementExecutionCount:1;
-        BOOL shouldComputeMD5:1;
-        BOOL isComputingMD5:1;
+        BOOL shouldComputeHash:1;
+        BOOL isComputingHash:1;
         BOOL isFinalizing:1;
         BOOL useIdleTimeout:1;
         BOOL useIdleTimeoutForInitialConnection:1;
@@ -303,7 +304,8 @@ static void _network_idleTimerFired(SELF_ARG);
         _requestOperation = op;
         _responseClass = op.responseClass;
 
-        _flags.shouldComputeMD5 = (op.requestConfiguration.computeMD5 != NO);
+        _hashAlgo = op.requestConfiguration.responseComputeHashAlgorithm;
+        _flags.shouldComputeHash = (_hashAlgo != TNLResponseHashComputeAlgorithmNone);
         _flags.shouldCaptureResponse = 1;
 
         if (Nil == [NSURLSessionTaskMetrics class]) {
@@ -325,6 +327,8 @@ static void _network_idleTimerFired(SELF_ARG);
 
 - (void)dealloc
 {
+    TNLAssert(!_hashContextRef);
+
     _network_stopIdleTimer(self);
     if (!self.isComplete) {
         [self.URLSessionTask cancel];
@@ -1409,17 +1413,9 @@ static void _network_setObservingURLSessionTask(SELF_ARG,
             metaData.serverResponseTime = [responseTime longLongValue];
         }
 
-        NSString *contentMD5 = lowerCaseHeaderFields[@"content-md5"];
-        if (contentMD5.length > 0) {
-            NSData *data = [[NSData alloc] initWithBase64EncodedString:contentMD5
-                                                               options:NSDataBase64DecodingIgnoreUnknownCharacters];
-            if (data.length == CC_MD5_DIGEST_LENGTH) {
-                metaData.expectedMD5Hash = data;
-            }
-        }
-
-        if (_md5HashData.length == CC_MD5_DIGEST_LENGTH) {
-            metaData.MD5Hash = _md5HashData;
+        if (_hashData) {
+            metaData.responseBodyHashAlgorithm = _hashAlgo;
+            metaData.responseBodyHash = _hashData;
         }
 
         metaData.localCacheHit = response.tnl_wasCachedResponse;
@@ -1713,7 +1709,7 @@ static void _network_fail(SELF_ARG,
     self->_error = error;
     TNLLogDebug(@"%@ error: %@", self, self->_error);
 
-    _network_finishMD5(self, NO /*success*/);
+    _network_finishHash(self, NO /*success*/);
     _network_buildResponseInfo(self);
     TNLAssert(self->_responseInfo);
     _network_finalize(self, (didCancel) ? TNLRequestOperationStateCancelled : TNLRequestOperationStateFailed);
@@ -1750,7 +1746,7 @@ static void _network_complete(SELF_ARG)
     self->_contentDecoderRecentData = nil;
     self->_responseBodyEndDate = [NSDate date];
 
-    _network_finishMD5(self, YES /*success*/);
+    _network_finishHash(self, YES /*success*/);
     _network_buildResponseInfo(self);
     TNLAssert(self->_responseInfo);
     _network_finalize(self, TNLRequestOperationStateSucceeded);
@@ -1927,7 +1923,7 @@ static NSError * __nullable _network_appendDecodedData(SELF_ARG,
 
     NSError *error = nil;
     _network_transitionState(self, TNLRequestOperationStateRunning);
-    _network_updateMD5(self, data);
+    _network_updateHash(self, data);
 
     NSHTTPURLResponse *URLResponse = self.URLResponse;
 
@@ -2461,41 +2457,187 @@ static void _network_idleTimerFired(SELF_ARG)
     }
 }
 
-#pragma mark MD5
+#pragma mark Hash
 
-static void _network_updateMD5(SELF_ARG,
-                               NSData *data)
+NS_INLINE void* __nullable _mallocAndInitHashContext(TNLResponseHashComputeAlgorithm algo)
+{
+#define INIT_HASH(hash) ({ \
+    contextRef = malloc(sizeof(CC_##hash##_CTX)); \
+    CC_##hash##_Init((CC_##hash##_CTX *)contextRef); \
+})
+
+    void* contextRef = NULL;
+    switch (algo) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        case TNLResponseHashComputeAlgorithmMD2:
+            INIT_HASH(MD2);
+#pragma clang diagnostic pop
+            break;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        case TNLResponseHashComputeAlgorithmMD4:
+            INIT_HASH(MD4);
+#pragma clang diagnostic pop
+            break;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        case TNLResponseHashComputeAlgorithmMD5:
+            INIT_HASH(MD5);
+#pragma clang diagnostic pop
+            break;
+        case TNLResponseHashComputeAlgorithmSHA1:
+            INIT_HASH(SHA1);
+            break;
+        case TNLResponseHashComputeAlgorithmSHA256:
+            INIT_HASH(SHA256);
+            break;
+        case TNLResponseHashComputeAlgorithmSHA512:
+            INIT_HASH(SHA512);
+            break;
+        case TNLResponseHashComputeAlgorithmNone:
+        default:
+            break;
+    }
+
+#undef INIT_HASH
+
+    return contextRef;
+}
+
+NS_INLINE void _updateHash(TNLResponseHashComputeAlgorithm algo, void * __nullable contextRef, const void *data, CC_LONG len)
+{
+    if (!contextRef) {
+        return;
+    }
+
+#define UPDATE_HASH(hash) ({ \
+    CC_##hash##_Update((CC_##hash##_CTX *)contextRef, data, len); \
+})
+
+    switch (algo) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        case TNLResponseHashComputeAlgorithmMD2:
+            UPDATE_HASH(MD2);
+#pragma clang diagnostic pop
+            break;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        case TNLResponseHashComputeAlgorithmMD4:
+            UPDATE_HASH(MD4);
+#pragma clang diagnostic pop
+            break;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        case TNLResponseHashComputeAlgorithmMD5:
+            UPDATE_HASH(MD5);
+#pragma clang diagnostic pop
+            break;
+        case TNLResponseHashComputeAlgorithmSHA1:
+            UPDATE_HASH(SHA1);
+            break;
+        case TNLResponseHashComputeAlgorithmSHA256:
+            UPDATE_HASH(SHA256);
+            break;
+        case TNLResponseHashComputeAlgorithmSHA512:
+            UPDATE_HASH(SHA512);
+            break;
+        case TNLResponseHashComputeAlgorithmNone:
+        default:
+            break;
+    }
+
+#undef UPDATE_HASH
+
+}
+
+NS_INLINE NSData * __nullable _finalizeHash(TNLResponseHashComputeAlgorithm algo, void * __nullable contextRef, BOOL success)
+{
+    if (!contextRef) {
+        return nil;
+    }
+
+    unsigned char *hashBuffer = NULL;
+    NSData *hashData = nil;
+
+#define FINALIZE_HASH(hash) ({ \
+    hashBuffer = (unsigned char *)malloc(CC_##hash##_DIGEST_LENGTH); \
+    hashData = [NSData dataWithBytesNoCopy:hashBuffer length:CC_##hash##_DIGEST_LENGTH freeWhenDone:YES]; \
+    CC_##hash##_Final(hashBuffer, (CC_##hash##_CTX *)contextRef); \
+})
+
+    switch (algo) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        case TNLResponseHashComputeAlgorithmMD2:
+            FINALIZE_HASH(MD2);
+#pragma clang diagnostic pop
+            break;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        case TNLResponseHashComputeAlgorithmMD4:
+            FINALIZE_HASH(MD4);
+#pragma clang diagnostic pop
+            break;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        case TNLResponseHashComputeAlgorithmMD5:
+            FINALIZE_HASH(MD5);
+#pragma clang diagnostic pop
+            break;
+        case TNLResponseHashComputeAlgorithmSHA1:
+            FINALIZE_HASH(SHA1);
+            break;
+        case TNLResponseHashComputeAlgorithmSHA256:
+            FINALIZE_HASH(SHA256);
+            break;
+        case TNLResponseHashComputeAlgorithmSHA512:
+            FINALIZE_HASH(SHA512);
+            break;
+        case TNLResponseHashComputeAlgorithmNone:
+        default:
+            break;
+    }
+
+#undef FINALIZE_HASH
+
+    return (success) ? hashData : nil;
+}
+
+static void _network_updateHash(SELF_ARG,
+                                NSData *data)
 {
     if (!self) {
         return;
     }
 
-    if (!self->_flags.isComputingMD5 && self->_flags.shouldComputeMD5) {
-        CC_MD5_Init(&self->_md5Context);
-        self->_flags.isComputingMD5 = YES;
+    if (!self->_flags.isComputingHash && self->_flags.shouldComputeHash) {
+        self->_hashContextRef = _mallocAndInitHashContext(self->_hashAlgo);
+        self->_flags.isComputingHash = YES;
     }
-    if (self->_flags.isComputingMD5) {
-        CC_MD5_Update(&self->_md5Context, data.bytes, (CC_LONG)data.length);
+
+    if (self->_flags.isComputingHash) {
+        [data enumerateByteRangesUsingBlock:^(const void * _Nonnull bytes, NSRange byteRange, BOOL * _Nonnull stop) {
+            _updateHash(self->_hashAlgo, self->_hashContextRef, bytes, (CC_LONG)byteRange.length);
+        }];
     }
 }
 
-static void _network_finishMD5(SELF_ARG,
-                               BOOL success)
+static void _network_finishHash(SELF_ARG,
+                                BOOL success)
 {
     if (!self) {
         return;
     }
 
-    if (self->_flags.isComputingMD5) {
-        unsigned char *md5HashBuffer = (unsigned char *)malloc(CC_MD5_DIGEST_LENGTH);
-        self->_md5HashData = [NSData dataWithBytesNoCopy:md5HashBuffer
-                                                  length:CC_MD5_DIGEST_LENGTH
-                                            freeWhenDone:YES];
-        CC_MD5_Final(md5HashBuffer, &self->_md5Context);
-        if (!success) {
-            self->_md5HashData = nil;
+    if (self->_flags.isComputingHash) {
+        if (self->_hashContextRef) {
+            self->_hashData = _finalizeHash(self->_hashAlgo, self->_hashContextRef, success);
+            free(self->_hashContextRef);
+            self->_hashContextRef = NULL;
         }
-        self->_flags.isComputingMD5 = NO;
+        self->_flags.isComputingHash = NO;
     }
 }
 
@@ -2656,7 +2798,12 @@ static NSString *TNLSecCertificateDescription(SecCertificateRef cert)
 #if TARGET_OS_OSX
         serialNumberData = (NSData *)CFBridgingRelease(SecCertificateCopySerialNumber(cert, NULL));
 #else
+#if TARGET_OS_UIKITFORMAC
+        // this is not possible since UIKITFORMAC starts at iOS 13, which will hit the above line
+        TNLAssertNever();
+#else
         serialNumberData = (NSData *)CFBridgingRelease(SecCertificateCopySerialNumber(cert));
+#endif
 #endif
     }
     if (serialNumberData) {

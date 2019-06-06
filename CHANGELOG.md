@@ -2,13 +2,18 @@
 
 ## Info
 
-**Document version:** 2.6.1
+**Document version:** 2.7.0
 
-**Last updated:** 05/30/2019
+**Last updated:** 06/05/2019
 
 **Author:** Nolan O'Brien
 
 ## History
+
+### 2.7.0
+ 
+ - Change `TNLRequestConfiguration` to accept a `TNLResponseHashComputeAlgorithm` to specify how to hash
+   - MD5 was marked deprecated in iOS 13, so providing a wider range of algorithms without eliminating MD5 support is needed
 
 ### 2.6.1
 
