@@ -24,6 +24,7 @@
 #define kSharedKeySharedContainerIdentifier @"scid"
 #define kSharedKeySessionSendsLaunchEvents  @"ssle"
 #define kSharedKeyMultiPathServiceType      @"mptcp" // Multipath TCP (MPTCP)
+#define kSharedKeyShouldUseExtendedBackgroundIdleMode   @"xbim"
 
 #pragma mark Keys for URL Sessions Configs
 
@@ -49,6 +50,7 @@
 #define TNLSessionConfigurationPropertyKeySharedContainerIdentifier     kSharedKeySharedContainerIdentifier
 #define TNLSessionConfigurationPropertyKeyProtocolClassPrefix           @"pc" // key will be this prefix concatenated with an index
 #define TNLSessionConfigurationPropertyKeyMultipathServiceType          kSharedKeyMultiPathServiceType
+#define TNLSessionConfigurationPropertyKeyShouldUseExtendedBackgroundIdleMode   kSharedKeyShouldUseExtendedBackgroundIdleMode
 
 #pragma mark Keys for TNL Request Configs
 
@@ -72,4 +74,5 @@
 #define TNLRequestConfigurationPropertyKeyCookieStorage                         kSharedKeyHTTPCookieStorage
 #define TNLRequestConfigurationPropertyKeySharedContainerIdentifier             kSharedKeySharedContainerIdentifier
 #define TNLRequestConfigurationPropertyKeyMultipathServiceType                  kSharedKeyMultiPathServiceType
+#define TNLRequestConfigurationPropertyKeyShouldUseExtendedBackgroundIdleMode   kSharedKeyShouldUseExtendedBackgroundIdleMode
 

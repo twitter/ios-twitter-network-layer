@@ -2,13 +2,35 @@
 
 ## Info
 
-**Document version:** 2.7.0
+**Document version:** 2.8.1
 
-**Last updated:** 06/05/2019
+**Last updated:** 08/26/2019
 
 **Author:** Nolan O'Brien
 
 ## History
+
+### 2.8.1
+
+- Disable `connectivityOptions` on `TNLRequestConfiguration` for iOS 13+
+  - `connectivityOptions` are backed by `NSURLSessionConfiguration` `waitsForConnectivity`
+  - `waitsForConnectivity` regressed in iOS 13 betas and is unuseable as a feature currently.
+  - _NOTE: if iOS 13 releases with this regression and it is not promptly fixed with an iOS 13.1, __TNL__ will completely disable support for `waitsForConnectivity` behavior by deprecating the `connectivityOptions` configuration property._
+
+### 2.8.0
+
+- Expose `shouldUseExtendedBackgroundIdleMode` in `TNLRequestConfiguration`
+  - There's a lot of nuance to this configuration property, so take care when using it 
+
+### 2.7.5
+
+- Change it so that iOS 12 and above use __Network.framework__ for reachability instead of __SystemConfiguration.framework__
+  - Reachability in __SystemConfiguration.framework__ has been broken in simulator since iOS 11
+  - Reachability in __SystemConfiguration.framework__ will no longer work at all starting in iOS 13
+  - Reachability using `nw_path_monitor_t` is the new canonical way to observe reachability changes, so we'll use that
+- Change network reachability flags in `TNLCommunicationAgent` from `SCNetworkReachabilityFlags` to `TNLNetworkReachabilityFlags`
+  - On iOS 11 and below, the flags are exactly the same as `SCNetworkReachabilityFlags`
+  - On iOS 12 and above, the flags now map to the new `TNLNetworkReachabilityMask` flags
 
 ### 2.7.0
  

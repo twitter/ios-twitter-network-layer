@@ -46,6 +46,20 @@ NS_ASSUME_NONNULL_BEGIN
 + (BOOL)tnl_URLSessionSupportsDecodingBrotliContentEncoding;
 
 /**
+ Introduced in iOS 11, `waitsForConnectivity` offers a great deal of control over network requests and
+ can help avoid needlessly failing a request that can wait until there is a network connection to execute.
+ With iOS 13 beta (and matching tvOS, macOS and watchOS versions), Apple regressed `waitsForConnectivity`.
+ `NSURLSession` layer no longer calls `NSURLSessionTaskDelegate` `URLSession:taskIsWaitingForConnectivity:`
+ rendering the feature impotent and dangerous (easily leading to never finishing network requests which
+ can lead to interminable hangs based on the dependencies established on the `TNLRequestOperation`).
+ #FB7027774
+ For versions of iOS (and other matching OSes) that did not support `waitsForConnectivity` (below iOS 11), this will return `NO`.
+ For versions of iOS (and other matching OSes) that have the regression from iOS 13, this will return `NO`.
+ Otherwise, this will return `YES` and `waitsForConnectivity` features can be used.
+ */
++ (BOOL)tnl_URLSessionCanUseWaitsForConnectivity;
+
+/**
  Convenience method for appropriately mutating the session configuration's `protocolClasses`
  */
 - (void)tnl_insertProtocolClasses:(nullable NSArray<Class> *)additionalClasses;

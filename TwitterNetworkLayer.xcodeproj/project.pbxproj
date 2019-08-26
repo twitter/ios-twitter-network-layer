@@ -255,6 +255,7 @@
 		8BCA626419C356AE00F3F8CA /* TNLRequestOperationState.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BCA626319C356AE00F3F8CA /* TNLRequestOperationState.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BCAF8C519F716370043EB22 /* TNLRequestOperationCancelSource.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BCAF8C319F716370043EB22 /* TNLRequestOperationCancelSource.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BCAF8C619F716370043EB22 /* TNLRequestOperationCancelSource.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BCAF8C419F716370043EB22 /* TNLRequestOperationCancelSource.m */; };
+		8BCC9EF022AC36C400A5D1C8 /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BCC9EEF22AC36C400A5D1C8 /* Network.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		8BD083C91FD9C2020090B7C3 /* TNLTimeoutOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BD083C71FD9C2020090B7C3 /* TNLTimeoutOperation.h */; };
 		8BD083CA1FD9C2020090B7C3 /* TNLTimeoutOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BD083C81FD9C2020090B7C3 /* TNLTimeoutOperation.m */; };
 		8BD083CB1FD9C20E0090B7C3 /* TNLTimeoutOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BD083C71FD9C2020090B7C3 /* TNLTimeoutOperation.h */; };
@@ -265,6 +266,8 @@
 		8BD500E71D8765F200D828C7 /* TNLURLStringCoding.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BD500E61D8765F200D828C7 /* TNLURLStringCoding.m */; };
 		8BD500F51D87762200D828C7 /* TNL_ProjectCommon.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BD500F31D87762200D828C7 /* TNL_ProjectCommon.h */; };
 		8BD500F61D87762200D828C7 /* TNL_ProjectCommon.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BD500F41D87762200D828C7 /* TNL_ProjectCommon.m */; };
+		8BD8715D22AD82360011DACA /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BCC9EEF22AC36C400A5D1C8 /* Network.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		8BD8715E22AD823A0011DACA /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BCC9EEF22AC36C400A5D1C8 /* Network.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		8BDA9D2D197881DE00678D90 /* TNLError.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BDA9D2B197881DE00678D90 /* TNLError.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BDA9D2F197881DE00678D90 /* TNLError.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDA9D2C197881DE00678D90 /* TNLError.m */; };
 		8BDA9D331978822300678D90 /* TNLPriority.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BDA9D311978822300678D90 /* TNLPriority.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -687,7 +690,6 @@
 		8B022A8119AAD2F800DB3052 /* NSDictionary+TNLAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+TNLAdditions.h"; sourceTree = "<group>"; };
 		8B022A8219AAD2F800DB3052 /* NSDictionary+TNLAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+TNLAdditions.m"; sourceTree = "<group>"; };
 		8B07EE681987E7DD00F9EF8E /* TNL_Project.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNL_Project.m; sourceTree = "<group>"; };
-		8B0A07721C73E736002F63B1 /* TwitterLoggingService.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = TwitterLoggingService.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B0AFAA61A018EBE00C8C81F /* TNLPseudoURLProtocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLPseudoURLProtocol.h; sourceTree = "<group>"; };
 		8B0AFAA71A018EBE00C8C81F /* TNLPseudoURLProtocol.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLPseudoURLProtocol.m; sourceTree = "<group>"; };
 		8B0AFAAD1A01C20000C8C81F /* TNLPseudoRequestOperationTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLPseudoRequestOperationTest.m; sourceTree = "<group>"; };
@@ -808,6 +810,7 @@
 		8BCA626319C356AE00F3F8CA /* TNLRequestOperationState.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLRequestOperationState.h; sourceTree = "<group>"; };
 		8BCAF8C319F716370043EB22 /* TNLRequestOperationCancelSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLRequestOperationCancelSource.h; sourceTree = "<group>"; };
 		8BCAF8C419F716370043EB22 /* TNLRequestOperationCancelSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLRequestOperationCancelSource.m; sourceTree = "<group>"; };
+		8BCC9EEF22AC36C400A5D1C8 /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = System/Library/Frameworks/Network.framework; sourceTree = SDKROOT; };
 		8BD083C71FD9C2020090B7C3 /* TNLTimeoutOperation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TNLTimeoutOperation.h; sourceTree = "<group>"; };
 		8BD083C81FD9C2020090B7C3 /* TNLTimeoutOperation.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TNLTimeoutOperation.m; sourceTree = "<group>"; };
 		8BD317BE19A8DD0100DF1836 /* TNLXPlaygroundViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLXPlaygroundViewController.h; sourceTree = "<group>"; };
@@ -929,6 +932,7 @@
 				8BB26ABB1D8B142E00D1AB5A /* CFNetwork.framework in Frameworks */,
 				8B4AA7621E1F297C00BF7EA0 /* CoreTelephony.framework in Frameworks */,
 				8BE402CA1946743D00C7241E /* Foundation.framework in Frameworks */,
+				8BCC9EF022AC36C400A5D1C8 /* Network.framework in Frameworks */,
 				8B427D551FB53DBF00C9E5CE /* Security.framework in Frameworks */,
 				8BE3DB9D1CDB00B00081ACCE /* SystemConfiguration.framework in Frameworks */,
 				8BB26ABC1D8B143900D1AB5A /* UIKit.framework in Frameworks */,
@@ -962,6 +966,7 @@
 				8BFDF9402135AB2C002F6A80 /* Security.framework in Frameworks */,
 				8BFDF9412135AB2C002F6A80 /* SystemConfiguration.framework in Frameworks */,
 				8BFDF9422135AB2C002F6A80 /* UIKit.framework in Frameworks */,
+				8BD8715E22AD823A0011DACA /* Network.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -989,6 +994,7 @@
 				BF4AA0EF1EE61D46001647B5 /* libz.tbd in Frameworks */,
 				BF4AA0F01EE61D46001647B5 /* CFNetwork.framework in Frameworks */,
 				BF4AA0F21EE61D46001647B5 /* Foundation.framework in Frameworks */,
+				8BD8715D22AD82360011DACA /* Network.framework in Frameworks */,
 				8BFDF8FD2135A1FC002F6A80 /* Security.framework in Frameworks */,
 				BF4AA0F31EE61D46001647B5 /* SystemConfiguration.framework in Frameworks */,
 			);
@@ -1142,6 +1148,7 @@
 		8BE402C81946743D00C7241E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				8BCC9EEF22AC36C400A5D1C8 /* Network.framework */,
 				8BFDF8FC2135A1FC002F6A80 /* Security.framework */,
 				8B022A7B19AA52F800DB3052 /* Accounts.framework */,
 				8B6DCB4B1974598300235576 /* CFNetwork.framework */,
@@ -1156,7 +1163,6 @@
 				8B427D541FB53DBF00C9E5CE /* Security.framework */,
 				8B022A7F19AA530000DB3052 /* Social.framework */,
 				8B4DEFF81986AA64008A31EB /* SystemConfiguration.framework */,
-				8B0A07721C73E736002F63B1 /* TwitterLoggingService.framework */,
 				8B6DCB491974583B00235576 /* UIKit.framework */,
 				8BE402D71946743E00C7241E /* XCTest.framework */,
 			);
@@ -1766,7 +1772,7 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = TNL;
-				LastUpgradeCheck = 1020;
+				LastUpgradeCheck = 1030;
 				ORGANIZATIONNAME = Twitter;
 				TargetAttributes = {
 					8B9EBDB52135B4B100E6E466 = {
@@ -2249,6 +2255,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_MODULES_AUTOLINK = NO;
+				CODE_SIGN_IDENTITY = "";
 				DEFINES_MODULE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				PRODUCT_BUNDLE_IDENTIFIER = com.twitter.TwitterNetworkLayer;
@@ -2262,6 +2269,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_MODULES_AUTOLINK = NO;
+				CODE_SIGN_IDENTITY = "";
 				DEFINES_MODULE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				PRODUCT_BUNDLE_IDENTIFIER = com.twitter.TwitterNetworkLayer;
@@ -2517,6 +2525,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_MODULES_AUTOLINK = NO;
+				CODE_SIGN_IDENTITY = "";
 				DEFINES_MODULE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				PRODUCT_BUNDLE_IDENTIFIER = com.twitter.TwitterNetworkLayer;
@@ -2530,6 +2539,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_MODULES_AUTOLINK = NO;
+				CODE_SIGN_IDENTITY = "";
 				DEFINES_MODULE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				PRODUCT_BUNDLE_IDENTIFIER = com.twitter.TwitterNetworkLayer;

@@ -137,6 +137,9 @@ FOUNDATION_EXTERN Class __nullable TNLDynamicUIApplicationClass(void);
 
 #define TNLLogVerboseEnabled() ([gTNLLogger respondsToSelector:@selector(tnl_shouldLogVerbosely)] ? [gTNLLogger tnl_shouldLogVerbosely] : NO)
 
+#define TNL_LOG_WAITS_FOR_CONNECTIVITY_WARNING() \
+TNLLogWarning(@"Cannot modify -[TNLRequestConfiguration connectivityOptions] on iOS 13+ (and matching tvOS, macOS, watchOS versions).  Apple bug introduced with `NSURLSessionConfiguration.waitsForConnectivity` in iOS 13 betas, #FB7027774.");
+
 #pragma mark - Introspection
 
 #if DEBUG

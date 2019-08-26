@@ -10,12 +10,37 @@
 
 #if !TARGET_OS_WATCH // no communication agent for watchOS
 
-#import <SystemConfiguration/SystemConfiguration.h>
+/**
+ `TNLNetworkReachabilityFlags` are the same as `SCNetworkReachability` on iOS 11 and below.
+ On iOS 12+, they are a different set of flags matching `TNLNetworkReachabilityMask` options.
+ */
+typedef uint32_t TNLNetworkReachabilityFlags;
 
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol TNLCarrierInfo;
 @protocol TNLCommunicationAgentObserver;
+
+/**
+ Mask that is in place for `TNLNetworkReachabilityFlags` on iOS 12+
+ */
+typedef NS_OPTIONS(uint32_t, TNLNetworkReachabilityMask)
+{
+    TNLNetworkReachabilityMaskNone = 0,
+
+    TNLNetworkReachabilityMaskPathStatusSatisfied = 1 << 0,
+    TNLNetworkReachabilityMaskPathStatusUnsatisfied = 1 << 1,
+    TNLNetworkReachabilityMaskPathStatusSatisfiable = 1 << 2,
+    // 0 path status == invalid
+
+    TNLNetworkReachabilityMaskPathIntefaceTypeOther = (1 << 8) << 0,
+    TNLNetworkReachabilityMaskPathIntefaceTypeWifi = (1 << 8) << 1,
+    TNLNetworkReachabilityMaskPathIntefaceTypeCellular = (1 << 8) << 2,
+    TNLNetworkReachabilityMaskPathIntefaceTypeWired = (1 << 8) << 3,
+    TNLNetworkReachabilityMaskPathIntefaceTypeLoopback = (1 << 8) << 4,
+    // 0 path interface type == none
+
+} API_AVAILABLE(macos(10.14), ios(12.0), watchos(5.0), tvos(12.0));
 
 /**
  Enum of reachability statuses from the `TNLCommunicationAgent`
@@ -81,7 +106,7 @@ typedef NS_ENUM(NSInteger, TNLWWANRadioAccessTechnologyValue) {
     /** Unknown radio access tech */
     TNLWWANRadioAccessTechnologyValueUnknown    = 0,
 
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 
     /** 2G, `CTRadioAccessTechnologyGPRS` */
     TNLWWANRadioAccessTechnologyValueGPRS       = 1,
@@ -114,7 +139,7 @@ typedef NS_ENUM(NSInteger, TNLWWANRadioAccessTechnologyValue) {
     /** 4G, Not defined in `CTTelephonyNetworkInfo.h` */
     TNLWWANRadioAccessTechnologyValueHSPAP      = 15
 
-#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#endif // #if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 };
 
 //! Convert a WWAN radio access technololgy `NSString` into a `TNLWWANRadioAccessTechnologyValue`
@@ -141,11 +166,11 @@ typedef NS_ENUM(NSInteger, TNLWWANRadioAccessGeneration) {
 //! Determine the `TNLWWANRadioAccessGeneration` from a `TNLWWANRadioAccessTechnologyValue`
 FOUNDATION_EXTERN TNLWWANRadioAccessGeneration TNLWWANRadioAccessGenerationForTechnologyValue(TNLWWANRadioAccessTechnologyValue value) __attribute__((const));
 
-//! String to break SCNetworkReachabilityFlags into a string of flags - for debug purposes only
-FOUNDATION_EXTERN NSString *TNLDebugStringFromNetworkReachabilityFlags(SCNetworkReachabilityFlags flags);
+//! String to break TNLNetworkReachabilityFlags into a string of flags - for debug purposes only.  Has different outputs for iOS 11- and iOS 12+.
+FOUNDATION_EXTERN NSString *TNLDebugStringFromNetworkReachabilityFlags(TNLNetworkReachabilityFlags flags);
 
 
-typedef void(^TNLCommunicationAgentIdentifyReachabilityCallback)(SCNetworkReachabilityFlags flags, TNLNetworkReachabilityStatus status);
+typedef void(^TNLCommunicationAgentIdentifyReachabilityCallback)(TNLNetworkReachabilityFlags flags, TNLNetworkReachabilityStatus status);
 typedef void(^TNLCommunicationAgentIdentifyCarrierInfoCallback)(id<TNLCarrierInfo> __nullable info);
 typedef void(^TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback)(NSString * __nullable info);
 typedef void(^TNLCommunicationAgentIdentifyCaptivePortalStatusCallback)(TNLCaptivePortalStatus status);
@@ -222,7 +247,7 @@ typedef void(^TNLCommunicationAgentIdentifyCaptivePortalStatusCallback)(TNLCapti
 /** cached reachability status */
 @property (atomic, readonly) TNLNetworkReachabilityStatus currentReachabilityStatus;
 /** cached reachability flags */
-@property (atomic, readonly) SCNetworkReachabilityFlags currentReachabilityFlags;
+@property (atomic, readonly) TNLNetworkReachabilityFlags currentReachabilityFlags;
 /** cached radio access technology. Note: `nil` for macOS and UIKit for Mac */
 @property (atomic, copy, readonly, nullable) NSString *currentWWANRadioAccessTechnology;
 /** cached captive portal status */
@@ -248,14 +273,14 @@ typedef void(^TNLCommunicationAgentIdentifyCaptivePortalStatusCallback)(TNLCapti
  called when the oberver is registered with the initial trait values at the time of registration
 
  @parameter communicationAgent related comminication agent for registration
- @parameter didRegisterObserverWithInitialReachabilityFlags Reachability configuration flags that were registered
+ @parameter flags Reachability configuration flags that were registered
  @parameter status current network reachability status
  @parameter carrierInfo Any available carrier information.  Note: This is `nil` in macOS as there is no cellular carrier involved.
  @parameter WWANRadioAccessTechnology GPRS, EDGE, LTE, etc. Note: This is `nil` in macOS as there is no cellular carrier involved.
  @parameter captivePortalStatus the `TNLCaptivePortalStatus` upon registration of an observer
  */
 - (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
-        didRegisterObserverWithInitialReachabilityFlags:(SCNetworkReachabilityFlags)flags
+        didRegisterObserverWithInitialReachabilityFlags:(TNLNetworkReachabilityFlags)flags
         status:(TNLNetworkReachabilityStatus)status
         carrierInfo:(nullable id<TNLCarrierInfo>)info
         WWANRadioAccessTechnology:(nullable NSString *)radioTech
@@ -263,9 +288,9 @@ typedef void(^TNLCommunicationAgentIdentifyCaptivePortalStatusCallback)(TNLCapti
 
 /** called when reachability changes */
 - (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
-        didUpdateReachabilityFromPreviousFlags:(SCNetworkReachabilityFlags)oldFlags
+        didUpdateReachabilityFromPreviousFlags:(TNLNetworkReachabilityFlags)oldFlags
         previousStatus:(TNLNetworkReachabilityStatus)oldStatus
-        toCurrentFlags:(SCNetworkReachabilityFlags)newFlags
+        toCurrentFlags:(TNLNetworkReachabilityFlags)newFlags
         currentStatus:(TNLNetworkReachabilityStatus)newStatus;
 
 /** called when carrier info changes

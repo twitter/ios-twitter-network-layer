@@ -44,7 +44,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #define kTaskMetricsNotSeenOnCompletionDelayCompletionDuration (0.300)
 
-static NSString * const kTempFileDir = @"com.tnl.temp";
+static NSString * const kTempFilePrefix = @"com.tnl.temp.";
 
 static NSString *TNLWriteDataToTemporaryFile(NSData *data);
 static BOOL TNLURLRequestHasBody(NSURLRequest *request, id<TNLRequest> requestPrototype);
@@ -873,7 +873,7 @@ static void _network_handleRedirect(SELF_ARG,
         }
 
         _network_transitionState(self, TNLRequestOperationStateRunning);
-        TNLAttemptMetaData *metadata = [self network_metaData];
+        TNLAttemptMetaData *metadata = [self network_metaDataWithLowerCaseHeaderFields:[response.allHeaderFields tnl_copyWithLowercaseKeys]];
         [requestOperation network_URLSessionTaskOperation:self
                                            redirectedFrom:fromRequest
                                          withHTTPResponse:response
@@ -1378,7 +1378,7 @@ static void _network_setObservingURLSessionTask(SELF_ARG,
     }
 }
 
-- (TNLAttemptMetaData *)network_metaData
+- (TNLAttemptMetaData *)network_metaDataWithLowerCaseHeaderFields:(nullable NSDictionary *)lowerCaseHeaderFields
 {
     NSURLSessionTask *task = self.URLSessionTask;
     TNLAttemptMetaData *metaData = [[TNLAttemptMetaData alloc] init];
@@ -1389,7 +1389,8 @@ static void _network_setObservingURLSessionTask(SELF_ARG,
 
         NSHTTPURLResponse *response = self.URLResponse;
         TNLAssert(!response || response == task.response || response == _cancelledRedirectResponse);
-        NSDictionary *lowerCaseHeaderFields = [response.allHeaderFields tnl_copyWithLowercaseKeys];
+
+        metaData.responseLowercaseHeaders = lowerCaseHeaderFields;
 
         if (_layer8BodyBytesReceived >= 0) {
             metaData.layer8BodyBytesReceived = _layer8BodyBytesReceived;
@@ -1579,7 +1580,7 @@ static void _network_resumeSessionTask(SELF_ARG,
     // reusing the same QOS for the execution of the task
 
     const TNLPriority requestPriority = self.requestPriority;
-    dispatch_sync(dispatch_get_global_queue(TNLConvertTNLPriorityToGCDQOS(requestPriority), 0), ^{
+    dispatch_sync(dispatch_get_global_queue((long)TNLConvertTNLPriorityToGCDQOS(requestPriority), 0), ^{
         self->_taskResumeDate = [NSDate date];
         self->_taskResumePriority = requestPriority;
         [task resume];
@@ -1655,7 +1656,7 @@ static void _network_buildInternalResponse(SELF_ARG)
         return;
     }
 
-    TNLAttemptMetaData *metadata = [self network_metaData];
+    TNLAttemptMetaData *metadata = [self network_metaDataWithLowerCaseHeaderFields:self->_responseInfo.allHTTPHeaderFieldsWithLowerCaseKeys];
     TNLAttemptMetrics *attemptMetrics = [[TNLAttemptMetrics alloc] initWithType:TNLAttemptTypeInitial
                                                                       startDate:self->_startDate
                                                                   startMachTime:self->_startMachTime
@@ -2022,7 +2023,7 @@ static void _network_finalizeWithResponseCompletion(SELF_ARG,
     if (strongRequestOp) {
         NSURLSessionTaskMetrics *taskMetrics = self->_taskMetrics;
 
-        TNLAttemptMetaData *metaData = [self network_metaData];
+        TNLAttemptMetaData *metaData = [self network_metaDataWithLowerCaseHeaderFields:self->_responseInfo.allHTTPHeaderFieldsWithLowerCaseKeys];
         [strongRequestOp network_URLSessionTaskOperation:self
                                 finalizeWithResponseInfo:self->_responseInfo
                                            responseError:self->_error
@@ -2798,8 +2799,9 @@ static NSString *TNLSecCertificateDescription(SecCertificateRef cert)
 #if TARGET_OS_OSX
         serialNumberData = (NSData *)CFBridgingRelease(SecCertificateCopySerialNumber(cert, NULL));
 #else
-#if TARGET_OS_UIKITFORMAC
-        // this is not possible since UIKITFORMAC starts at iOS 13, which will hit the above line
+#if TARGET_OS_MACCATALYST
+        // this is not possible since TARGET_OS_MACCATALYST starts with iOS SDK 13,
+        // which will hit the above line
         TNLAssertNever();
 #else
         serialNumberData = (NSData *)CFBridgingRelease(SecCertificateCopySerialNumber(cert));
@@ -2837,9 +2839,23 @@ static NSArray<NSString *> *TNLSecTrustGetCertificateChainDescriptions(SecTrustR
 
 static NSString *TNLWriteDataToTemporaryFile(NSData *data)
 {
-    NSString *temporaryFileDir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:kTempFileDir];
-    NSString *temporaryFilePath = [temporaryFileDir stringByAppendingString:[NSUUID UUID].UUIDString];
-    [[NSFileManager defaultManager] createDirectoryAtPath:temporaryFileDir withIntermediateDirectories:YES attributes:nil error:NULL];
+    static NSString *temporaryFileDir;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        temporaryFileDir = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES).firstObject;
+#if !TARGET_OS_IPHONE || TARGET_OS_MACCATALYST
+        // platform may be non-sandboxed, or "sandbox" may contain sym-links outside of expected sandbox
+        // ensure unique path using bundle-id or a UUID for safety
+        NSString *extra = [[NSBundle mainBundle] bundleIdentifier] ?: [kTempFilePrefix stringByAppendingString:[[NSUUID UUID] UUIDString]];
+        temporaryFileDir = [temporaryFileDir stringByResolvingSymlinksInPath];
+        if (![temporaryFileDir containsString:[NSString stringWithFormat:@"/%@/", extra]]) {
+            temporaryFileDir = [temporaryFileDir stringByAppendingPathComponent:extra];
+        }
+#endif
+        [[NSFileManager defaultManager] createDirectoryAtPath:temporaryFileDir withIntermediateDirectories:YES attributes:nil error:NULL];
+    });
+
+    NSString *temporaryFilePath = [temporaryFileDir stringByAppendingPathComponent:[kTempFilePrefix stringByAppendingString:[[NSUUID UUID] UUIDString]]];
     [data writeToFile:temporaryFilePath atomically:YES];
     return temporaryFilePath;
 }

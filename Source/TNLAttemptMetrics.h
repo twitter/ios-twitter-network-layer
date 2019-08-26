@@ -78,7 +78,7 @@ static const NSInteger TNLAttemptCompleteDispositionCount = 3;
 /** attempt reachability status */
 @property (nonatomic, readonly) TNLNetworkReachabilityStatus reachabilityStatus;
 /** attempt reachability flags */
-@property (nonatomic, readonly) SCNetworkReachabilityFlags reachabilityFlags;
+@property (nonatomic, readonly) TNLNetworkReachabilityFlags reachabilityFlags;
 /** attempt radio access technology */
 @property (nonatomic, copy, readonly, nullable) NSString *WWANRadioAccessTechnology;
 /** attempt carrier info. Note: `nil` for macOS since there is no cellular carrier information */

@@ -121,7 +121,7 @@ NSString *TNLXCommunicationStatusUpdatedNotification = @"TNLXCommunicationStatus
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-#if !TARGET_OS_UIKITFORMAC
+#if !TARGET_OS_MACCATALYST
     if (@available(iOS 13, *)) {
 
     } else {
@@ -179,7 +179,7 @@ NSString *TNLXCommunicationStatusUpdatedNotification = @"TNLXCommunicationStatus
 - (void)networkingDidChange:(NSNotification *)note
 {
     assert([NSThread isMainThread]);
-#if !TARGET_OS_UIKITFORMAC
+#if !TARGET_OS_MACCATALYST
     BOOL on = [note.userInfo[TNLNetworkExecutingNetworkConnectionsExecutingKey] boolValue];
     [UIApplication sharedApplication].networkActivityIndicatorVisible = on;
 #endif
@@ -232,7 +232,7 @@ NSString *TNLXCommunicationStatusUpdatedNotification = @"TNLXCommunicationStatus
 #pragma mark TNLCommunicationAgentObserver
 
 - (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
-        didRegisterObserverWithInitialReachabilityFlags:(SCNetworkReachabilityFlags)flags
+        didRegisterObserverWithInitialReachabilityFlags:(TNLNetworkReachabilityFlags)flags
         status:(TNLNetworkReachabilityStatus)status
         carrierInfo:(nullable id<TNLCarrierInfo>)info
         WWANRadioAccessTechnology:(nullable NSString *)radioTech
@@ -254,9 +254,9 @@ NSString *TNLXCommunicationStatusUpdatedNotification = @"TNLXCommunicationStatus
 }
 
 - (void)tnl_communicationAgent:(TNLCommunicationAgent *)agent
-        didUpdateReachabilityFromPreviousFlags:(SCNetworkReachabilityFlags)oldFlags
+        didUpdateReachabilityFromPreviousFlags:(TNLNetworkReachabilityFlags)oldFlags
         previousStatus:(TNLNetworkReachabilityStatus)oldStatus
-        toCurrentFlags:(SCNetworkReachabilityFlags)newFlags
+        toCurrentFlags:(TNLNetworkReachabilityFlags)newFlags
         currentStatus:(TNLNetworkReachabilityStatus)newStatus
 {
     _SCFlagsString = TNLDebugStringFromNetworkReachabilityFlags(newFlags);

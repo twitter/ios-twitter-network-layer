@@ -38,6 +38,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary<NSString *, id> *)tnl_dictionaryValue;
 
 /**
+ returns the `resourceFetchType` as a readable debug string
+ */
+- (NSString *)tnl_resourceFetchTypeDebugString;
+
+/**
  returns the earliest date of all the timing dates
  */
 - (nullable NSDate *)tnl_earliestDate;
@@ -58,6 +63,12 @@ NS_ASSUME_NONNULL_BEGIN
  returns a string describing the timings
  */
 - (NSString *)tnl_timingDescription;
+
+/**
+ returns a dictionary of meta data info.
+ Does not provide timing info, request model data or response model data.
+ */
+- (NSDictionary<NSString *, id> *)tnl_medadata;
 
 /** convenience method for TCP start if connect includes TCP connect */
 @property (nonatomic, readonly, nullable) NSDate *tnl_transportConnectionStartDate;

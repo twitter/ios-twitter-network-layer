@@ -145,7 +145,7 @@ typedef NS_OPTIONS(NSInteger, TNLRequestConnectivityOptions) {
     /**
      Suspend the attempt timeout while waiting for connectivity, resuming when connectivity returns.
      No-op if `TNLRequestConnectivityOptionInvalidateAttemptTimeoutWhenWaitForConnectivityTriggered` is also set.
-     TODO: there is no event from NSURLSession when a task continues upon connectivity, so this is
+     TODO: there is no event from NSURLSession when a task continues upon connectivity, so this
            feature is out of reach right now.
      */
     // TNLRequestConnectivityOptionSuspendAttemptTimeoutDuringWaitForConnectivity = (1 << 3),
@@ -248,6 +248,7 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
         BOOL discretionary:1;
         BOOL shouldLaunchAppForBackgroundEvents:1;
         BOOL shouldSetCookies:1;
+        BOOL shouldUseExtendedBackgroundIdleMode:1;
 
     } _ivars;
 }
@@ -289,6 +290,15 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
 
  Default is `TNLRequestConnectivityOptionsDefault` (fail instead of waiting for connectivity)
  Requires iOS 11, macOS 10.13
+
+ @warning iOS 13 beta (and matching tvOS, macOS and watchOS versions) has regressed `waitsForConnectivity`.
+ `NSURLSession` layer no longer calls `NSURLSessionTaskDelegate` `URLSession:taskIsWaitingForConnectivity:`
+ rendering the feature impotent and dangerous (easily leading to never finishing network requests which
+ can lead to interminable hangs based on the dependencies established on the `TNLRequestOperation`).
+ #FB7027774
+ To avoid this regression, `connectivityOptions` will be set to `TNLRequestConnectivityOptionsNone`
+ on for iOS 13+ and attempting to mutate this property will log a warning to the `TNLLogger`.
+ If Apple fixed this issue, we will re-enable use of this feature on OS versiosn it was fixed for.
  */
 @property (nonatomic, readonly) TNLRequestConnectivityOptions connectivityOptions;
 
@@ -503,6 +513,33 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
 @property (nonatomic, readonly) NSURLSessionMultipathServiceType multipathServiceType API_AVAILABLE(ios(11.0)) API_UNAVAILABLE(macos, watchos, tvos);
 
 /**
+ Extended background idle mode for any tcp sockets created.
+ When enabled this mode asks the system to keep the socket open and delay reclaiming it when the process moves to the background.
+ (see https://developer.apple.com/library/ios/technotes/tn2277/_index.html)
+ Default value is `NO`
+
+ Introduced iOS 9.  Older version will ignore this setting.
+
+ See `[NSURLSessionConfiguration shouldUseExtendedBackgroundIdleMode]`
+
+ @note it is inefficient to have multiple connections to the same host, which
+ NSURLSession forces as it siloes connections per session.
+ Since different values for `shouldUseExtendedBackgroundIdleMode` will incur different
+ backing NSURLSession instances, it is inefficient for requests to the same host to be
+ configured with different values for `shouldUseExtendedBackgroundIdleMode` as they
+ will be forced by the NSURL layer to run on separate NSURLSession instances
+ and thus on different connections.  To take care of this risk, be considerate of when
+ you have `shouldUseExtendedBackgroundIdleMode` as a different value between requests
+ to the same host.  One simple/brute option: force all requests to a host to always have
+ the same value for `shouldUseExtendedBackgroundIdleMode`.  Another option is to be
+ very intentional with what requests have `shouldUseExtendedBackgroundIdleMode` as `YES`
+ and potentially only use background requests for those use cases instead.  Even more
+ complicated would be to rig a system where you dynamically shift all requests to move
+ their `shouldUseExtendedBackgroundIdleMode` config value based on the app behavior.
+ */
+@property (nonatomic, readonly) BOOL shouldUseExtendedBackgroundIdleMode;
+
+/**
  Create a new `TNLRequestConfiguration` instance with default values
  */
 + (instancetype)defaultConfiguration;
@@ -554,6 +591,7 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
 @property (nonatomic, readwrite, nullable) NSURLCache *URLCache;
 @property (nonatomic, readwrite, nullable) NSHTTPCookieStorage *cookieStorage;
 @property (nonatomic, readwrite) NSURLSessionMultipathServiceType multipathServiceType API_AVAILABLE(ios(11.0)) API_UNAVAILABLE(macos, watchos, tvos);
+@property (nonatomic, readwrite) BOOL shouldUseExtendedBackgroundIdleMode;
 
 /**
  Populates propertiest that effect prioritization.
