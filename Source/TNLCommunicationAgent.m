@@ -6,14 +6,19 @@
 //  Copyright © 2016 Twitter. All rights reserved.
 //
 
+#include <TargetConditionals.h>
+
+#if !TARGET_OS_WATCH // no communication agent for watchOS
+
+#import <Network/Network.h>
+#import <SystemConfiguration/SystemConfiguration.h>
+
 #import "NSDictionary+TNLAdditions.h"
 #import "NSURLSessionConfiguration+TNLAdditions.h"
 #import "TNL_Project.h"
 #import "TNLCommunicationAgent_Project.h"
 #import "TNLHTTP.h"
 #import "TNLPseudoURLProtocol.h"
-
-#if !TARGET_OS_WATCH // no communication agent for watchOS
 
 #define SELF_ARG PRIVATE_SELF(TNLCommunicationAgent)
 
@@ -25,7 +30,26 @@ static NSString * const kCaptivePortalCheckEndpoint = @"http://connectivitycheck
 static void _ReachabilityCallback(__unused SCNetworkReachabilityRef target,
                                   const SCNetworkReachabilityFlags flags,
                                   void* info);
-static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(SCNetworkReachabilityFlags flags) __attribute__((const));
+static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(TNLNetworkReachabilityFlags flags) __attribute__((const));
+static TNLNetworkReachabilityFlags _NetworkReachabilityFlagsFromPath(nw_path_t path);
+
+#define _NWPathStatusToFlag(status) ((status > 0) ? ((uint32_t)1 << (uint32_t)((status) - 1)) : 0)
+#define _NWInterfaceTypeToFlag(itype) ((uint32_t)1 << (uint32_t)8 << (uint32_t)(itype))
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunguarded-availability"
+
+TNLStaticAssert(_NWPathStatusToFlag(nw_path_status_satisfied) == TNLNetworkReachabilityMaskPathStatusSatisfied, MISSMATCH_REACHABILITY_FLAGS);
+TNLStaticAssert(_NWPathStatusToFlag(nw_path_status_unsatisfied) == TNLNetworkReachabilityMaskPathStatusUnsatisfied, MISSMATCH_REACHABILITY_FLAGS);
+TNLStaticAssert(_NWPathStatusToFlag(nw_path_status_satisfiable) == TNLNetworkReachabilityMaskPathStatusSatisfiable, MISSMATCH_REACHABILITY_FLAGS);
+
+TNLStaticAssert(_NWInterfaceTypeToFlag(nw_interface_type_other) == TNLNetworkReachabilityMaskPathIntefaceTypeOther, MISSMATCH_REACHABILITY_FLAGS);
+TNLStaticAssert(_NWInterfaceTypeToFlag(nw_interface_type_wifi) == TNLNetworkReachabilityMaskPathIntefaceTypeWifi, MISSMATCH_REACHABILITY_FLAGS);
+TNLStaticAssert(_NWInterfaceTypeToFlag(nw_interface_type_cellular) == TNLNetworkReachabilityMaskPathIntefaceTypeCellular, MISSMATCH_REACHABILITY_FLAGS);
+TNLStaticAssert(_NWInterfaceTypeToFlag(nw_interface_type_wired) == TNLNetworkReachabilityMaskPathIntefaceTypeWired, MISSMATCH_REACHABILITY_FLAGS);
+TNLStaticAssert(_NWInterfaceTypeToFlag(nw_interface_type_loopback) == TNLNetworkReachabilityMaskPathIntefaceTypeLoopback, MISSMATCH_REACHABILITY_FLAGS);
+
+#pragma clang diagnostic pop
 
 @interface TNLCommunicationAgentWeakWrapper : NSObject
 @property (nonatomic, weak) TNLCommunicationAgent *communicationAgent;
@@ -34,7 +58,7 @@ static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(SCNetwor
 @interface TNLCommunicationAgent ()
 
 @property (atomic) TNLNetworkReachabilityStatus currentReachabilityStatus;
-@property (atomic) SCNetworkReachabilityFlags currentReachabilityFlags;
+@property (atomic) TNLNetworkReachabilityFlags currentReachabilityFlags;
 @property (atomic, copy, nullable) NSString *currentWWANRadioAccessTechnology;
 @property (atomic) TNLCaptivePortalStatus currentCaptivePortalStatus;
 @property (atomic, nullable) id<TNLCarrierInfo> currentCarrierInfo;
@@ -44,9 +68,10 @@ static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(SCNetwor
 @interface TNLCommunicationAgent (Agent)
 
 static void _agent_initialize(SELF_ARG);
-static void _agent_forciblyUpdateReachability(SELF_ARG);
-static void _agent_updateReachabilityFlags(SELF_ARG,
-                                           SCNetworkReachabilityFlags newFlags);
+static void _agent_forciblyUpdateLegacyReachability(SELF_ARG);
+static void _agent_updateReachability(SELF_ARG,
+                                      TNLNetworkReachabilityFlags newFlags,
+                                      TNLNetworkReachabilityStatus newStatus);
 
 static void _agent_addObserver(SELF_ARG,
                                id<TNLCommunicationAgentObserver> observer);
@@ -71,7 +96,7 @@ static void _agent_handleCaptivePortalResponse(SELF_ARG,
 @end
 
 @interface TNLCommunicationAgent (Private)
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 static void _updateCarrier(SELF_ARG,
                            CTCarrier *carrier);
 #endif
@@ -94,8 +119,10 @@ static void _updateCarrier(SELF_ARG,
     NSOperationQueue *_agentOperationQueue;
     TNLCommunicationAgentWeakWrapper *_agentWrapper;
 
-    SCNetworkReachabilityRef _reachabilityRef;
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+    SCNetworkReachabilityRef _legacyReachabilityRef;
+    nw_path_monitor_t _modernReachabilityNetworkPathMonitor; // supports ARC
+
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
     CTTelephonyNetworkInfo *_internalTelephonyNetworkInfo;
 #endif
     NSURLSessionConfiguration *_captivePortalSessionConfiguration;
@@ -146,13 +173,18 @@ static void _updateCarrier(SELF_ARG,
 
 - (void)dealloc
 {
-    if (_reachabilityRef) {
-        SCNetworkReachabilitySetCallback(_reachabilityRef, NULL, NULL);
-        SCNetworkReachabilitySetDispatchQueue(_reachabilityRef, NULL);
-        CFRelease(_reachabilityRef);
+    if (_legacyReachabilityRef) {
+        SCNetworkReachabilitySetCallback(_legacyReachabilityRef, NULL, NULL);
+        SCNetworkReachabilitySetDispatchQueue(_legacyReachabilityRef, NULL);
+        CFRelease(_legacyReachabilityRef);
+    }
+    if (tnl_available_ios_12) {
+        if (_modernReachabilityNetworkPathMonitor) {
+            nw_path_monitor_cancel(_modernReachabilityNetworkPathMonitor);
+        }
     }
 
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
     [[NSNotificationCenter defaultCenter] removeObserver:self
                                                     name:CTRadioAccessTechnologyDidChangeNotification
                                                   object:nil];
@@ -224,14 +256,16 @@ static void _updateCarrier(SELF_ARG,
 
 @implementation TNLCommunicationAgent (Agent)
 
-static void _agent_forciblyUpdateReachability(SELF_ARG)
+#pragma mark Legacy Reachability
+
+static void _agent_forciblyUpdateLegacyReachability(SELF_ARG)
 {
     if (!self) {
         return;
     }
 
     SCNetworkReachabilityFlags flags;
-    if (SCNetworkReachabilityGetFlags(self->_reachabilityRef, &flags)) {
+    if (SCNetworkReachabilityGetFlags(self->_legacyReachabilityRef, &flags)) {
         self.currentReachabilityFlags = flags;
         self.currentReachabilityStatus = _NetworkReachabilityStatusFromFlags(flags);
     } else {
@@ -240,35 +274,80 @@ static void _agent_forciblyUpdateReachability(SELF_ARG)
     }
 }
 
-static void _agent_initializeReachability(SELF_ARG)
+static void _agent_initializeLegacyReachability(SELF_ARG)
 {
     if (!self) {
         return;
     }
 
-    self->_reachabilityRef = SCNetworkReachabilityCreateWithName(kCFAllocatorDefault, self.host.UTF8String);
+    self->_legacyReachabilityRef = SCNetworkReachabilityCreateWithName(kCFAllocatorDefault, self.host.UTF8String);
 
-    _agent_forciblyUpdateReachability(self);
+    _agent_forciblyUpdateLegacyReachability(self);
 
     SCNetworkReachabilityContext context = { 0, (__bridge void*)self->_agentWrapper, NULL, NULL, NULL };
-    if (SCNetworkReachabilitySetCallback(self->_reachabilityRef, _ReachabilityCallback, &context)) {
-        if (SCNetworkReachabilitySetDispatchQueue(self->_reachabilityRef, self->_agentQueue)) {
+    if (SCNetworkReachabilitySetCallback(self->_legacyReachabilityRef, _ReachabilityCallback, &context)) {
+        if (SCNetworkReachabilitySetDispatchQueue(self->_legacyReachabilityRef, self->_agentQueue)) {
             self->_flags.initializedReachability = 1;
         } else {
-            SCNetworkReachabilitySetCallback(self->_reachabilityRef, NULL, NULL);
-            CFRelease(self->_reachabilityRef);
-            self->_reachabilityRef = NULL;
+            SCNetworkReachabilitySetCallback(self->_legacyReachabilityRef, NULL, NULL);
+            CFRelease(self->_legacyReachabilityRef);
+            self->_legacyReachabilityRef = NULL;
         }
     }
 
     if (!self->_flags.initializedReachability) {
         TNLLogError(@"Failed to start reachability: %@", self.host);
-        if (self->_reachabilityRef) {
-            CFRelease(self->_reachabilityRef);
-            self->_reachabilityRef = NULL;
+        if (self->_legacyReachabilityRef) {
+            CFRelease(self->_legacyReachabilityRef);
+            self->_legacyReachabilityRef = NULL;
         }
     }
 }
+
+#pragma mark Modern Reachability
+
+static void _agent_updateModernReachability(SELF_ARG, nw_path_t __nonnull path)
+{
+    if (!self) {
+        return;
+    }
+
+    if (tnl_available_ios_12) {
+
+#if DEBUG
+        TNLLogDebug(@"network path monitor update: %@", path.description);
+#endif
+
+        const TNLNetworkReachabilityFlags newFlags = _NetworkReachabilityFlagsFromPath(path);
+        const TNLNetworkReachabilityStatus newStatus = _NetworkReachabilityStatusFromFlags(newFlags);
+        _agent_updateReachability(self, newFlags, newStatus);
+    }
+}
+
+static void _agent_initializeModernReachability(SELF_ARG)
+{
+    if (!self) {
+        return;
+    }
+
+    if (tnl_available_ios_12) {
+        __weak typeof(self) weakSelf = self;
+        self->_modernReachabilityNetworkPathMonitor = nw_path_monitor_create();
+
+        nw_path_monitor_set_queue(self->_modernReachabilityNetworkPathMonitor, self->_agentQueue);
+        // nw_path_monitor_set_cancel_handler // don't need a cancel handler
+        nw_path_monitor_set_update_handler(self->_modernReachabilityNetworkPathMonitor, ^(nw_path_t  __nonnull path) {
+            __strong typeof(self) strongSelf = weakSelf;
+            _agent_updateModernReachability(strongSelf, path);
+        });
+
+        nw_path_monitor_start(self->_modernReachabilityNetworkPathMonitor); // will trigger an update callback (but async)
+
+        self->_flags.initializedReachability = 1;
+    }
+}
+
+#pragma mark Telephony
 
 static void _agent_initializeTelephony(SELF_ARG)
 {
@@ -276,7 +355,7 @@ static void _agent_initializeTelephony(SELF_ARG)
         return;
     }
 
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
     __weak typeof(self) weakSelf = self;
 
     self->_internalTelephonyNetworkInfo = [[CTTelephonyNetworkInfo alloc] init];
@@ -288,11 +367,13 @@ static void _agent_initializeTelephony(SELF_ARG)
                                                  name:CTRadioAccessTechnologyDidChangeNotification object:nil];
     self.currentCarrierInfo = [TNLCarrierInfoInternal carrierWithCarrier:self->_internalTelephonyNetworkInfo.subscriberCellularProvider];
     self.currentWWANRadioAccessTechnology = [self->_internalTelephonyNetworkInfo.currentRadioAccessTechnology copy];
-#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#endif // #if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 
     self->_flags.initializedCarrier = 1;
     self->_flags.initializedRadioTech = 1;
 }
+
+#pragma mark Captive Portal
 
 static void _agent_initializeCaptivePortalStatus(SELF_ARG)
 {
@@ -323,6 +404,8 @@ static void _agent_initializeCaptivePortalStatus(SELF_ARG)
     [self->_queuedCaptivePortalCallbacks addObject:[callback copy]];
 }
 
+#pragma mark Private Methods
+
 static void _agent_initialize(SELF_ARG)
 {
     if (!self) {
@@ -333,9 +416,14 @@ static void _agent_initialize(SELF_ARG)
     TNLAssert(!self->_flags.initializedReachability);
     TNLAssert(!self->_flags.initializedCarrier);
     TNLAssert(!self->_flags.initializedRadioTech);
-    TNLAssert(!self->_reachabilityRef);
+    TNLAssert(!self->_legacyReachabilityRef);
+    TNLAssert(!self->_modernReachabilityNetworkPathMonitor);
 
-    _agent_initializeReachability(self);
+    if (tnl_available_ios_12) {
+        _agent_initializeModernReachability(self);
+    } else {
+        _agent_initializeLegacyReachability(self);
+    }
     _agent_initializeTelephony(self);
     _agent_initializeCaptivePortalStatus(self);
 
@@ -393,7 +481,7 @@ static void _agent_addObserver(SELF_ARG,
     }
 
     if ([observer respondsToSelector:modernSelector]) {
-        SCNetworkReachabilityFlags flags = self.currentReachabilityFlags;
+        TNLNetworkReachabilityFlags flags = self.currentReachabilityFlags;
         TNLNetworkReachabilityStatus status = self.currentReachabilityStatus;
         id<TNLCarrierInfo> info = self.currentCarrierInfo;
         NSString *radioTech = self.currentWWANRadioAccessTechnology;
@@ -439,7 +527,7 @@ static void _agent_identifyReachability(SELF_ARG,
         return;
     }
 
-    SCNetworkReachabilityFlags flags = self.currentReachabilityFlags;
+    TNLNetworkReachabilityFlags flags = self.currentReachabilityFlags;
     TNLNetworkReachabilityStatus status = self.currentReachabilityStatus;
     tnl_dispatch_async_autoreleasing(dispatch_get_main_queue(), ^{
         callback(flags, status);
@@ -610,21 +698,20 @@ static void _agent_handleCaptivePortalResponse(SELF_ARG,
     });
 }
 
-static void _agent_updateReachabilityFlags(SELF_ARG,
-                                           SCNetworkReachabilityFlags newFlags)
+static void _agent_updateReachability(SELF_ARG,
+                                      TNLNetworkReachabilityFlags newFlags,
+                                      TNLNetworkReachabilityStatus newStatus)
 {
     if (!self) {
         return;
     }
 
-    const SCNetworkReachabilityFlags oldFlags = self.currentReachabilityFlags;
+    const TNLNetworkReachabilityFlags oldFlags = self.currentReachabilityFlags;
     const TNLNetworkReachabilityStatus oldStatus = self.currentReachabilityStatus;
 
-    if (oldFlags == newFlags && oldStatus != TNLNetworkReachabilityUndetermined) {
+    if (oldFlags == newFlags && oldStatus == newStatus) {
         return;
     }
-
-    const TNLNetworkReachabilityStatus newStatus = _NetworkReachabilityStatusFromFlags(newFlags);
 
     self.currentReachabilityStatus = newStatus;
     self.currentReachabilityFlags = newFlags;
@@ -653,7 +740,7 @@ static void _agent_updateReachabilityFlags(SELF_ARG,
 
 @implementation TNLCommunicationAgent (Private)
 
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 static void _updateCarrier(SELF_ARG,
                            CTCarrier *carrier)
 {
@@ -678,7 +765,7 @@ static void _updateCarrier(SELF_ARG,
         });
     });
 }
-#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#endif // #if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 
 - (void)private_updateRadioAccessTechnology:(NSNotification *)note
 {
@@ -707,7 +794,7 @@ static void _updateCarrier(SELF_ARG,
 
 @end
 
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 @implementation TNLCarrierInfoInternal
 
 @synthesize carrierName = _carrierName;
@@ -776,7 +863,7 @@ static void _updateCarrier(SELF_ARG,
 }
 
 @end
-#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#endif // #if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 
 @implementation TNLCommunicationAgent (UnsafeSynchronousAccess)
 
@@ -807,12 +894,29 @@ static void _ReachabilityCallback(__unused SCNetworkReachabilityRef target,
 
     TNLCommunicationAgent *agent = [(__bridge TNLCommunicationAgentWeakWrapper *)info communicationAgent];
     if (agent) {
-        _agent_updateReachabilityFlags(agent, flags);
+        _agent_updateReachability(agent, flags, _NetworkReachabilityStatusFromFlags(flags));
     }
 }
 
-static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(SCNetworkReachabilityFlags flags)
+static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(TNLNetworkReachabilityFlags flags)
 {
+    if (tnl_available_ios_12) {
+        const TNLNetworkReachabilityMask mask = flags;
+        if ((mask & TNLNetworkReachabilityMaskPathStatusSatisfied) == 0) {
+            return TNLNetworkReachabilityNotReachable;
+        }
+
+        if ((mask & TNLNetworkReachabilityMaskPathIntefaceTypeWifi) != 0) {
+            return TNLNetworkReachabilityReachableViaWiFi;
+        }
+
+        if ((mask & TNLNetworkReachabilityMaskPathIntefaceTypeCellular) != 0) {
+            return TNLNetworkReachabilityReachableViaWWAN;
+        }
+
+        return TNLNetworkReachabilityUndetermined;
+    }
+
     if ((flags & kSCNetworkReachabilityFlagsReachable) == 0) {
         return TNLNetworkReachabilityNotReachable;
     }
@@ -839,13 +943,59 @@ static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(SCNetwor
     return TNLNetworkReachabilityNotReachable;
 }
 
+static TNLNetworkReachabilityFlags _NetworkReachabilityFlagsFromPath(nw_path_t path)
+{
+    if (tnl_available_ios_12) {
+        TNLNetworkReachabilityMask flags = 0;
+        if (path != nil) {
+            const nw_path_status_t status = nw_path_get_status(path);
+            if (status > 0) {
+#if DEBUG
+                if (gTwitterNetworkLayerAssertEnabled) {
+                    switch (status) {
+                        case nw_path_status_invalid:
+                        case nw_path_status_satisfied:
+                        case nw_path_status_unsatisfied:
+                        case nw_path_status_satisfiable:
+                            break;
+                        default:
+                            TNLAssertMessage(0, @"the nw_path_status_t enum has expanded!  Need to update TNLNetworkReachabilityMask.");
+                            break;
+                    }
+                }
+#endif
+                flags |= _NWPathStatusToFlag(status);
+            }
+
+            for (nw_interface_type_t itype = 0; itype <= 4; itype++) {
+                const bool usesInterface = nw_path_uses_interface_type(path, itype);
+                if (usesInterface) {
+                    flags |= _NWInterfaceTypeToFlag(itype);
+                }
+            }
+
+            if (tnl_available_ios_13) {
+                if (nw_path_is_expensive(path)) {
+                    flags |= TNLNetworkReachabilityMaskPathConditionExpensive;
+                }
+                if (nw_path_is_constrained(path)) {
+                    flags |= TNLNetworkReachabilityMaskPathConditionConstrained;
+                }
+            }
+        }
+        return flags;
+    }
+
+    return 0;
+}
+
 TNLWWANRadioAccessTechnologyValue TNLWWANRadioAccessTechnologyValueFromString(NSString *WWANTechString)
 {
     static NSDictionary* sTechStringToValueMap = nil;
 
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
         sTechStringToValueMap = @{
                                   CTRadioAccessTechnologyGPRS : @(TNLWWANRadioAccessTechnologyValueGPRS),
                                   CTRadioAccessTechnologyEdge: @(TNLWWANRadioAccessTechnologyValueEDGE),
@@ -870,7 +1020,7 @@ TNLWWANRadioAccessTechnologyValue TNLWWANRadioAccessTechnologyValueFromString(NS
 
 NSString *TNLWWANRadioAccessTechnologyValueToString(TNLWWANRadioAccessTechnologyValue value)
 {
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
     switch (value) {
         case TNLWWANRadioAccessTechnologyValueGPRS:
             return CTRadioAccessTechnologyGPRS;
@@ -901,14 +1051,14 @@ NSString *TNLWWANRadioAccessTechnologyValueToString(TNLWWANRadioAccessTechnology
         case TNLWWANRadioAccessTechnologyValueUnknown:
             break;
     }
-#endif // TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#endif // TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 
     return @"unknown";
 }
 
 TNLWWANRadioAccessGeneration TNLWWANRadioAccessGenerationForTechnologyValue(TNLWWANRadioAccessTechnologyValue value)
 {
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
     switch (value) {
         case TNLWWANRadioAccessTechnologyValueEVDO_0:
         case TNLWWANRadioAccessTechnologyValue1xRTT:
@@ -932,7 +1082,7 @@ TNLWWANRadioAccessGeneration TNLWWANRadioAccessGenerationForTechnologyValue(TNLW
         case TNLWWANRadioAccessTechnologyValueUnknown:
             break;
     }
-#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#endif // #if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 
     return TNLWWANRadioAccessGenerationUnknown;
 }
@@ -969,7 +1119,7 @@ NSString *TNLCaptivePortalStatusToString(TNLCaptivePortalStatus status)
     return @"undetermined";
 }
 
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 
 NSDictionary * __nullable TNLCarrierInfoToDictionary(id<TNLCarrierInfo> __nullable carrierInfo)
 {
@@ -1007,15 +1157,35 @@ id<TNLCarrierInfo> __nullable TNLCarrierInfoFromDictionary(NSDictionary * __null
                                                     allowsVOIP:[dict[@"allowsVOIP"] boolValue]];
 }
 
-#endif // #if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#endif // #if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
 
-NS_INLINE const char _DebugCharFromReachabilityFlag(SCNetworkReachabilityFlags flags, uint32_t flag, const char presentChar)
+NS_INLINE const char _DebugCharFromReachabilityFlag(TNLNetworkReachabilityFlags flags, uint32_t flag, const char presentChar)
 {
     return TNL_BITMASK_HAS_SUBSET_FLAGS(flags, flag) ? presentChar : '_';
 }
 
-NSString *TNLDebugStringFromNetworkReachabilityFlags(SCNetworkReachabilityFlags flags)
+NSString *TNLDebugStringFromNetworkReachabilityFlags(TNLNetworkReachabilityFlags flags)
 {
+    if (tnl_available_ios_12) {
+        NSString *dbgStr;
+        dbgStr = [NSString stringWithFormat:@"%c%c%c%c%c%c%c%c",
+                  _DebugCharFromReachabilityFlag(flags, TNLNetworkReachabilityMaskPathStatusUnsatisfied, 'U'),
+                  _DebugCharFromReachabilityFlag(flags, TNLNetworkReachabilityMaskPathStatusSatisfied, 'S'),
+                  _DebugCharFromReachabilityFlag(flags, TNLNetworkReachabilityMaskPathStatusSatisfiable, 's'),
+                  _DebugCharFromReachabilityFlag(flags, TNLNetworkReachabilityMaskPathIntefaceTypeOther, 'o'),
+                  _DebugCharFromReachabilityFlag(flags, TNLNetworkReachabilityMaskPathIntefaceTypeWifi, 'w'),
+                  _DebugCharFromReachabilityFlag(flags, TNLNetworkReachabilityMaskPathIntefaceTypeCellular, 'c'),
+                  _DebugCharFromReachabilityFlag(flags, TNLNetworkReachabilityMaskPathIntefaceTypeWired, 'e'),
+                  _DebugCharFromReachabilityFlag(flags, TNLNetworkReachabilityMaskPathIntefaceTypeLoopback, 'l')
+                ];
+        if (tnl_available_ios_13) {
+            dbgStr = [dbgStr stringByAppendingFormat:@"%c%c",
+                      _DebugCharFromReachabilityFlag(flags, TNLNetworkReachabilityMaskPathConditionExpensive, '$'),
+                      _DebugCharFromReachabilityFlag(flags, TNLNetworkReachabilityMaskPathConditionConstrained, 'C')];
+        }
+        return dbgStr;
+    }
+
     return [NSString stringWithFormat:
 #if TARGET_OS_IOS
             @"%c%c%c%c%c%c%c%c%c",

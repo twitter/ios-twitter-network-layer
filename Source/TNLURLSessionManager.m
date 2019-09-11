@@ -1324,6 +1324,8 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
         _cookieStorage = config.HTTPCookieStorage;
         _sharedContainerIdentifier = [config.sharedContainerIdentifier copy];
 
+        memset(&_ivars, 0, sizeof(_ivars)); // prep ivars as all 0
+
         _ivars.executionMode = TNLRequestExecutionModeDefault;
         _ivars.redirectPolicy = TNLRequestRedirectPolicyDefault;
         _ivars.responseDataConsumptionMode = TNLResponseDataConsumptionModeDefault;
@@ -1338,10 +1340,18 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
         _ivars.networkServiceType = config.networkServiceType;
         _ivars.cookieAcceptPolicy = config.HTTPCookieAcceptPolicy;
         _ivars.allowsCellularAccess = (config.allowsCellularAccess != NO);
+        _ivars.connectivityOptions = TNLRequestConnectivityOptionsNone;
         if (tnl_available_ios_11) {
-            _ivars.connectivityOptions = (config.waitsForConnectivity != NO) ? TNLRequestConnectivityOptionWaitForConnectivity : TNLRequestConnectivityOptionsNone;
-        } else {
-            _ivars.connectivityOptions = TNLRequestConnectivityOptionsNone;
+            if ([NSURLSessionConfiguration tnl_URLSessionCanUseWaitsForConnectivity]) {
+                if (config.waitsForConnectivity) {
+                    _ivars.connectivityOptions = TNLRequestConnectivityOptionWaitForConnectivity;
+                }
+            } else {
+                // waitsForConnectivity bug, leave as .None
+                if (config.waitsForConnectivity) {
+                    TNL_LOG_WAITS_FOR_CONNECTIVITY_WARNING();
+                }
+            }
         }
         _ivars.discretionary = (config.isDiscretionary != NO);
         _ivars.shouldSetCookies = (config.HTTPShouldSetCookies != NO);
@@ -1353,6 +1363,9 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
             _ivars.multipathServiceType = config.multipathServiceType;
         }
 #endif
+        if (tnl_available_ios_9) {
+            _ivars.shouldUseExtendedBackgroundIdleMode = (config.shouldUseExtendedBackgroundIdleMode != NO);
+        }
     }
     return self;
 }
@@ -1445,7 +1458,11 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
     // TNL will control when to fail early if waiting for connectivity
 
     if (tnl_available_ios_11) {
-        config.waitsForConnectivity = YES;
+        if ([NSURLSessionConfiguration tnl_URLSessionCanUseWaitsForConnectivity]) {
+            config.waitsForConnectivity = YES;
+        } else {
+            config.waitsForConnectivity = NO; // waitsForConnectivity bug
+        }
     }
 
     // TNL will have the NSURLRequest control some configurations,
@@ -1484,6 +1501,9 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
     config.HTTPCookieStorage = nil;
     config.HTTPCookieAcceptPolicy = NSHTTPCookieAcceptPolicyNever;
     config.HTTPShouldSetCookies = NO;
+    if (tnl_available_ios_9) {
+        config.shouldUseExtendedBackgroundIdleMode = NO;
+    }
     return config;
 }
 
@@ -1593,6 +1613,9 @@ TNLMutableParameterCollection *TNLMutableParametersFromURLSessionConfiguration(N
 #if TARGET_OS_IPHONE // == IOS + WATCH + TV
     params[TNLSessionConfigurationPropertyKeySessionSendsLaunchEvents] = @(config.sessionSendsLaunchEvents);
 #endif
+    if (tnl_available_ios_9) {
+        params[TNLSessionConfigurationPropertyKeyShouldUseExtendedBackgroundIdleMode] = @(config.shouldUseExtendedBackgroundIdleMode);
+    }
 
     tempValue = config.connectionProxyDictionary;
     if ([(NSDictionary *)tempValue count] > 0) {
@@ -1730,6 +1753,13 @@ static void _ConfigureSessionConfigurationWithRequestConfiguration(NSURLSessionC
         } else {
             sessionConfig.waitsForConnectivity = NO;
         }
+
+        if (![NSURLSessionConfiguration tnl_URLSessionCanUseWaitsForConnectivity]) {
+            if (sessionConfig.waitsForConnectivity) {
+                TNL_LOG_WAITS_FOR_CONNECTIVITY_WARNING();
+                sessionConfig.waitsForConnectivity = NO;
+            }
+        }
     }
 #if TARGET_OS_IPHONE // == IOS + WATCH + TV
     sessionConfig.sessionSendsLaunchEvents = requestConfig.shouldLaunchAppForBackgroundEvents;
@@ -1742,6 +1772,9 @@ static void _ConfigureSessionConfigurationWithRequestConfiguration(NSURLSessionC
         sessionConfig.multipathServiceType = requestConfig.multipathServiceType;
     }
 #endif
+    if (tnl_available_ios_9) {
+        sessionConfig.shouldUseExtendedBackgroundIdleMode = requestConfig.shouldUseExtendedBackgroundIdleMode;
+    }
 
     // Transfer protocols
     NSArray<Class> *additionalClasses = TNLProtocolClassesForProtocolOptions(requestConfig.protocolOptions);

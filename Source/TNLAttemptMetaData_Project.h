@@ -43,6 +43,7 @@ PRIMITIVE_FIELD(layer8BodyBytesTransmitted, Layer8BodyBytesTransmitted, SInt64, 
 PRIMITIVE_FIELD(serverResponseTime, ServerResponseTime, SInt64, longLongValue) \
 PRIMITIVE_FIELD(localCacheHit, LocalCacheHit, BOOL, boolValue) \
 PRIMITIVE_FIELD(responseBodyHashAlgorithm, ResponseBodyHashAlgorithm, TNLResponseHashComputeAlgorithm, integerValue) \
+OBJECT_FIELD(responseLowercaseHeaders, ResponseLowercaseHeaders, NSDictionary) \
 OBJECT_FIELD(responseBodyHash, ResponseBodyHash, NSData) \
 OBJECT_FIELD(sessionId, SessionId, NSString) \
 \

@@ -132,7 +132,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 
 #endif
 
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
         _carrierInfo = TNLCarrierInfoFromDictionary([aDecoder decodeObjectOfClass:[NSDictionary class]
                                                                            forKey:@"carrierInfo"]);
 #endif
@@ -167,7 +167,7 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     [aCoder encodeObject:_WWANRadioAccessTechnology forKey:@"WWANRadioAccessTechnology"];
 #endif
 
-#if TARGET_OS_IOS && !TARGET_OS_UIKITFORMAC
+#if TARGET_OS_IOS && !TARGET_OS_MACCATALYST
     [aCoder encodeObject:TNLCarrierInfoToDictionary(_carrierInfo) forKey:@"carrierInfo"];
 #endif
 }

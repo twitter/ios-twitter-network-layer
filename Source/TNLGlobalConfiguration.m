@@ -145,7 +145,12 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
 
 - (void)_tnl_applicationWillEnterForeground:(NSNotification *)note
 {
-    self.lastApplicationState = UIApplicationStateInactive;
+    // When you adopt UIScene in iOS 13+, the foreground notification is sent
+    // on both cold start and return from background. We only want to update
+    // our application state for the latter
+    if (self.lastApplicationState == UIApplicationStateBackground) {
+        self.lastApplicationState = UIApplicationStateInactive;
+    }
 }
 
 - (void)_tnl_applicationDidBecomeActive:(NSNotification *)note
