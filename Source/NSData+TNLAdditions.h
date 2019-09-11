@@ -16,7 +16,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface NSData (TNLAdditions)
-- (NSData *)tnl_safeSubdataNoCopyWithRange:(NSRange)range;
+- (NSData *)tnl_safeSubdataNoCopyWithRange:(NSRange)subRange; // throws `NSRangeException`
+- (nullable NSData *)tnl_safeSubdataNoCopyWithRange:(NSRange)range error:(out NSError * __nullable * __nullable)outError;
 - (NSString *)tnl_hexStringValue;
 @end
 

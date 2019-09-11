@@ -16,6 +16,26 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+
+#pragma mark - File Name macro
+
+/**
+ Helper macro for the file name macro.
+
+ `__FILE__` is the historical C macro that is replaced with the full file path of the current file being compiled (e.g. `/Users/username/workspace/project/source/subfolder/anotherfolder/implementation/file.c`)
+ `__FILE_NAME__` is the new C macro in clang that is replaced with the file name of the current file being compiled (e.g. `file.c`)
+
+ By default, if `__FILE_NAME__` is availble with the current compiler, it will be used.
+ This behavior can be overridden by providing a value for `TNL_FILE_NAME` to the compiler, like `-DTNL_FILE_NAME=__FILE__` or `-DTNL_FILE_NAME=\"redacted\"`
+ */
+#if !defined(TNL_FILE_NAME)
+#ifdef __FILE_NAME__
+#define TNL_FILE_NAME __FILE_NAME__
+#else
+#define TNL_FILE_NAME __FILE__
+#endif
+#endif
+
 #pragma mark - Binary
 
 FOUNDATION_EXTERN BOOL TNLIsExtension(void);
@@ -43,18 +63,41 @@ FOUNDATION_EXTERN BOOL TNLIsExtension(void);
 
 FOUNDATION_EXTERN BOOL gTwitterNetworkLayerAssertEnabled;
 
+#if !defined(NS_BLOCK_ASSERTIONS)
+
+#define TNLCAssert(condition, desc, ...) \
+do {                \
+    __PRAGMA_PUSH_NO_EXTRA_ARG_WARNINGS \
+    if (__builtin_expect(!(condition), 0)) {        \
+            NSString *__assert_fn__ = [NSString stringWithUTF8String:__PRETTY_FUNCTION__]; \
+            __assert_fn__ = __assert_fn__ ? __assert_fn__ : @"<Unknown Function>"; \
+            NSString *__assert_file__ = [NSString stringWithUTF8String:TNL_FILE_NAME]; \
+            __assert_file__ = __assert_file__ ? __assert_file__ : @"<Unknown File>"; \
+        [[NSAssertionHandler currentHandler] handleFailureInFunction:__assert_fn__ \
+        file:__assert_file__ \
+            lineNumber:__LINE__ description:(desc), ##__VA_ARGS__]; \
+    }                \
+    __PRAGMA_POP_NO_EXTRA_ARG_WARNINGS \
+} while(0)
+
+#else // NS_BLOCK_ASSERTIONS defined
+
+#define TNLCAssert(condition, desc, ...) do {} while (0)
+
+#endif // NS_BLOCK_ASSERTIONS not defined
+
 #define TNLAssert(expression) \
 ({ if (gTwitterNetworkLayerAssertEnabled) { \
     const BOOL __expressionValue = !!(expression); (void)__expressionValue; \
     __TNLAssert(__expressionValue); \
-    NSCAssert(__expressionValue, @"assertion failed: (" #expression ")"); \
+    TNLCAssert(__expressionValue, @"assertion failed: (" #expression ")"); \
 } })
 
 #define TNLAssertMessage(expression, format, ...) \
 ({ if (gTwitterNetworkLayerAssertEnabled) { \
     const BOOL __expressionValue = !!(expression); (void)__expressionValue; \
     __TNLAssert(__expressionValue); \
-    NSCAssert(__expressionValue, @"assertion failed: (" #expression ") message: %@", [NSString stringWithFormat:format, ##__VA_ARGS__]); \
+    TNLCAssert(__expressionValue, @"assertion failed: (" #expression ") message: %@", [NSString stringWithFormat:format, ##__VA_ARGS__]); \
 } })
 
 #define TNLAssertNever()      TNLAssert(0 && "this line should never get executed" )
@@ -64,7 +107,12 @@ FOUNDATION_EXTERN BOOL gTwitterNetworkLayerAssertEnabled;
 // NOTE: TNLStaticAssert's msg argument should be valid as a variable.  That is, composed of ASCII letters, numbers and underscore characters only.
 #define __TNLStaticAssert(line, msg) TNLStaticAssert_##line##_##msg
 #define _TNLStaticAssert(line, msg) __TNLStaticAssert( line , msg )
-#define TNLStaticAssert(condition, msg) typedef char _TNLStaticAssert( __LINE__ , msg ) [ (condition) ? 1 : -1 ]
+
+#define TNLStaticAssert(condition, msg) \
+_Pragma("clang diagnostic push") \
+_Pragma("clang diagnostic ignored \"-Wunused\"") \
+typedef char _TNLStaticAssert( __LINE__ , msg ) [ (condition) ? 1 : -1 ] \
+_Pragma("clang diagnostic pop" )
 
 #pragma twitter endignoreformatting
 
@@ -79,7 +127,7 @@ do { \
     id<TNLLogger> const __logger = gTNLLogger; \
     TNLLogLevel const __level = (level); \
     if (__logger && (![__logger respondsToSelector:@selector(tnl_canLogWithLevel:context:)] || [__logger tnl_canLogWithLevel:__level context:nil])) { \
-        [__logger tnl_logWithLevel:__level context:nil file:@(__FILE__) function:@(__FUNCTION__) line:__LINE__ message:[NSString stringWithFormat: __VA_ARGS__ ]]; \
+        [__logger tnl_logWithLevel:__level context:nil file:@(TNL_FILE_NAME) function:@(__FUNCTION__) line:__LINE__ message:[NSString stringWithFormat: __VA_ARGS__ ]]; \
     } \
 } while (0)
 

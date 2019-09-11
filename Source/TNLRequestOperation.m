@@ -1431,19 +1431,19 @@ static void _network_applyGlobalHeadersToScratchURLRequest(SELF_ARG, tnl_request
         self->_scratchURLRequest.allHTTPHeaderFields = nil;
 
         // 1) default headers
-        for (NSString *key in defaultHeaders) {
-            [self->_scratchURLRequest setValue:defaultHeaders[key] forHTTPHeaderField:key];
-        }
+        [defaultHeaders enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, NSString * _Nonnull obj, BOOL * _Nonnull stop) {
+            [self->_scratchURLRequest setValue:obj forHTTPHeaderField:key];
+        }];
 
         // 2) specified headers
-        for (NSString *key in existingHeaders) {
-            [self->_scratchURLRequest setValue:existingHeaders[key] forHTTPHeaderField:key];
-        }
+        [existingHeaders enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, NSString * _Nonnull obj, BOOL * _Nonnull stop) {
+            [self->_scratchURLRequest setValue:obj forHTTPHeaderField:key];
+        }];
 
         // 3) override headers
-        for (NSString *key in overrideHeaders) {
-            [self->_scratchURLRequest setValue:overrideHeaders[key] forHTTPHeaderField:key];
-        }
+        [overrideHeaders enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, NSString * _Nonnull obj, BOOL * _Nonnull stop) {
+            [self->_scratchURLRequest setValue:obj forHTTPHeaderField:key];
+        }];
     }
 
     nextBlock();
@@ -1855,7 +1855,7 @@ static void _network_fail(SELF_ARG,
     NSURLSessionTaskMetrics *taskMetrics;
     TNLURLSessionTaskOperation *URLSessionTaskOperation = self.URLSessionTaskOperation;
     if (URLSessionTaskOperation) {
-        metadata = [URLSessionTaskOperation network_metaData];
+        metadata = [URLSessionTaskOperation network_metaDataWithLowerCaseHeaderFields:info.allHTTPHeaderFieldsWithLowerCaseKeys];
         taskMetrics = [URLSessionTaskOperation network_taskMetrics];
     } else {
         metadata = (TNLAttemptMetaData * __nonnull)nil;
@@ -2161,7 +2161,7 @@ static void _network_completeStateTransition(SELF_ARG,
 #if NS_BLOCK_ASSERTIONS
         assert(attemptResponse != nil);
 #else
-        NSCAssert(attemptResponse != nil, @"assertion failed: cannot finish a %@ with a nil TNLResponse!", NSStringFromClass([self class]));
+        TNLCAssert(attemptResponse != nil, @"assertion failed: cannot finish a %@ with a nil TNLResponse!", NSStringFromClass([self class]));
 #endif
 
         [self.requestOperationQueue operation:self

@@ -79,7 +79,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 // call these from tnl_network_queue()
 - (void)network_priorityDidChangeForRequestOperation:(TNLRequestOperation *)op;
-- (TNLAttemptMetaData *)network_metaData;
+- (TNLAttemptMetaData *)network_metaDataWithLowerCaseHeaderFields:(nullable NSDictionary *)lowerCaseHeaderFields;
 - (nullable NSURLSessionTaskMetrics *)network_taskMetrics;
 
 @end

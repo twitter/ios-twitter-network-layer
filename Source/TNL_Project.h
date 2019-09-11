@@ -137,6 +137,17 @@ FOUNDATION_EXTERN Class __nullable TNLDynamicUIApplicationClass(void);
 
 #define TNLLogVerboseEnabled() ([gTNLLogger respondsToSelector:@selector(tnl_shouldLogVerbosely)] ? [gTNLLogger tnl_shouldLogVerbosely] : NO)
 
+#if TARGET_OS_OSX
+#define TNL_LOG_WAITS_FOR_CONNECTIVITY_WARNING() \
+TNLLogWarning(@"#FB7027774: Cannot modify -[TNLRequestConfiguration connectivityOptions] on macOS %li.%li.%li", (long)[NSProcessInfo processInfo].operatingSystemVersion.majorVersion, (long)[NSProcessInfo processInfo].operatingSystemVersion.minorVersion, (long)[NSProcessInfo processInfo].operatingSystemVersion.patchVersion)
+#elif TARGET_OS_IPHONE && !TARGET_OS_WATCH
+#define TNL_LOG_WAITS_FOR_CONNECTIVITY_WARNING() \
+TNLLogWarning(@"#FB7027774: Cannot modify -[TNLRequestConfiguration connectivityOptions] on %@ %@", [UIDevice currentDevice].systemName, [UIDevice currentDevice].systemVersion)
+#else
+#define TNL_LOG_WAITS_FOR_CONNECTIVITY_WARNING() \
+TNLLogWarning(@"#FB7027774: Cannot modify -[TNLRequestConfiguration connectivityOptions]")
+#endif
+
 #pragma mark - Introspection
 
 #if DEBUG

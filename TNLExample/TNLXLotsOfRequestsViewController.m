@@ -371,7 +371,7 @@ static const BOOL kUseThumbnail = NO;
                 delay++;
             }
         } else {
-            _progressView.backgroundColor = [UIColor colorWithRed:0.75 green:0.1 blue:0.1 alpha:0.0];
+            _progressView.backgroundColor = [UIColor colorWithRed:(CGFloat)0.75 green:(CGFloat)0.1 blue:(CGFloat)0.1 alpha:(CGFloat)0.0];
         }
     } else {
         NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];

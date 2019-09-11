@@ -178,7 +178,7 @@ NSURLCache *TNLGetURLCacheDemuxProxy()
     return [self init];
 }
 
-#if !TARGET_OS_UIKITFORMAC
+#if !TARGET_OS_MACCATALYST
 - (id)initWithMemoryCapacity:(NSUInteger)memoryCapacity diskCapacity:(NSUInteger)diskCapacity diskPath:(nullable NSString *)path
 {
     return [self init];

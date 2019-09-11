@@ -73,6 +73,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) NSTimeInterval taskWithoutMetricsCompletionLatency;
 - (BOOL)hasTaskWithoutMetricsCompletionLatency;
 
+/**
+ The headers from the URL response, converted to all lowercase
+ */
+@property (nonatomic, copy, readonly, nullable) NSDictionary *responseLowercaseHeaders;
+- (BOOL)hasResponseLowercaseHeaders;
 
 /**
  The number of bytes received in the response body at OSI layer 8.

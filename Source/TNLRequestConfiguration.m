@@ -188,6 +188,11 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
     return 0;
 }
 
+- (BOOL)shouldUseExtendedBackgroundIdleMode
+{
+    return _ivars.shouldUseExtendedBackgroundIdleMode;
+}
+
 #pragma mark Constructors
 
 + (instancetype)defaultConfiguration
@@ -224,6 +229,12 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
         _sharedContainerIdentifier = [config->_sharedContainerIdentifier copy];
 
         memcpy(&_ivars, &(config->_ivars), sizeof(_ivars));
+        if (_ivars.connectivityOptions != TNLRequestConnectivityOptionsNone) {
+            if (![NSURLSessionConfiguration tnl_URLSessionCanUseWaitsForConnectivity]) {
+                _ivars.connectivityOptions = TNLRequestConnectivityOptionsNone;
+                TNL_LOG_WAITS_FOR_CONNECTIVITY_WARNING();
+            }
+        }
     }
     return self;
 }
@@ -296,6 +307,7 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
     D_SET(isDiscretionary);
     D_SET(shouldLaunchAppForBackgroundEvents);
     D_SET(shouldSetCookies);
+    D_SET(shouldUseExtendedBackgroundIdleMode);
 #if TARGET_OS_IOS
     if (tnl_available_ios_11) {
         D_SET(multipathServiceType);
@@ -411,6 +423,7 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
 @dynamic URLCache;
 @dynamic cookieStorage;
 @dynamic multipathServiceType;
+@dynamic shouldUseExtendedBackgroundIdleMode;
 
 - (id)copyWithZone:(nullable NSZone *)zone
 {
@@ -440,6 +453,11 @@ static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
 
 - (void)setConnectivityOptions:(TNLRequestConnectivityOptions)connectivityOptions
 {
+    if (![NSURLSessionConfiguration tnl_URLSessionCanUseWaitsForConnectivity]) {
+        TNL_LOG_WAITS_FOR_CONNECTIVITY_WARNING();
+        return;
+    }
+
     _ivars.connectivityOptions = (connectivityOptions & 0xf);
 }
 
@@ -545,6 +563,11 @@ PROP_RETAIN_ASSIGN_IMP(cookieStorage);
 #endif
 }
 
+- (void)setShouldUseExtendedBackgroundIdleMode:(BOOL)shouldUseExtendedBackgroundIdleMode
+{
+    _ivars.shouldUseExtendedBackgroundIdleMode = (shouldUseExtendedBackgroundIdleMode != NO);
+}
+
 - (void)configureAsLowPriority
 {
     self.discretionary = YES;
@@ -641,6 +664,8 @@ PROP_RETAIN_ASSIGN_IMP(cookieStorage);
     PULL_VALUE(TNLRequestConfigurationPropertyKeyDiscrectionary, discretionary, boolValue, BOOL);
 
     PULL_VALUE(TNLRequestConfigurationPropertyKeyShouldLaunchAppForBackgroundEvents, shouldLaunchAppForBackgroundEvents, boolValue, BOOL);
+
+    PULL_VALUE(TNLRequestConfigurationPropertyKeyShouldUseExtendedBackgroundIdleMode, shouldUseExtendedBackgroundIdleMode, boolValue, BOOL);
 
 #if TARGET_OS_IOS
     if (tnl_available_ios_11) {
@@ -758,6 +783,7 @@ TNLMutableParameterCollection * __nullable TNLMutableParametersFromRequestConfig
     params[TNLRequestConfigurationPropertyKeyDiscrectionary] = @(config.isDiscretionary);
     params[TNLRequestConfigurationPropertyKeyCookieAcceptPolicy] = @(config.cookieAcceptPolicy);
     params[TNLRequestConfigurationPropertyKeyShouldSetCookies] = @(config.shouldSetCookies);
+    params[TNLRequestConfigurationPropertyKeyShouldUseExtendedBackgroundIdleMode] = @(config.shouldUseExtendedBackgroundIdleMode);
 
     id value;
 

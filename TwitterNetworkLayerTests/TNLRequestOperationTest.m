@@ -1103,7 +1103,7 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     XCTAssertEqualObjects(completedResponse.operationError.domain, TNLErrorDomain);
     XCTAssertEqual(completedResponse.operationError.code, TNLErrorCodeRequestOperationIdleTimedOut);
     XCTAssertGreaterThan(completedResponse.metrics.totalDuration, idleTimeout);
-    NSTimeInterval withConnectionTimeoutDuration = completedResponse.metrics.totalDuration;
+    XCTAssertLessThan(completedResponse.metrics.totalDuration, idleTimeout + latency);
     NSLog(@"Idle Timeout Includes Initial Connection: %.3fs", completedResponse.metrics.totalDuration);
 
     // Idle Timeout Excludes Initial Connection
@@ -1117,8 +1117,7 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     XCTAssertEqualObjects(completedResponse.operationError.domain, TNLErrorDomain);
     XCTAssertEqual(completedResponse.operationError.code, TNLErrorCodeRequestOperationIdleTimedOut);
     XCTAssertGreaterThan(completedResponse.metrics.totalDuration, latency);
-    XCTAssertGreaterThan(completedResponse.metrics.totalDuration, withConnectionTimeoutDuration + latency);
-    NSTimeInterval withoutConnectionTimeoutDuration = completedResponse.metrics.totalDuration;
+    XCTAssertGreaterThan(completedResponse.metrics.totalDuration, idleTimeout + latency);
     NSLog(@"Idle Timeout Excludes Initial Connection: %.3fs", completedResponse.metrics.totalDuration);
 
     // No Idle Timeout
@@ -1130,7 +1129,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [[TNLRequestOperationQueue defaultOperationQueue] enqueueRequestOperation:operation];
     [operation waitUntilFinishedWithoutBlockingRunLoop];
     XCTAssertNil(completedResponse.operationError);
-    XCTAssertGreaterThan(completedResponse.metrics.totalDuration, withoutConnectionTimeoutDuration);
+    XCTAssertGreaterThan(completedResponse.metrics.totalDuration, latency);
+    XCTAssertGreaterThan(completedResponse.metrics.totalDuration, latency * 2);
     NSLog(@"Idle Timeout Disabled: %.3fs", completedResponse.metrics.totalDuration);
 
     [TNLGlobalConfiguration sharedInstance].idleTimeoutMode = TNLGlobalConfigurationIdleTimeoutModeDefault;

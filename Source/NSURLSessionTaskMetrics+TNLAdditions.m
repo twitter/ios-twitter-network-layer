@@ -52,9 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSDictionary<NSString *, id> *)tnl_dictionaryValue
 {
-    NSMutableDictionary<NSString *, id> *d = [[NSMutableDictionary alloc] init];
-
-    d[@"statusCode"] = @([(NSHTTPURLResponse *)self.response statusCode]);
+    NSMutableDictionary<NSString *, id> *d = [[self tnl_medadata] mutableCopy];
 
 #define APPLY_VALUE(key, value) \
     do { \
@@ -63,9 +61,6 @@ NS_ASSUME_NONNULL_BEGIN
             d[(key)] = valueObj; \
         } \
     } while (NO)
-
-    APPLY_VALUE(@"URL", self.request.URL);
-    APPLY_VALUE(@"protocol", self.networkProtocolName);
 
     APPLY_VALUE(@"dns", [self tnl_domainLookupDuration]);
     APPLY_VALUE(@"connect", [self tnl_connectDuration]);
@@ -76,32 +71,73 @@ NS_ASSUME_NONNULL_BEGIN
     APPLY_VALUE(@"response", [self tnl_responseReceiveDuration]);
     APPLY_VALUE(@"total", [self tnl_totalDuration]);
 
+    d[@"statusCode"] = @([(NSHTTPURLResponse *)self.response statusCode]);
+    APPLY_VALUE(@"URL", self.request.URL);
+
 #undef APPLY_VALUE
 
-    switch (self.resourceFetchType) {
-        case NSURLSessionTaskMetricsResourceFetchTypeNetworkLoad:
-            d[@"load"] = @"network";
-            break;
-        case NSURLSessionTaskMetricsResourceFetchTypeServerPush:
-            d[@"load"] = @"push";
-            break;
-        case NSURLSessionTaskMetricsResourceFetchTypeLocalCache:
-            d[@"load"] = @"cache";
-            break;
-        default:
-            d[@"load"] = @"unknown";
-            break;
-    }
+    return d;
+}
 
-    if (!self.reusedConnection) {
-        d[@"newConnection"] = @"true";
-    }
+- (NSDictionary<NSString *, id> *)tnl_medadata
+{
+    NSMutableDictionary<NSString *, id> *d = [[NSMutableDictionary alloc] init];
 
-    if (self.proxyConnection) {
-        d[@"proxy"] = @"true";
+#define APPLY_VALUE(key, value) \
+    do { \
+        id valueObj = (value); \
+        if (valueObj) { \
+            d[(key)] = valueObj; \
+        } \
+    } while (NO)
+
+    APPLY_VALUE(@"protocol", self.networkProtocolName);
+
+    d[@"load"] = self.tnl_resourceFetchTypeDebugString;
+    d[@"newConnection"] = @(!self.reusedConnection);
+    d[@"proxy"] = @(self.proxyConnection);
+
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+    if (tnl_available_ios_13) {
+        d[@"header_tx"] = @(self.countOfRequestHeaderBytesSent);
+        d[@"body_tx"] = @(self.countOfRequestBodyBytesSent);
+        d[@"body_bytes"] = @(self.countOfRequestBodyBytesBeforeEncoding);
+
+        d[@"header_rx"] = @(self.countOfResponseHeaderBytesReceived);
+        d[@"body_rx"] = @(self.countOfResponseBodyBytesReceived);
+        d[@"body_bytes"] = @(self.countOfResponseBodyBytesAfterDecoding);
+
+        APPLY_VALUE(@"localAddress", self.localAddress);
+        APPLY_VALUE(@"localPort", self.localPort);
+        APPLY_VALUE(@"remoteAddress", self.remoteAddress);
+        APPLY_VALUE(@"remotePort", self.remotePort);
+        APPLY_VALUE(@"tlsVersion", self.negotiatedTLSProtocolVersion);
+        APPLY_VALUE(@"tlsCSuite", self.negotiatedTLSCipherSuite);
+
+        d[@"cellular"] = @(self.isCellular);
+        d[@"expensive"] = @(self.isExpensive);
+        d[@"constrained"] = @(self.isConstrained);
+        d[@"multipath"] = @(self.isMultipath);
     }
+#endif
+
+#undef APPLY_VALUE
 
     return d;
+}
+
+- (NSString *)tnl_resourceFetchTypeDebugString
+{
+    switch (self.resourceFetchType) {
+        case NSURLSessionTaskMetricsResourceFetchTypeNetworkLoad:
+            return @"network";
+        case NSURLSessionTaskMetricsResourceFetchTypeServerPush:
+            return @"push";
+        case NSURLSessionTaskMetricsResourceFetchTypeLocalCache:
+            return @"cache";
+        default:
+            return @"unknown";
+    }
 }
 
 - (NSString *)tnl_timingDescription
