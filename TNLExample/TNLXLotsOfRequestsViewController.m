@@ -387,7 +387,7 @@ static const BOOL kUseThumbnail = NO;
         if (200 == response.info.statusCode) {
             const SInt64 contentLength = response.metrics.attemptMetrics.lastObject.metaData.responseContentLength;
             if (contentLength) {
-                _bytesReceived += (op.downloadProgress * (double)contentLength);
+                _bytesReceived += (uint64_t)(op.downloadProgress * (double)contentLength);
                 [self _updateProgress];
             }
         }
