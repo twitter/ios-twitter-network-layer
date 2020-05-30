@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 5/23/14.
-//  Copyright (c) 2014 Twitter, Inc. All rights reserved.
+//  Copyright © 2020 Twitter, Inc. All rights reserved.
 //
 
 #include <mach/mach_time.h>
@@ -43,6 +43,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 static NSString * const kRedactedKeyValue = @"<redacted>";
 
+static volatile atomic_uint_fast64_t sNextRetryId = ATOMIC_VAR_INIT(1);
+
 static dispatch_queue_t _RequestOperationDefaultCallbackQueue(void);
 static dispatch_queue_t _RequestOperationDefaultCallbackQueue()
 {
@@ -77,6 +79,10 @@ static dispatch_queue_t _URLSessionTaskOperationPropertyQueue()
     });
     return sQueue;
 }
+
+@interface TNLTimerOperation : TNLSafeOperation
+- (instancetype)initWithDelay:(NSTimeInterval)delay;
+@end
 
 @interface TNLRequestOperation ()
 
@@ -178,16 +184,17 @@ static void _network_retryDuringStateTransition(SELF_ARG,
                                                 TNLResponse *attemptResponse,
                                                 id<TNLRequestRetryPolicyProvider> retryPolicyProvider);
 
-#pragma mark Retry Timer
+#pragma mark Retry
 
-static void _network_startRetryTimer(SELF_ARG,
-                                     NSTimeInterval retryInterval,
-                                     TNLResponse *oldResponse,
-                                     id<TNLRequestRetryPolicyProvider> __nullable retryPolicyProvider);
-static void _network_invalidateRetryTimer(SELF_ARG);
-static void _network_retryTimerDidFire(SELF_ARG,
-                                       TNLResponse *oldResponse,
-                                       id<TNLRequestRetryPolicyProvider> __nullable retryPolicyProvider);
+static void _network_startRetry(SELF_ARG,
+                                NSTimeInterval retryDelay,
+                                TNLResponse *oldResponse,
+                                id<TNLRequestRetryPolicyProvider> __nullable retryPolicyProvider);
+static void _network_invalidateRetry(SELF_ARG);
+static void _network_tryRetry(SELF_ARG,
+                              uint64_t retryId,
+                              TNLResponse *oldResponse,
+                              id<TNLRequestRetryPolicyProvider> __nullable retryPolicyProvider);
 
 #pragma mark Operation Timeout Timer
 
@@ -311,12 +318,14 @@ TNLStaticAssert(sizeof(TNLRequestOperationState_Unaligned_AtomicT) == sizeof(TNL
     TNLResponseMetrics *_metrics;
 
     // Timers
-    dispatch_source_t _retryDelayTimerSource;
     dispatch_source_t _operationTimeoutTimerSource;
     dispatch_source_t _attemptTimeoutTimerSource;
     dispatch_source_t _callbackTimeoutTimerSource;
     uint64_t _callbackTimeoutTimerStartMachTime;
     uint64_t _callbackTimeoutTimerPausedMachTime;
+
+    // Retry
+    uint64_t _activeRetryId;
 
     // Flags that can only be written on the background queue
     struct {
@@ -334,6 +343,18 @@ TNLStaticAssert(sizeof(TNLRequestOperationState_Unaligned_AtomicT) == sizeof(TNL
     // atomic properties support
     TNLURLSessionTaskOperation *_URLSessionTaskOperation;
     volatile atomic_bool _didCompleteFinishedCallback;
+}
+
+#pragma mark overrides with no behavior change
+
+- (void)addDependency:(NSOperation *)op
+{
+    [super addDependency:op];
+}
+
+- (void)waitUntilFinished
+{
+    [super waitUntilFinished];
 }
 
 #pragma mark init/dealloc
@@ -401,10 +422,10 @@ TNLStaticAssert(sizeof(TNLRequestOperationState_Unaligned_AtomicT) == sizeof(TNL
 
 - (void)dealloc
 {
-    tnl_dispatch_timer_invalidate(_retryDelayTimerSource);
     tnl_dispatch_timer_invalidate(_operationTimeoutTimerSource);
     tnl_dispatch_timer_invalidate(_attemptTimeoutTimerSource);
     tnl_dispatch_timer_invalidate(_callbackTimeoutTimerSource);
+    _activeRetryId = 0; // invalidate any pending retry
 
     TNLBackgroundTaskIdentifier backgroundTaskIdentifier = self.dealloc_backgroundTaskIdentifier;
     if (TNLBackgroundTaskInvalid != backgroundTaskIdentifier) {
@@ -628,13 +649,11 @@ TNLStaticAssert(sizeof(TNLRequestOperationState_Unaligned_AtomicT) == sizeof(TNL
         id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
         SEL callback = @selector(tnl_requestOperartionIsWaitingForConnectivity:);
         if ([eventHandler respondsToSelector:callback]) {
-            dispatch_barrier_async(_callbackQueue, ^{
-                @autoreleasepool {
-                    NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                    _updateTag(self, tag);
-                    [eventHandler tnl_requestOperartionIsWaitingForConnectivity:self];
-                    _clearTag(self, tag);
-                }
+            tnl_dispatch_barrier_async_autoreleasing(_callbackQueue, ^{
+                NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+                _updateTag(self, tag);
+                [eventHandler tnl_requestOperartionIsWaitingForConnectivity:self];
+                _clearTag(self, tag);
             });
         }
     }
@@ -648,14 +667,12 @@ TNLStaticAssert(sizeof(TNLRequestOperationState_Unaligned_AtomicT) == sizeof(TNL
         id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
         SEL callback = @selector(tnl_requestOperation:didReceiveURLResponse:);
         if ([eventHandler respondsToSelector:callback]) {
-            dispatch_barrier_async(_callbackQueue, ^{
-                @autoreleasepool {
-                    NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                    _updateTag(self, tag);
-                    [eventHandler tnl_requestOperation:self
-                                 didReceiveURLResponse:URLResponse];
-                    _clearTag(self, tag);
-                }
+            tnl_dispatch_barrier_async_autoreleasing(_callbackQueue, ^{
+                NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+                _updateTag(self, tag);
+                [eventHandler tnl_requestOperation:self
+                             didReceiveURLResponse:URLResponse];
+                _clearTag(self, tag);
             });
         }
     }
@@ -710,22 +727,20 @@ static void _network_willPerformRedirect(SELF_ARG,
                 id<TNLRequestRedirecter> redirecter = self.internalDelegate;
                 SEL callback = @selector(tnl_requestOperation:willRedirectFromRequest:withResponse:toRequest:completion:);
                 if ([redirecter respondsToSelector:callback]) {
-                    dispatch_barrier_async(self->_callbackQueue, ^{
-                        @autoreleasepool {
-                            NSString *tag = TAG_FROM_METHOD(redirecter, @protocol(TNLRequestRedirecter), callback);
-                            _updateTag(self, tag);
-                            [redirecter tnl_requestOperation:self
-                                     willRedirectFromRequest:fromRequest
-                                                withResponse:response
-                                                   toRequest:toRequest
-                                                  completion:^(id<TNLRequest> finalToRequest) {
-                                _clearTag(self, tag);
-                                // all `TNLURLSessionTaskOperationDelegate` completion blocks must be called from tnl_network_queue
-                                tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-                                    completion(finalToRequest);
-                                });
-                            }];
-                        }
+                    tnl_dispatch_barrier_async_autoreleasing(self->_callbackQueue, ^{
+                        NSString *tag = TAG_FROM_METHOD(redirecter, @protocol(TNLRequestRedirecter), callback);
+                        _updateTag(self, tag);
+                        [redirecter tnl_requestOperation:self
+                                 willRedirectFromRequest:fromRequest
+                                            withResponse:response
+                                               toRequest:toRequest
+                                              completion:^(id<TNLRequest> finalToRequest) {
+                            _clearTag(self, tag);
+                            // all `TNLURLSessionTaskOperationDelegate` completion blocks must be called from tnl_network_queue
+                            tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
+                                completion(finalToRequest);
+                            });
+                        }];
                     });
                 } else {
                     // No callback to call, revert to Default behavior
@@ -792,15 +807,13 @@ static void _network_willPerformRedirect(SELF_ARG,
         id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
         SEL callback = @selector(tnl_requestOperation:didRedirectFromURLRequest:toURLRequest:);
         if ([eventHandler respondsToSelector:callback]) {
-            dispatch_barrier_async(_callbackQueue, ^{
-                @autoreleasepool {
-                    NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                    _updateTag(self, tag);
-                    [eventHandler tnl_requestOperation:self
-                             didRedirectFromURLRequest:fromRequest
-                                          toURLRequest:toRequest];
-                    _clearTag(self, tag);
-                }
+            tnl_dispatch_barrier_async_autoreleasing(_callbackQueue, ^{
+                NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+                _updateTag(self, tag);
+                [eventHandler tnl_requestOperation:self
+                         didRedirectFromURLRequest:fromRequest
+                                      toURLRequest:toRequest];
+                _clearTag(self, tag);
             });
         }
    }
@@ -818,15 +831,13 @@ static void _network_notifyHostSanitized(SELF_ARG,
     id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
     SEL callback = @selector(tnl_requestOperation:didSanitizeFromHost:toHost:);
     if ([eventHandler respondsToSelector:callback]) {
-        dispatch_barrier_async(self->_callbackQueue, ^{
-            @autoreleasepool {
-                NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                _updateTag(self, tag);
-                [eventHandler tnl_requestOperation:self
-                               didSanitizeFromHost:oldHost
-                                            toHost:newHost];
-                _clearTag(self, tag);
-            }
+        tnl_dispatch_barrier_async_autoreleasing(self->_callbackQueue, ^{
+            NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+            _updateTag(self, tag);
+            [eventHandler tnl_requestOperation:self
+                           didSanitizeFromHost:oldHost
+                                        toHost:newHost];
+            _clearTag(self, tag);
         });
     }
 }
@@ -887,14 +898,12 @@ static void _network_notifyHostSanitized(SELF_ARG,
         id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
         SEL callback = @selector(tnl_requestOperation:didUpdateUploadProgress:);
         if ([eventHandler respondsToSelector:callback]) {
-            dispatch_barrier_async(_callbackQueue, ^{
-                @autoreleasepool {
-                    NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                    _updateTag(self, tag);
-                    [eventHandler tnl_requestOperation:self
-                               didUpdateUploadProgress:progress];
-                    _clearTag(self, tag);
-                }
+            tnl_dispatch_barrier_async_autoreleasing(_callbackQueue, ^{
+                NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+                _updateTag(self, tag);
+                [eventHandler tnl_requestOperation:self
+                           didUpdateUploadProgress:progress];
+                _clearTag(self, tag);
             });
         }
     }
@@ -918,14 +927,12 @@ static void _network_notifyHostSanitized(SELF_ARG,
         id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
         SEL callback = @selector(tnl_requestOperation:didUpdateDownloadProgress:);
         if ([eventHandler respondsToSelector:callback]) {
-            dispatch_barrier_async(_callbackQueue, ^{
-                @autoreleasepool {
-                    NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                    _updateTag(self, tag);
-                    [eventHandler tnl_requestOperation:self
-                             didUpdateDownloadProgress:progress];
-                    _clearTag(self, tag);
-                }
+            tnl_dispatch_barrier_async_autoreleasing(_callbackQueue, ^{
+                NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+                _updateTag(self, tag);
+                [eventHandler tnl_requestOperation:self
+                         didUpdateDownloadProgress:progress];
+                _clearTag(self, tag);
             });
         }
     }
@@ -941,14 +948,12 @@ static void _network_notifyHostSanitized(SELF_ARG,
                 id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
                 SEL callback = @selector(tnl_requestOperation:didReceiveData:);
                 if ([eventHandler respondsToSelector:callback]) {
-                    dispatch_barrier_async(self->_callbackQueue, ^{
-                        @autoreleasepool {
-                            NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                            _updateTag(self, tag);
-                            [eventHandler tnl_requestOperation:self
-                                                didReceiveData:data];
-                            _clearTag(self, tag);
-                        }
+                    tnl_dispatch_barrier_async_autoreleasing(self->_callbackQueue, ^{
+                        NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+                        _updateTag(self, tag);
+                        [eventHandler tnl_requestOperation:self
+                                            didReceiveData:data];
+                        _clearTag(self, tag);
                     });
                 }
                 break;
@@ -974,17 +979,15 @@ static void _network_notifyHostSanitized(SELF_ARG,
         id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
         SEL callback = @selector(tnl_requestOperation:didStartRequestWithURLSessionTaskIdentifier:URLSessionConfigurationIdentifier:URLSessionSharedContainerIdentifier:isBackgroundRequest:);
         if ([eventHandler respondsToSelector:callback]) {
-            dispatch_barrier_async(_callbackQueue, ^{
-                @autoreleasepool {
-                    NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                    _updateTag(self, tag);
-                    [eventHandler tnl_requestOperation:self
-                                  didStartRequestWithURLSessionTaskIdentifier:taskId
-                                  URLSessionConfigurationIdentifier:configIdentifier
-                                  URLSessionSharedContainerIdentifier:sharedContainerIdentifier
-                                  isBackgroundRequest:isBackgroundRequest];
-                    _clearTag(self, tag);
-                }
+            tnl_dispatch_barrier_async_autoreleasing(_callbackQueue, ^{
+                NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+                _updateTag(self, tag);
+                [eventHandler tnl_requestOperation:self
+                              didStartRequestWithURLSessionTaskIdentifier:taskId
+                              URLSessionConfigurationIdentifier:configIdentifier
+                              URLSessionSharedContainerIdentifier:sharedContainerIdentifier
+                              isBackgroundRequest:isBackgroundRequest];
+                _clearTag(self, tag);
             });
         }
     }
@@ -1039,11 +1042,6 @@ static void _network_notifyHostSanitized(SELF_ARG,
 }
 
 #pragma mark Wait
-
-- (void)waitUntilFinished
-{
-    [super waitUntilFinished];
-}
 
 - (void)waitUntilFinishedWithoutBlockingRunLoop
 {
@@ -1278,35 +1276,33 @@ static void _network_hydrateRequest(SELF_ARG, tnl_request_preparation_block_t ne
     id<TNLRequestHydrater> hydrater = self.internalDelegate;
     id<TNLRequest> originalRequest = self.originalRequest;
     SEL callback = @selector(tnl_requestOperation:hydrateRequest:completion:);
-    dispatch_barrier_async(self->_callbackQueue, ^{
-        @autoreleasepool {
-            if ([hydrater respondsToSelector:callback]) {
-                NSString *tag = TAG_FROM_METHOD(hydrater, @protocol(TNLRequestHydrater), callback);
-                _updateTag(self, tag);
-                [hydrater tnl_requestOperation:self
-                                hydrateRequest:originalRequest
-                                    completion:^(id<TNLRequest> hydratedRequest, NSError *error) {
-                    _clearTag(self, tag);
+    tnl_dispatch_barrier_async_autoreleasing(self->_callbackQueue, ^{
+        if ([hydrater respondsToSelector:callback]) {
+            NSString *tag = TAG_FROM_METHOD(hydrater, @protocol(TNLRequestHydrater), callback);
+            _updateTag(self, tag);
+            [hydrater tnl_requestOperation:self
+                            hydrateRequest:originalRequest
+                                completion:^(id<TNLRequest> hydratedRequest, NSError *error) {
+                _clearTag(self, tag);
 
-                    tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-                        if (!_network_getIsPreparing(self)) {
-                            return;
-                        }
-
-                        if (error) {
-                            _network_fail(self, TNLErrorCreateWithCodeAndUnderlyingError(TNLErrorCodeRequestOperationFailedToHydrateRequest, error));
-                        } else {
-                            self.hydratedRequest = hydratedRequest ?: originalRequest;
-                            nextBlock();
-                        }
-                    });
-                }];
-            } else {
                 tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-                    self.hydratedRequest = originalRequest;
-                    nextBlock();
+                    if (!_network_getIsPreparing(self)) {
+                        return;
+                    }
+
+                    if (error) {
+                        _network_fail(self, TNLErrorCreateWithCodeAndUnderlyingError(TNLErrorCodeRequestOperationFailedToHydrateRequest, error));
+                    } else {
+                        self.hydratedRequest = hydratedRequest ?: originalRequest;
+                        nextBlock();
+                    }
                 });
-            }
+            }];
+        } else {
+            tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
+                self.hydratedRequest = originalRequest;
+                nextBlock();
+            });
         }
     });
 }
@@ -1372,11 +1368,15 @@ static void _network_validateConfiguration(SELF_ARG, tnl_request_preparation_blo
 
     TNLRequestConfiguration *config = self->_requestConfiguration;
 
-    if (config.attemptTimeout - config.idleTimeout < -0.05) {
+    const BOOL hasAttemptTimeout = config.attemptTimeout >= MIN_TIMER_INTERVAL;
+    const BOOL hasIdleTimeout = config.idleTimeout >= MIN_TIMER_INTERVAL;
+    const BOOL hasOperationTimeout = config.operationTimeout >= MIN_TIMER_INTERVAL;
+
+    if (hasAttemptTimeout && hasIdleTimeout && (config.attemptTimeout - config.idleTimeout < -0.05)) {
         TNLLogWarning(@"Attempt Timeout (%.2f) should not be shorter than the Idle Timeout (%.2f)!", config.attemptTimeout, config.idleTimeout);
     }
 
-    if (config.operationTimeout - config.attemptTimeout < -0.05) {
+    if (hasOperationTimeout && hasAttemptTimeout && (config.operationTimeout - config.attemptTimeout < -0.05)) {
         TNLLogWarning(@"Operation Timeout (%.2f) should not be shorter than the Attempt Timeout (%.2f)!", config.operationTimeout, config.attemptTimeout);
     }
 
@@ -1690,33 +1690,31 @@ static void _network_authorizeScratchURLRequest(SELF_ARG, tnl_request_preparatio
         return;
     }
 
-    dispatch_barrier_async(self->_callbackQueue, ^{
-        @autoreleasepool {
-            NSString *tag = TAG_FROM_METHOD(authorizer, @protocol(TNLRequestAuthorizer), callback);
-            _updateTag(self, tag);
-            [authorizer tnl_requestOperation:self
-                         authorizeURLRequest:[self->_scratchURLRequest copy]
-                                  completion:^(NSString *authHeader, NSError *error) {
-                _clearTag(self, tag);
+    tnl_dispatch_barrier_async_autoreleasing(self->_callbackQueue, ^{
+        NSString *tag = TAG_FROM_METHOD(authorizer, @protocol(TNLRequestAuthorizer), callback);
+        _updateTag(self, tag);
+        [authorizer tnl_requestOperation:self
+                     authorizeURLRequest:[self->_scratchURLRequest copy]
+                              completion:^(NSString *authHeader, NSError *error) {
+            _clearTag(self, tag);
 
-                tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-                    if (!_network_getIsPreparing(self)) {
-                        return;
-                    }
+            tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
+                if (!_network_getIsPreparing(self)) {
+                    return;
+                }
 
-                    if (error) {
-                        _network_fail(self, TNLErrorCreateWithCodeAndUnderlyingError(TNLErrorCodeRequestOperationFailedToAuthorizeRequest, error));
-                        return;
-                    }
+                if (error) {
+                    _network_fail(self, TNLErrorCreateWithCodeAndUnderlyingError(TNLErrorCodeRequestOperationFailedToAuthorizeRequest, error));
+                    return;
+                }
 
-                    if (authHeader) {
-                        [self->_scratchURLRequest setValue:(authHeader.length > 0) ? authHeader : nil
-                                        forHTTPHeaderField:@"Authorization"];
-                    }
-                    nextBlock();
-                });
-            }];
-        }
+                if (authHeader) {
+                    [self->_scratchURLRequest setValue:(authHeader.length > 0) ? authHeader : nil
+                                    forHTTPHeaderField:@"Authorization"];
+                }
+                nextBlock();
+            });
+        }];
     });
 }
 
@@ -1757,9 +1755,10 @@ static void _network_connect(SELF_ARG,
     TNLAssert(_network_getIsPreparing(self));
 
     TNLAssertMessage(self.URLSessionTaskOperation == nil, @"Already have a TNLURLSessionTaskOperation? state = %@", TNLRequestOperationStateToString(self.state));
-    _network_transitionState(self,
-                             TNLRequestOperationStateStarting,
-                             nil /*attemptResponse*/);
+
+    // Do not update the `.state` here.
+    // The `.URLSessionTaskOperation` will update to `TNLRequestOperationStateStarting` once it starts
+    // (which may be delayed by 503 backoffs).
 
     [self.requestOperationQueue findURLSessionTaskOperationForRequestOperation:self
                                                                       complete:^(TNLURLSessionTaskOperation *taskOp) {
@@ -1790,27 +1789,25 @@ static void _network_startURLSessionTaskOperation(SELF_ARG,
         return;
     }
 
-    dispatch_barrier_async(self->_callbackQueue, ^{
-        @autoreleasepool {
-            NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-            _updateTag(self, tag);
-            [eventHandler tnl_requestOperation:self
-                          readyToEnqueueUnderlyingNetworkingOperation:isRetry
-                          enqueueBlock:^(NSArray<NSOperation *> *dependencies) {
-                _clearTag(self, tag);
-                // add dependencies synchronously with callback
-                if (dependencies) {
-                    TNLLogDebug(@"Added dependencies to %@: %@", taskOp, dependencies);
-                    for (NSOperation *op in dependencies) {
-                        [taskOp addDependency:op];
-                    }
+    tnl_dispatch_barrier_async_autoreleasing(self->_callbackQueue, ^{
+        NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+        _updateTag(self, tag);
+        [eventHandler tnl_requestOperation:self
+                      readyToEnqueueUnderlyingNetworkingOperation:isRetry
+                      enqueueBlock:^(NSArray<NSOperation *> *dependencies) {
+            _clearTag(self, tag);
+            // add dependencies synchronously with callback
+            if (dependencies) {
+                TNLLogDebug(@"Added dependencies to %@: %@", taskOp, dependencies);
+                for (NSOperation *op in dependencies) {
+                    [taskOp addDependency:op];
                 }
-                // dispatch to network queue to start the op
-                tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-                    [taskOp enqueueToOperationQueueIfNeeded:self.requestOperationQueue];
-                });
-            }];
-        }
+            }
+            // dispatch to network queue to start the op
+            tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
+                [taskOp enqueueToOperationQueueIfNeeded:self.requestOperationQueue];
+            });
+        }];
     });
 }
 
@@ -1902,28 +1899,24 @@ static void _network_retry(SELF_ARG,
     if (!self->_backgroundFlags.silentStart) {
         SEL callback = @selector(tnl_requestOperation:didStartRetryFromResponse:);
         if ([retryPolicyProvider respondsToSelector:callback]) {
-            dispatch_barrier_async(_RetryPolicyProviderQueue(retryPolicyProvider), ^{
-                @autoreleasepool {
-                    NSString *tag = TAG_FROM_METHOD(retryPolicyProvider, @protocol(TNLRequestRetryPolicyProvider), callback);
-                    _updateTag(self, tag);
-                    [retryPolicyProvider tnl_requestOperation:self
-                                    didStartRetryFromResponse:oldResponse];
-                    _clearTag(self, tag);
-                }
+            tnl_dispatch_barrier_async_autoreleasing(_RetryPolicyProviderQueue(retryPolicyProvider), ^{
+                NSString *tag = TAG_FROM_METHOD(retryPolicyProvider, @protocol(TNLRequestRetryPolicyProvider), callback);
+                _updateTag(self, tag);
+                [retryPolicyProvider tnl_requestOperation:self
+                                didStartRetryFromResponse:oldResponse];
+                _clearTag(self, tag);
             });
         }
         id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
         callback = @selector(tnl_requestOperation:didStartRetryFromResponse:policyProvider:);
         if ([eventHandler respondsToSelector:callback]) {
-            dispatch_barrier_async(self->_callbackQueue, ^{
-                @autoreleasepool {
-                    NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                    _updateTag(self, tag);
-                    [eventHandler tnl_requestOperation:self
-                             didStartRetryFromResponse:oldResponse
-                                        policyProvider:retryPolicyProvider];
-                    _clearTag(self, tag);
-                }
+            tnl_dispatch_barrier_async_autoreleasing(self->_callbackQueue, ^{
+                NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+                _updateTag(self, tag);
+                [eventHandler tnl_requestOperation:self
+                         didStartRetryFromResponse:oldResponse
+                                    policyProvider:retryPolicyProvider];
+                _clearTag(self, tag);
             });
         }
     }
@@ -1992,7 +1985,7 @@ static void _network_cleanupAfterComplete(SELF_ARG)
         return;
     }
 
-    _network_invalidateRetryTimer(self);
+    _network_invalidateRetry(self);
     _network_invalidateOperationTimeoutTimer(self);
 }
 
@@ -2141,15 +2134,13 @@ static void _network_completeStateTransition(SELF_ARG,
     id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
     SEL callback = @selector(tnl_requestOperation:didTransitionFromState:toState:);
     if ([eventHandler respondsToSelector:callback]) {
-        dispatch_barrier_async(self->_callbackQueue, ^{
-            @autoreleasepool {
-                NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                _updateTag(self, tag);
-                [eventHandler tnl_requestOperation:self
-                            didTransitionFromState:oldState
-                                           toState:state];
-                _clearTag(self, tag);
-            }
+        tnl_dispatch_barrier_async_autoreleasing(self->_callbackQueue, ^{
+            NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+            _updateTag(self, tag);
+            [eventHandler tnl_requestOperation:self
+                        didTransitionFromState:oldState
+                                       toState:state];
+            _clearTag(self, tag);
         });
     }
 
@@ -2157,7 +2148,9 @@ static void _network_completeStateTransition(SELF_ARG,
 
     if (finishedDidChange) {
         // have aggressive assert here, whether TNL asserts are enabled or not
-        __TNLAssert(attemptResponse != nil);
+        if (nil == attemptResponse) {
+            __TNLAssertTriggering();
+        }
 #if NS_BLOCK_ASSERTIONS
         assert(attemptResponse != nil);
 #else
@@ -2271,15 +2264,13 @@ static void _network_didCompleteAttempt(SELF_ARG,
         id<TNLRequestEventHandler> eventHandler = self.internalDelegate;
         SEL callback = @selector(tnl_requestOperation:didCompleteAttemptWithResponse:disposition:);
         if ([eventHandler respondsToSelector:callback]) {
-            dispatch_barrier_async(self->_callbackQueue, ^{
-                @autoreleasepool {
-                    NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                    _updateTag(self, tag);
-                    [eventHandler tnl_requestOperation:self
-                        didCompleteAttemptWithResponse:response
-                                           disposition:disposition];
-                    _clearTag(self, tag);
-                }
+            tnl_dispatch_barrier_async_autoreleasing(self->_callbackQueue, ^{
+                NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+                _updateTag(self, tag);
+                [eventHandler tnl_requestOperation:self
+                    didCompleteAttemptWithResponse:response
+                                       disposition:disposition];
+                _clearTag(self, tag);
             });
         }
     }
@@ -2305,28 +2296,26 @@ static void _network_complete(SELF_ARG,
     SEL callback = @selector(tnl_requestOperation:didCompleteWithResponse:);
     const BOOL hasCompletionCallback = [eventHandler respondsToSelector:callback];
     dispatch_block_t block = ^{
-        @autoreleasepool {
-            if (hasCompletionCallback) {
-                NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
-                _updateTag(self, tag);
-                [eventHandler tnl_requestOperation:self
-                           didCompleteWithResponse:response];
-                _clearTag(self, tag);
-            }
-            _finalizeCompletion(self); // finalize from the completion queue
-            tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-                _network_endBackgroundTask(self);
-            });
+        if (hasCompletionCallback) {
+            NSString *tag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), callback);
+            _updateTag(self, tag);
+            [eventHandler tnl_requestOperation:self
+                       didCompleteWithResponse:response];
+            _clearTag(self, tag);
         }
+        _finalizeCompletion(self); // finalize from the completion queue
+        tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
+            _network_endBackgroundTask(self);
+        });
     };
 
     if (self->_callbackQueue == self->_completionQueue) {
-        dispatch_barrier_async(self->_completionQueue, block);
+        tnl_dispatch_barrier_async_autoreleasing(self->_completionQueue, block);
     } else {
         // dispatch to callback queue to flush the callback queue
         dispatch_barrier_async(self->_callbackQueue, ^{
             // dispatch to completion queue for completion
-            dispatch_barrier_async(self->_completionQueue, block);
+            tnl_dispatch_barrier_async_autoreleasing(self->_completionQueue, block);
         });
     }
 }
@@ -2693,10 +2682,10 @@ static void _network_forciblyRetryInvalidatedURLSessionRequest(SELF_ARG,
         _network_transitionState(self,
                                  TNLRequestOperationStateWaitingToRetry,
                                  nil /*attemptResponse*/);
-        _network_startRetryTimer(self,
-                                 MIN_TIMER_INTERVAL,
-                                 attemptResponse,
-                                 nil /*retryPolicyProvider*/);
+        _network_startRetry(self,
+                            MIN_TIMER_INTERVAL,
+                            attemptResponse,
+                            nil /*retryPolicyProvider*/);
         // don't need to end the background task here since we are triggering
         // the retry in order to circumvent a race condition that causes a failure,
         // not actually retrying after a legitimate failure that could be of any
@@ -2771,78 +2760,77 @@ static void _network_retryDuringStateTransition(SELF_ARG,
     TNLRequestConfiguration *requestConfig = self->_requestConfiguration;
 
     // Dispatch to the retry queue to get retry policy info
-    dispatch_barrier_async(_RetryPolicyProviderQueue(retryPolicyProvider), ^{
+    tnl_dispatch_barrier_async_autoreleasing(_RetryPolicyProviderQueue(retryPolicyProvider), ^{
 
-        @autoreleasepool {
-            NSString *tag = TAG_FROM_METHOD(retryPolicyProvider, @protocol(TNLRequestRetryPolicyProvider), @selector(tnl_shouldRetryRequestOperation:withResponse:));
-            _updateTag(self, tag);
-            const BOOL retry = [retryPolicyProvider tnl_shouldRetryRequestOperation:self
-                                                                       withResponse:attemptResponse];
-            _clearTag(self, tag);
+        NSString *tag = TAG_FROM_METHOD(retryPolicyProvider, @protocol(TNLRequestRetryPolicyProvider), @selector(tnl_shouldRetryRequestOperation:withResponse:));
+        _updateTag(self, tag);
+        const BOOL retry = [retryPolicyProvider tnl_shouldRetryRequestOperation:self
+                                                                   withResponse:attemptResponse];
+        _clearTag(self, tag);
 
-            if (retry) {
+        if (retry) {
 
-                NSTimeInterval operationTimeout = requestConfig.operationTimeout;
-                BOOL didUpdateOperationTimeout = NO;
-                TNLRequestConfiguration *newConfig = _retryQueue_pullNewRequestConfiguration(self,
-                                                                                             retryPolicyProvider,
-                                                                                             attemptResponse,
-                                                                                             requestConfig);
-                if (newConfig) {
-                    TNLLogDebug(@"Retry policy updated config: %@", @{
-                                                                      @"operation" : self,
-                                                                      @"attemptResponse" : attemptResponse,
-                                                                      @"oldConfig" : requestConfig,
-                                                                      @"newConfig" : newConfig
-                                                                      });
-                    const NSTimeInterval newTimeout = newConfig.operationTimeout;
-                    if (newTimeout != operationTimeout) {
-                        operationTimeout = newTimeout;
-                        didUpdateOperationTimeout = YES;
-                    }
+            NSTimeInterval operationTimeout = requestConfig.operationTimeout;
+            BOOL didUpdateOperationTimeout = NO;
+            TNLRequestConfiguration *newConfig = _retryQueue_pullNewRequestConfiguration(self,
+                                                                                         retryPolicyProvider,
+                                                                                         attemptResponse,
+                                                                                         requestConfig);
+            if (newConfig) {
+                TNLLogDebug(@"Retry policy updated config: %@", @{
+                                                                  @"operation" : self,
+                                                                  @"attemptResponse" : attemptResponse,
+                                                                  @"oldConfig" : requestConfig,
+                                                                  @"newConfig" : newConfig
+                                                                  });
+                const NSTimeInterval newTimeout = newConfig.operationTimeout;
+                if (newTimeout != operationTimeout) {
+                    operationTimeout = newTimeout;
+                    didUpdateOperationTimeout = YES;
                 }
-
-                const NSTimeInterval retryDelay = _retryQueue_pullRetryDelay(self, retryPolicyProvider, attemptResponse);
-                const NSTimeInterval elapsedTime = TNLComputeDuration(enqueueMachTime, mach_absolute_time());
-
-                // Only retry if the attempt won't be too far into the future
-                if ((elapsedTime + retryDelay) < operationTimeout) {
-                    TNLLogDebug(@"Retry will start in %.3f seconds", retryDelay);
-
-                    NSTimeInterval newOperationTimeout = -1.0; // negative won't update timeout
-                    if (didUpdateOperationTimeout) {
-                        newOperationTimeout = operationTimeout - elapsedTime;
-                        TNLAssert(newOperationTimeout >= 0.0);
-                    }
-                    _retryQueue_doRetry(self,
-                                        oldState,
-                                        retryPolicyProvider,
-                                        attemptResponse,
-                                        retryDelay,
-                                        eventHandler,
-                                        hasCachedCancel,
-                                        newConfig,
-                                        newOperationTimeout);
-                    return;
-                }
-
-                TNLLogDebug(@"Retry is past timeout, not retrying");
             }
 
-            // won't retry
-            tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-                self->_backgroundFlags.inRetryCheck = NO;
-                if (_network_getIsStateFinished(self)) {
-                    return;
-                }
+            const BOOL hasOperationTimeout = operationTimeout >= MIN_TIMER_INTERVAL;
+            const NSTimeInterval retryDelay = _retryQueue_pullRetryDelay(self, retryPolicyProvider, attemptResponse);
+            const NSTimeInterval elapsedTime = TNLComputeDuration(enqueueMachTime, mach_absolute_time());
 
-                TNLAssert(attemptResponse != nil);
-                _network_completeStateTransition(self,
-                                                 oldState,
-                                                 state,
-                                                 attemptResponse);
-            });
+            // Only retry if the attempt won't be too far into the future
+            if (!hasOperationTimeout || ((elapsedTime + retryDelay) < operationTimeout)) {
+                TNLLogDebug(@"Retry will start in %.3f seconds", retryDelay);
+
+                NSTimeInterval newOperationTimeout = -1.0; // negative won't update timeout
+                if (didUpdateOperationTimeout && hasOperationTimeout) {
+                    newOperationTimeout = operationTimeout - elapsedTime;
+                    TNLAssert(newOperationTimeout >= 0.0);
+                }
+                _retryQueue_doRetry(self,
+                                    oldState,
+                                    retryPolicyProvider,
+                                    attemptResponse,
+                                    retryDelay,
+                                    eventHandler,
+                                    hasCachedCancel,
+                                    newConfig,
+                                    newOperationTimeout);
+                return;
+            }
+
+            TNLLogDebug(@"Retry is past timeout, not retrying");
         }
+
+        // won't retry
+        tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
+            self->_backgroundFlags.inRetryCheck = NO;
+            if (_network_getIsStateFinished(self)) {
+                return;
+            }
+
+            TNLAssert(attemptResponse != nil);
+            _network_completeStateTransition(self,
+                                             oldState,
+                                             state,
+                                             attemptResponse);
+        });
     });
 }
 
@@ -2929,8 +2917,20 @@ static void _retryQueue_doRetry(SELF_ARG,
         }
     }
 
-    if (newConfig) {
-        tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
+    tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
+        self->_backgroundFlags.inRetryCheck = NO;
+        if (_network_getHasFailedOrFinished(self)) {
+            return;
+        }
+
+        // don't use stale hasCachedCancel var here,
+        // check the fresh _cachedCancel ref directly
+        if (self->_cachedCancelError != nil) {
+            _network_fail(self, self->_cachedCancelError);
+            return;
+        }
+
+        if (newConfig) {
             // update the config
             self->_requestConfiguration = newConfig;
             // update the operation timeout if it had changed
@@ -2938,117 +2938,131 @@ static void _retryQueue_doRetry(SELF_ARG,
                 _network_invalidateOperationTimeoutTimer(self);
                 _network_startOperationTimeoutTimer(self, newOperationTimeout);
             }
-        });
-    }
+        }
 
-    // Dispatch to the callback queue in case we need to event to the event handler
-    willStartRetryCallback = @selector(tnl_requestOperation:willStartRetryFromResponse:policyProvider:afterDelay:);
-    dispatch_barrier_async(self->_callbackQueue, ^{
-        @autoreleasepool {
-            if (!hasCachedCancel) {
-                if ([eventHandler respondsToSelector:willStartRetryCallback] && ((__bridge void *)eventHandler != (__bridge void *)retryPolicyProvider)) {
-                    NSString *eventTag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), willStartRetryCallback);
-                    _updateTag(self, eventTag);
-                    [eventHandler tnl_requestOperation:self
-                            willStartRetryFromResponse:attemptResponse
-                                        policyProvider:retryPolicyProvider
-                                            afterDelay:retryDelay];
-                    _clearTag(self, eventTag);
-                }
+        self.URLSessionTaskOperation = nil;
+
+        // Transition to "Waiting to Retry", forcibly updating to "Starting" first, if necessary
+        TNLRequestOperationState updatedOldState = oldState;
+        if (TNLRequestOperationStatePreparingRequest == oldState) {
+            _network_completeStateTransition(self,
+                                             oldState,
+                                             TNLRequestOperationStateStarting,
+                                             nil /*attemptResponse*/);
+            updatedOldState = TNLRequestOperationStateStarting;
+        }
+        _network_completeStateTransition(self,
+                                         updatedOldState,
+                                         TNLRequestOperationStateWaitingToRetry,
+                                         attemptResponse);
+
+        // Dispatch to the callback queue in case we need to event to the event handler
+        SEL eventHandlerWillStartRetryCallback = @selector(tnl_requestOperation:willStartRetryFromResponse:policyProvider:afterDelay:);
+        tnl_dispatch_barrier_async_autoreleasing(self->_callbackQueue, ^{
+            if ([eventHandler respondsToSelector:eventHandlerWillStartRetryCallback] && ((__bridge void *)eventHandler != (__bridge void *)retryPolicyProvider)) {
+                NSString *eventTag = TAG_FROM_METHOD(eventHandler, @protocol(TNLRequestEventHandler), eventHandlerWillStartRetryCallback);
+                _updateTag(self, eventTag);
+                [eventHandler tnl_requestOperation:self
+                        willStartRetryFromResponse:attemptResponse
+                                    policyProvider:retryPolicyProvider
+                                        afterDelay:retryDelay];
+                _clearTag(self, eventTag);
             }
 
-            // Finish with dispatch to background queue to update state and start retry timer (if necessary)
+            // Finish with dispatch to background queue to start retry timer
             tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-                self->_backgroundFlags.inRetryCheck = NO;
-                if (_network_getHasFailedOrFinished(self)) {
-                    return;
-                }
-
-                // don't use stale hasCachedCancel var here,
-                // check the fresh _cachedCancel ref directly
-                if (self->_cachedCancelError != nil) {
-                    _network_fail(self, self->_cachedCancelError);
-                } else {
-                    self.URLSessionTaskOperation = nil;
-                    TNLRequestOperationState updatedOldState = oldState;
-                    if (TNLRequestOperationStatePreparingRequest == oldState) {
-                        // forcibly update to "Starting" before updating to "Waiting to Retry"
-                        _network_completeStateTransition(self,
-                                                         oldState,
-                                                         TNLRequestOperationStateStarting,
-                                                         nil /*attemptResponse*/);
-                        updatedOldState = TNLRequestOperationStateStarting;
-                    }
-                    _network_completeStateTransition(self,
-                                                     updatedOldState,
-                                                     TNLRequestOperationStateWaitingToRetry,
-                                                     attemptResponse);
-                    _network_startRetryTimer(self,
-                                             retryDelay,
-                                             attemptResponse,
-                                             retryPolicyProvider);
-                    // end the background task while waiting to retry,
-                    // we only want the active request to be guarded with a bg task
-                    _network_endBackgroundTask(self);
-                }
+                _network_startRetry(self,
+                                    retryDelay,
+                                    attemptResponse,
+                                    retryPolicyProvider);
+                // end the background task while waiting to retry,
+                // we only want the active request to be guarded with a bg task
+                _network_endBackgroundTask(self);
             });
-        }
+        });
     });
 }
 
-#pragma mark Retry Timer
+#pragma mark Retry
 
-static void _network_startRetryTimer(SELF_ARG,
-                                     NSTimeInterval retryInterval,
-                                     TNLResponse *oldResponse,
-                                     id<TNLRequestRetryPolicyProvider> __nullable retryPolicyProvider)
+static void _network_startRetry(SELF_ARG,
+                                NSTimeInterval retryDelay,
+                                TNLResponse *oldResponse,
+                                id<TNLRequestRetryPolicyProvider> __nullable retryPolicyProvider)
 {
     if (!self) {
         return;
     }
 
-    _network_invalidateRetryTimer(self);
+    // Update the active retry number (effectively invalidating prior retries)
+    const uint64_t currentRetryId = atomic_fetch_add(&sNextRetryId, 1);
+    self->_activeRetryId = currentRetryId;
 
-    if (retryInterval < MIN_TIMER_INTERVAL) {
-        _network_retryTimerDidFire(self,
-                                   oldResponse,
-                                   retryPolicyProvider);
-    } else {
-        __weak typeof(self) weakSelf = self;
-        self->_retryDelayTimerSource = tnl_dispatch_timer_create_and_start(tnl_network_queue(),
-                                                                           retryInterval,
-                                                                           TIMER_LEEWAY_WITH_FIRE_INTERVAL(retryInterval),
-                                                                           NO /*repeats*/,
-                                                                           ^{
-            _network_retryTimerDidFire(weakSelf,
-                                       oldResponse,
-                                       retryPolicyProvider);
-        });
+    // The block try the actual retry
+    __weak typeof(self) weakSelf = self;
+    dispatch_block_t tryRetryBlock = ^{
+        _network_tryRetry(weakSelf,
+                          currentRetryId,
+                          oldResponse,
+                          retryPolicyProvider);
+    };
+
+    // Can we retry without any delay?
+    NSArray<NSOperation *> *dependencies = self.dependencies;
+    if (dependencies.count == 0 && retryDelay < MIN_TIMER_INTERVAL) {
+        // retry without a delay
+        tryRetryBlock();
+        return;
     }
+
+    // Set up operation to gate the retry on
+    NSOperation *retryDependencyOperation = [[TNLSafeOperation alloc] init];
+    retryDependencyOperation.completionBlock = ^{
+        if (dispatch_queue_get_label(tnl_network_queue()) == dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL)) {
+            tryRetryBlock();
+        } else {
+            dispatch_async(tnl_network_queue(), tryRetryBlock);
+        }
+    };
+
+    // Set up dependencies
+    for (NSOperation *op in dependencies) {
+        if (!op.isFinished && !op.isCancelled) {
+            [retryDependencyOperation addDependency:op];
+        }
+    }
+    if (retryDelay >= MIN_TIMER_INTERVAL) {
+        // the retry delay is concurrent with the other dependencies, so it doesn't need the other
+        // dependencies itself and simply be added to our dependency operation
+        NSOperation *delayOp = [[TNLTimerOperation alloc] initWithDelay:retryDelay];
+        [retryDependencyOperation addDependency:delayOp];
+        [TNLNetworkOperationQueue() addOperation:delayOp];
+    }
+
+    // Add our dependency operation to wait for our retry to trigger
+    [TNLNetworkOperationQueue() addOperation:retryDependencyOperation];
 }
 
-static void _network_invalidateRetryTimer(SELF_ARG)
+static void _network_invalidateRetry(SELF_ARG)
 {
     if (!self) {
         return;
     }
 
-    tnl_dispatch_timer_invalidate(self->_retryDelayTimerSource);
-    self->_retryDelayTimerSource = NULL;
+    self->_activeRetryId = 0;
 }
 
-static void _network_retryTimerDidFire(SELF_ARG,
-                                       TNLResponse *oldResponse,
-                                       id<TNLRequestRetryPolicyProvider> __nullable retryPolicyProvider)
+static void _network_tryRetry(SELF_ARG,
+                              uint64_t retryId,
+                              TNLResponse *oldResponse,
+                              id<TNLRequestRetryPolicyProvider> __nullable retryPolicyProvider)
 {
     if (!self) {
         return;
     }
 
-    if (self->_retryDelayTimerSource) {
-        TNLLogInformation(@"%@::_network_retryTimerDidFire()", self);
-
-        _network_invalidateRetryTimer(self);
+    if (retryId == self->_activeRetryId) {
+        TNLLogInformation(@"%@::_network_tryRetry()", self);
         _network_retry(self, oldResponse, retryPolicyProvider);
     }
 }
@@ -3095,7 +3109,7 @@ static void _network_operationTimeoutTimerDidFire(SELF_ARG)
 
         _network_invalidateOperationTimeoutTimer(self);
         _network_invalidateAttemptTimeoutTimer(self);
-        _network_invalidateRetryTimer(self);
+        _network_invalidateRetry(self);
 
         if (!_network_getHasFailedOrFinished(self)) {
             _network_fail(self, TNLErrorCreateWithCode(TNLErrorCodeRequestOperationOperationTimedOut));
@@ -3249,7 +3263,7 @@ static void _network_attemptTimeoutTimerDidFire(SELF_ARG)
         TNLLogInformation(@"%@::_network_attemptTimeoutTimerDidFire()", self);
 
         _network_invalidateAttemptTimeoutTimer(self);
-        _network_invalidateRetryTimer(self);
+        _network_invalidateRetry(self);
         // Don't invalidate the operation timeout
 
         if (!_network_getHasFailedOrFinished(self)) {
@@ -3496,6 +3510,86 @@ static void _clearTag(SELF_ARG,
             _network_stopCallbackTimer(self);
         }
     });
+}
+
+@end
+
+#pragma mark - TNLTimerOperation
+
+@implementation TNLTimerOperation
+{
+    NSTimeInterval _delay;
+    volatile atomic_bool _finished;
+    volatile atomic_bool _executing;
+}
+
+- (instancetype)initWithDelay:(NSTimeInterval)delay
+{
+    if (self = [self init]) {
+        _delay = delay;
+    }
+    return self;
+}
+
+- (instancetype)init
+{
+    if (self = [super init]) {
+        atomic_init(&_finished, false);
+        atomic_init(&_executing, false);
+    }
+    return self;
+}
+
+- (void)start
+{
+    if ([self isCancelled]) {
+        [self willChangeValueForKey:@"isFinished"];
+        atomic_store(&_finished, true);
+        [self didChangeValueForKey:@"isFinished"];
+        return;
+    }
+
+    [self willChangeValueForKey:@"isExecuting"];
+    atomic_store(&_executing, true);
+    [self didChangeValueForKey:@"isExecuting"];
+    [self run];
+}
+
+- (void)run
+{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_delay * NSEC_PER_SEC)), tnl_network_queue(), ^{
+        [self completeOperation];
+    });
+}
+
+- (BOOL)isExecuting
+{
+    return atomic_load(&_executing);
+}
+
+- (BOOL)isFinished
+{
+    return atomic_load(&_finished);
+}
+
+- (BOOL)isConcurrent
+{
+    return YES;
+}
+
+- (BOOL)isAsynchronous
+{
+    return YES;
+}
+
+- (void)completeOperation
+{
+    [self willChangeValueForKey:@"isFinished"];
+    [self willChangeValueForKey:@"isExecuting"];
+    atomic_store(&_executing, false);
+    atomic_store(&_finished, true);
+    [self didChangeValueForKey:@"isExecuting"];
+    [self didChangeValueForKey:@"isFinished"];
 }
 
 @end

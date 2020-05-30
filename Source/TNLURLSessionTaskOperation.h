@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 6/11/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "TNLAttemptMetaData.h"
@@ -70,9 +70,10 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 @interface TNLURLSessionTaskOperation (TNLURLSessionManagerMethods)
-- (void)handler:(id<TNLAuthenticationChallengeHandler>)handler
+- (void)handler:(nullable id<TNLAuthenticationChallengeHandler>)handler
         didCancelAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
-        forURLSession:(NSURLSession *)session;
+        forURLSession:(NSURLSession *)session
+        context:(nullable id)cancelContext;
 @end
 
 @interface TNLURLSessionTaskOperation (TNLRequestOperationMethods)

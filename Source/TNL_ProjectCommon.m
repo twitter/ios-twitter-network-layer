@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 3/5/15.
-//  Copyright (c) 2015 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "TNL_ProjectCommon.h"
@@ -112,12 +112,10 @@ void TNLSetDebugSTOPOnAssertEnabled(BOOL stopOnAssert)
     sIsDebugSTOPEnabled = stopOnAssert;
 }
 
-void __TNLAssert(BOOL expression)
+void __TNLAssertTriggering()
 {
-    if (!expression) {
-        if (TNLIsDebugSTOPOnAssertEnabled() && TNLIsDebuggerAttached()) {
-            TNLTriggerDebugSTOP(); // trigger debug stop
-        }
+    if (TNLIsDebugSTOPOnAssertEnabled() && TNLIsDebuggerAttached()) {
+        TNLTriggerDebugSTOP(); // trigger debug stop
     }
 }
 

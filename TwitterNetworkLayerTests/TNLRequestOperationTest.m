@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 11/12/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #include <pthread.h>
@@ -17,6 +17,7 @@
 #import "TNLRequestOperation_Project.h"
 #import "TNLRequestOperationCancelSource.h"
 #import "TNLRequestOperationQueue_Project.h"
+#import "TNLRequestRetryPolicyProvider.h"
 #import "TNLTemporaryFile_Project.h"
 
 @import ObjectiveC.runtime;
@@ -99,6 +100,9 @@ static void FireFakeApplicationNotification(NSString *notificationName, NSTimeIn
 @property (nonatomic, readonly) NSDictionary *result;
 @property (nonatomic, readonly) NSError *jsonParseError;
 @property (nonatomic, readonly) BOOL responseBodyWasInFile;
+@end
+
+@interface TestRetryOnceOn503Response : NSObject <TNLRequestRetryPolicyProvider>
 @end
 
 @interface TestTNLRequestDelegate : NSObject <TNLRequestDelegate>
@@ -185,6 +189,11 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
 
 - (void)registerRequest:(TNLHTTPRequest *)request args:(NSDictionary *)args
 {
+    [self registerRequest:request statusCode:200 args:args];
+}
+
+- (void)registerRequest:(TNLHTTPRequest *)request statusCode:(NSInteger)statusCode args:(NSDictionary *)args
+{
 #if RUN_TESTS_WITH_CANNED_RESPONSES
 
     NSURL *endpoint = request.URL;
@@ -204,7 +213,7 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     NSDictionary *responseBodyJSON = @{ @"args" : args ?: @{}, @"headers" : headers, @"url" : endpoint.absoluteString, @"json" : (hasBody) ? kBODY_DICTIONARY : [NSNull null] };
     NSData *body = [NSJSONSerialization dataWithJSONObject:responseBodyJSON options:0 error:NULL];
 
-    NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:endpoint statusCode:200 HTTPVersion:@"HTTP/1.1" headerFields:@{ @"Content-Type" : @"application/json" }];
+    NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:endpoint statusCode:statusCode HTTPVersion:@"HTTP/1.1" headerFields:@{ @"Content-Type" : @"application/json" }];
 
     [TNLPseudoURLProtocol registerURLResponse:response body:body withEndpoint:endpoint];
     [_registeredEndpoints addObject:endpoint];
@@ -1161,6 +1170,37 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     XCTAssertEqualObjects(expectedCallbacks, observedCallbacks);
 }
 
+- (void)testOrderOfCallbacksWithRetry
+{
+    NSDictionary *args = @{@"method":@"status/503"};
+    TNLMutableHTTPRequest *request = [self httpBinRequest:args];
+    request.HTTPMethodValue = TNLHTTPMethodGET;
+    [self registerRequest:request statusCode:503 args:args];
+
+    TNLMutableRequestConfiguration *config = self.config;
+    config.retryPolicyProvider = [[TestRetryOnceOn503Response alloc] init];
+
+    TestTNLRequestDelegate *delegate = [[TestTNLRequestDelegate alloc] init];
+    TNLRequestOperation *op = [TNLRequestOperation operationWithRequest:request responseClass:[TestJSONResponse class] configuration:config delegate:delegate];
+    op.context = delegate;
+
+    [[TNLRequestOperationQueue defaultOperationQueue] enqueueRequestOperation:op];
+    [op waitUntilFinishedWithoutBlockingRunLoop];
+    [self unregisterRequest:request];
+
+    NSArray<NSString *> *expectedCallbacks = @[
+                                               NSStringFromSelector(@selector(tnl_requestOperation:didReceiveURLResponse:)),
+                                               NSStringFromSelector(@selector(tnl_requestOperation:didCompleteAttemptWithResponse:disposition:)),
+                                               NSStringFromSelector(@selector(tnl_requestOperation:willStartRetryFromResponse:policyProvider:afterDelay:)),
+                                               NSStringFromSelector(@selector(tnl_requestOperation:didStartRetryFromResponse:policyProvider:)),
+                                               NSStringFromSelector(@selector(tnl_requestOperation:didReceiveURLResponse:)),
+                                               NSStringFromSelector(@selector(tnl_requestOperation:didCompleteAttemptWithResponse:disposition:)),
+                                               NSStringFromSelector(@selector(tnl_requestOperation:didCompleteWithResponse:))
+                                               ];
+    NSArray<NSString *> *observedCallbacks = delegate.observedCallbacks;
+    XCTAssertEqualObjects(expectedCallbacks, observedCallbacks);
+}
+
 @end
 
 @implementation TestJSONResponse
@@ -1189,6 +1229,15 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
             _jsonParseError = [NSError errorWithDomain:NSPOSIXErrorDomain code:EINTR userInfo:nil];
         }
     }
+}
+
+@end
+
+@implementation TestRetryOnceOn503Response
+
+- (BOOL)tnl_shouldRetryRequestOperation:(TNLRequestOperation *)op withResponse:(TNLResponse *)response
+{
+    return op.retryCount <= 0 && response.info.statusCode == 503;
 }
 
 @end
@@ -1236,6 +1285,22 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
 {
     SEL cmd = _cmd;
     sleep(1);
+    dispatch_sync(_fastQueue, ^{
+        [self trackSelector:cmd];
+    });
+}
+
+- (void)tnl_requestOperation:(TNLRequestOperation *)op willStartRetryFromResponse:(TNLResponse *)responseBeforeRetry policyProvider:(id<TNLRequestRetryPolicyProvider>)policyProvider afterDelay:(NSTimeInterval)delay
+{
+    SEL cmd = _cmd;
+    dispatch_sync(_fastQueue, ^{
+        [self trackSelector:cmd];
+    });
+}
+
+- (void)tnl_requestOperation:(TNLRequestOperation *)op didStartRetryFromResponse:(TNLResponse *)responseBeforeRetry policyProvider:(id<TNLRequestRetryPolicyProvider>)policyProvider
+{
+    SEL cmd = _cmd;
     dispatch_sync(_fastQueue, ^{
         [self trackSelector:cmd];
     });

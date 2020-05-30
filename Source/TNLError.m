@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 7/17/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "TNL_Project.h"
@@ -22,9 +22,12 @@ NSString * const TNLErrorCancelSourceLocalizedDescriptionKey = @"localizedCancel
 NSString * const TNLErrorCodeStringKey = @"TNLError.string";
 NSString * const TNLErrorHostKey = @"host";
 NSString * const TNLErrorRequestKey = @"request";
+NSString * const TNLErrorResponseKey = @"response";
 NSString * const TNLErrorProtectionSpaceHostKey = @"protectionSpaceHost";
 NSString * const TNLErrorCertificateChainDescriptionsKey = @"certificateChainDescriptions";
-NSString * const TNLErrorAuthenticationChallengeMethodKey = @"authenticationChallengeMethod";
+NSString * const TNLErrorAuthenticationChallengeMethodKey = @"authChallengeMethod";
+NSString * const TNLErrorAuthenticationChallengeRealmKey = @"authChallengeRealm";
+NSString * const TNLErrorAuthenticationChallengeCancelContextKey = @"authChallengeCancelContext";
 
 NSString *TNLErrorCodeToString(TNLErrorCode code)
 {

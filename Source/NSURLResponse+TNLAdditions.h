@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 11/13/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -29,12 +29,19 @@ NS_ASSUME_NONNULL_BEGIN
 @interface NSHTTPURLResponse (TNLAdditions)
 
 /**
- Convenience method for converting the `"Retry-After"` value into a delay.
+ Convenience method for converting the `"Retry-After"` value into a value.
  Returns `NSDate` if the string was for a date.
  Returns `NSNumber` wrapped `NSTimeInterval` (aka `double`) if the string was for a delay.
  Returns `nil` if the string could not be parsed.
  */
 + (nullable id)tnl_parseRetryAfterValueFromString:(nullable NSString *)retryAfterValueString;
+
+/**
+ Convenience method for converting the value of `"Retry-After"` into a delay.
+ Provide the `id` result from `tnl_parseRetryAfterValueFromString:`.
+ Returns `0` on `nil` or unexpected _retryAfterValue_.
+ */
++ (NSTimeInterval)tnl_delayFromRetryAfterValue:(nullable id)retryAfterValue;
 
 /**
  Calls `tnl_parseRetryAfterValueFromString:` with the `"Retry-After"` response header's value as the

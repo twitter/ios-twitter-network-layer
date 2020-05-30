@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 7/15/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #include <objc/message.h>
@@ -59,6 +59,17 @@ TNLStaticAssert((sizeof(kAnatomyTimeouts) / sizeof(kAnatomyTimeouts[0])) == kMax
 #define kConfigurationAttemptTimeoutDefault (kAnatomyTimeouts[TNLRequestAnatomyDefault].attemptTimeout) // Apple's default is 7 days (biasing towards background sessions).  We'll bias towards foreground sessions.
 #define kConfigurationOperationTimeoutDefault (kAnatomyTimeouts[TNLRequestAnatomyDefault].operationTimeout)
 static const NSTimeInterval kConfigurationDeferrableIntervalDefault = 0.0;
+
+TNLStaticAssert(TNLResponseHashComputeAlgorithmNone == 0, ALGORITHM_NONE_WRONG_VALUE);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+TNLStaticAssert(TNLResponseHashComputeAlgorithmMD2 == 1835294514, ALGORITHM_MD2_WRONG_VALUE);
+TNLStaticAssert(TNLResponseHashComputeAlgorithmMD4 == 1835294516, ALGORITHM_MD4_WRONG_VALUE);
+TNLStaticAssert(TNLResponseHashComputeAlgorithmMD5 == 1835294517, ALGORITHM_MD5_WRONG_VALUE);
+#pragma clang diagnostic pop
+TNLStaticAssert(TNLResponseHashComputeAlgorithmSHA1 == 1936220465, ALGORITHM_SHA1_WRONG_VALUE);
+TNLStaticAssert(TNLResponseHashComputeAlgorithmSHA256 == 1932670262, ALGORITHM_SHA256_WRONG_VALUE);
+TNLStaticAssert(TNLResponseHashComputeAlgorithmSHA512 == 1932865842, ALGORITHM_SHA512_WRONG_VALUE);
 
 @interface TNLRequestConfiguration ()
 

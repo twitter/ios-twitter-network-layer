@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 5/23/14.
-//  Copyright (c) 2014 Twitter, Inc. All rights reserved.
+//  Copyright © 2020 Twitter, Inc. All rights reserved.
 //
 
 #import <TwitterNetworkLayer/TNLHTTP.h>
@@ -412,7 +412,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-#pragma twitter stopignorestylecheck
+#pragma twitter endignorestylecheck
 
 /**
  `NSURLRequest` implicitly conforms to `TNLRequest`.  This category makes that conformance explicit.

@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 11/20/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <TwitterNetworkLayer/TNLAuthenticationChallengeHandler.h>

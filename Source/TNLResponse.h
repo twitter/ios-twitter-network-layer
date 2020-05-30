@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 5/23/14.
-//  Copyright (c) 2014 Twitter, Inc. All rights reserved.
+//  Copyright © 2020 Twitter, Inc. All rights reserved.
 //
 
 #import <TwitterNetworkLayer/TNLHTTP.h>
@@ -299,6 +299,9 @@ NS_SWIFT_NAME(response(request:operationError:info:metrics:));
 /** The underlying attempt metrics as `TNLAttemptMetrics` objects */
 @property (nonatomic, readonly, nullable) NSArray<TNLAttemptMetrics *> *attemptMetrics;
 
+/** A description of the response metrics as a serializable dictionary object */
+- (NSDictionary *)dictionaryDescription:(BOOL)verbose;
+
 /**
  Helper init for custom `TNLResponseMetrics`
  */
@@ -354,7 +357,7 @@ NS_SWIFT_NAME(response(request:operationError:info:metrics:));
  mechanism encapsulated by `TNLRequestOperation`.
 
  @param duration    The `totalDuration` of the metrics.  `firstAttemptStartMachTime` will be `0`.
- @param URLRequest  The `NSURLRequest` for the encapsulated attempt
+ @param request  The `NSURLRequest` for the encapsulated attempt
  @param URLResponse The `NSHTTPURLResponse` for the encapsulated attempt
  @param error       The `NSError` for the encapsulated attempt
 

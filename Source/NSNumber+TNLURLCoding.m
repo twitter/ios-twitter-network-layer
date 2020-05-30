@@ -3,14 +3,14 @@
 //  TwitterNetworkLayer
 //
 //  Created on 9/17/15.
-//  Copyright © 2015 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "NSNumber+TNLURLCoding.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@implementation NSNumber (TNLURLCoding)
+@implementation NSNumber (TNLBooleanCoding)
 
 - (BOOL)tnl_isBoolean
 {

@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 6/11/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <TwitterNetworkLayer/TNLAttemptMetrics.h>
@@ -36,7 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param op              The source `TNLRequestOperation`
  @param URLRequest      The `NSURLRequest` used in the attempt
- @param type            The `TNLAttemptType` of the attempt
+ @param metrics         The `TNLAttemptMetrics` of the attempt
  */
 - (void)tnl_requestOperation:(TNLRequestOperation *)op
       didStartAttemptRequest:(NSURLRequest *)URLRequest

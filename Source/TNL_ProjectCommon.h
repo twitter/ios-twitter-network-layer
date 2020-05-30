@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 3/5/15.
-//  Copyright (c) 2015 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 // This header is kept in sync with other *_Common.h headers from sibling projects.
@@ -69,14 +69,16 @@ FOUNDATION_EXTERN BOOL gTwitterNetworkLayerAssertEnabled;
 do {                \
     __PRAGMA_PUSH_NO_EXTRA_ARG_WARNINGS \
     if (__builtin_expect(!(condition), 0)) {        \
-            NSString *__assert_fn__ = [NSString stringWithUTF8String:__PRETTY_FUNCTION__]; \
-            __assert_fn__ = __assert_fn__ ? __assert_fn__ : @"<Unknown Function>"; \
-            NSString *__assert_file__ = [NSString stringWithUTF8String:TNL_FILE_NAME]; \
-            __assert_file__ = __assert_file__ ? __assert_file__ : @"<Unknown File>"; \
+        __TNLAssertTriggering(); \
+        NSString *__assert_fn__ = [NSString stringWithUTF8String:__PRETTY_FUNCTION__]; \
+        __assert_fn__ = __assert_fn__ ? __assert_fn__ : @"<Unknown Function>"; \
+        NSString *__assert_file__ = [NSString stringWithUTF8String:TNL_FILE_NAME]; \
+        __assert_file__ = __assert_file__ ? __assert_file__ : @"<Unknown File>"; \
         [[NSAssertionHandler currentHandler] handleFailureInFunction:__assert_fn__ \
-        file:__assert_file__ \
-            lineNumber:__LINE__ description:(desc), ##__VA_ARGS__]; \
-    }                \
+                                                                file:__assert_file__ \
+                                                          lineNumber:__LINE__ \
+                                                         description:(desc), ##__VA_ARGS__]; \
+    } \
     __PRAGMA_POP_NO_EXTRA_ARG_WARNINGS \
 } while(0)
 
@@ -89,14 +91,12 @@ do {                \
 #define TNLAssert(expression) \
 ({ if (gTwitterNetworkLayerAssertEnabled) { \
     const BOOL __expressionValue = !!(expression); (void)__expressionValue; \
-    __TNLAssert(__expressionValue); \
     TNLCAssert(__expressionValue, @"assertion failed: (" #expression ")"); \
 } })
 
 #define TNLAssertMessage(expression, format, ...) \
 ({ if (gTwitterNetworkLayerAssertEnabled) { \
     const BOOL __expressionValue = !!(expression); (void)__expressionValue; \
-    __TNLAssert(__expressionValue); \
     TNLCAssert(__expressionValue, @"assertion failed: (" #expression ") message: %@", [NSString stringWithFormat:format, ##__VA_ARGS__]); \
 } })
 
@@ -141,13 +141,13 @@ do { \
 #pragma mark - Debugging Tools
 
 #if DEBUG
-FOUNDATION_EXTERN void __TNLAssert(BOOL expression);
+FOUNDATION_EXTERN void __TNLAssertTriggering(void);
 FOUNDATION_EXTERN BOOL TNLIsDebuggerAttached(void);
 FOUNDATION_EXTERN void TNLTriggerDebugSTOP(void);
 FOUNDATION_EXTERN BOOL TNLIsDebugSTOPOnAssertEnabled(void);
 FOUNDATION_EXTERN void TNLSetDebugSTOPOnAssertEnabled(BOOL stopOnAssert);
 #else
-#define __TNLAssert(exp) ((void)0)
+#define __TNLAssertTriggering() ((void)0)
 #define TNLIsDebuggerAttached() (NO)
 #define TNLTriggerDebugSTOP() ((void)0)
 #define TNLIsDebugSTOPOnAssertEnabled() (NO)
@@ -192,7 +192,7 @@ __strong tnl_defer_block_t tnl_macro_concat(tnl_stack_defer_block_, __LINE__) __
 
 #define TNLDeferRelease(ref) tnl_defer(^{ if (ref) { CFRelease(ref); } })
 
-#pragma twitter stopignorestylecheck
+#pragma twitter endignorestylecheck
 
 #pragma mark - GCD helpers
 
@@ -227,6 +227,7 @@ __strong tnl_defer_block_t tnl_macro_concat(tnl_stack_defer_block_, __LINE__) __
 //          }
 //      }
 
+// Should pretty much ALWAYS use this for async dispatch
 NS_INLINE void tnl_dispatch_async_autoreleasing(dispatch_queue_t queue, dispatch_block_t block)
 {
     dispatch_async(queue, ^{
@@ -236,6 +237,17 @@ NS_INLINE void tnl_dispatch_async_autoreleasing(dispatch_queue_t queue, dispatch
     });
 }
 
+// Should pretty much ALWAYS use this for async barrier dispatch
+NS_INLINE void tnl_dispatch_barrier_async_autoreleasing(dispatch_queue_t queue, dispatch_block_t block)
+{
+    dispatch_barrier_async(queue, ^{
+        @autoreleasepool {
+            block();
+        }
+    });
+}
+
+// Only need this in a tight loop, existing autorelease pool will take effect for dispatch_sync
 NS_INLINE void tnl_dispatch_sync_autoreleasing(dispatch_queue_t __attribute__((noescape)) queue, dispatch_block_t block)
 {
     dispatch_sync(queue, ^{
@@ -327,4 +339,5 @@ NS_INLINE void tnl_dispatch_sync_autoreleasing(dispatch_queue_t __attribute__((n
 #endif
 
 NS_ASSUME_NONNULL_END
+
 

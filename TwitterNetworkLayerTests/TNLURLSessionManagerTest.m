@@ -2,8 +2,8 @@
 //  TNLURLSessionManagerTest.m
 //  TwitterNetworkLayer
 //
-//  Created by Nolan on 4/1/19.
-//  Copyright © 2019 Twitter. All rights reserved.
+//  Created on 4/1/19.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <XCTest/XCTest.h>

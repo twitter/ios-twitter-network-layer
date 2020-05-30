@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 5/26/14.
-//  Copyright (c) 2014 Twitter, Inc. All rights reserved.
+//  Copyright © 2020 Twitter, Inc. All rights reserved.
 //
 
 #import "TNL_Project.h"

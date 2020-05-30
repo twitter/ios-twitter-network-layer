@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 5/23/14.
-//  Copyright (c) 2014 Twitter, Inc. All rights reserved.
+//  Copyright © 2020 Twitter, Inc. All rights reserved.
 //
 
 #import <TwitterNetworkLayer/TNLPriority.h>
@@ -75,6 +75,8 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
  */
 @interface TNLRequestOperation : TNLSafeOperation
 
+#pragma mark Operation Properties
+
 /** Randomly generated operationId that will be the same for all attempts of this request operation */
 @property (nonatomic, readonly) int64_t operationId;
 
@@ -84,6 +86,8 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
 @property (nonatomic, readonly) TNLRequestConfiguration *requestConfiguration;
 /** The `TNLRequestDelegate` for this request operation */
 @property (nonatomic, readonly, weak, nullable) id<TNLRequestDelegate> requestDelegate;
+
+#pragma mark Request State
 
 /** The original `TNLRequest` for this operation */
 @property (nonatomic, readonly, nullable) id<TNLRequest> originalRequest;
@@ -121,6 +125,8 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
  */
 @property (nonatomic, readonly) float uploadProgress;
 
+#pragma mark Mutable Properties
+
 /**
  Any additional context desired to be set with the operation.
  */
@@ -137,6 +143,7 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
  */
 @property (atomic) TNLPriority priority;
 
+#pragma mark Designated Constructor
 
 /**
  Create a new operation for later enqueuing to a `TNLRequestOperationQueue`
@@ -152,6 +159,7 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
                        configuration:(nullable TNLRequestConfiguration *)config
                             delegate:(nullable id<TNLRequestDelegate>)delegate;
 
+#pragma mark Cancelation
 
 /**
  Cancel the operation
@@ -190,6 +198,8 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
  */
 - (void)cancel __attribute__((deprecated("do not use 'cancel' directly.  Call 'cancelWithSource:' or cancelWithSource:underlyingError:' instead")));
 
+#pragma mark Wait until finished
+
 /**
  Wait for the operation to finish.  See `[NSOperation waitUntilFinished]`.
  @warning This blocks on a semaphore so the thread will be completely blocked.
@@ -203,6 +213,22 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
  waiting for the operation to finish (be sure there are sources to pump when using this method).
  */
 - (void)waitUntilFinishedWithoutBlockingRunLoop;
+
+#pragma mark Dependencies
+
+/**
+ Same as `[NSOperation addDependency:]` with one exception.
+
+ Normally, all dependencies are effective until the dependent operation starts executing.
+ With `TNLRequestOperation`, however, dependencies are also used when retrying the operation.
+ If the `TNLRetryPolicyProvider` triggers a retry of the `TNLRequestOperation`, it will wait
+ for all `dependencies` to complete before the retry starts.
+ This effectively means that if a dependency is added after the target operation had already
+ started, that dependency would take effect on any subsequent retry.
+ Likewise, any dependency removed before a retry is triggered will not be used as a dependency
+ on the retry.
+ */
+- (void)addDependency:(NSOperation *)op;
 
 @end
 

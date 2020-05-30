@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 9/15/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -105,27 +105,39 @@ NS_ROOT_CLASS
 + (BOOL)hasExecutingNetworkConnections;
 
 /**
- Provide a signal to __TNL__ that a service unavailable HTTP status code was encountered.
- This will be used for backing off requests (within __TNL__) to the provided _URL_ `host`.
+ Provide a signal to __TNL__ that a backoff signaling HTTP response was encountered.
+ This will be used for backing off requests (within __TNL__) to the provided _URL_ `host` (or provided _host_ if a different host from the _URL_ is preferred).
+ @param URL the `NSURL` of the backoff signaling response
+ @param host the optional host to use instead of the _URL_ `host`
+ @param headers the HTTP headers in the response accompanying the backoff signal
  */
-+ (void)serviceUnavailableEncounteredForURL:(NSURL *)URL
-                            retryAfterDelay:(NSTimeInterval)delay;
++ (void)backoffSignalEncounteredForURL:(NSURL *)URL
+                                  host:(nullable NSString *)host
+                   responseHTTPHeaders:(nullable NSDictionary<NSString *, NSString *> *)headers;
 
 /**
  Provide a signal to __TNL__ when an HTTP response was encountered.
- If the `statusCode` is `TNLHTTPStatusCodeServiceUnavailable`, then
- `serviceUnavailableEncounteredForHost:retryAfterDelay:` will be called with the parsed
- `"Retry-After"` value.
+ Checks `[TNLGlobalConfiguration backoffSignaler]` and if backoff is signaled,
+ then `backoffSignalEncounteredForHost:host:responseHTTPHeaders:` will be called with the response's
+ `allHeaderFields`.
+ @param response the `NSHTTPURLResponse` to examine
+ @param host the optional host to use instead of the _response_ `URL.host`
  */
-+ (void)HTTPURLResponseEncounteredOutsideOfTNL:(NSHTTPURLResponse *)response;
++ (void)HTTPURLResponseEncounteredOutsideOfTNL:(NSHTTPURLResponse *)response
+                                          host:(nullable NSString *)host;
 
 /**
  Apply backoff dependencies to a given `NSOperation` (from outside of __TNL__) that depends on a
- service unavailable backoff be resolved before it should start.
+ backoff be resolved before it should start.
+ @param op the `NSOperation` to apply dependencies to
+ @param URL the `NSURL` of the operation
+ @param host the optional host for the operation (will be used instead of the `host` from the given _URL_ for keying off of)
+ @param isLongPoll whether or not the operation is a long polling operation
  */
-+ (void)applyServiceUnavailableBackoffDependenciesToOperation:(NSOperation *)op
-                                                      withURL:(NSURL *)URL
-                                            isLongPollRequest:(BOOL)isLongPoll;
++ (void)applyBackoffDependenciesToOperation:(NSOperation *)op
+                                    withURL:(NSURL *)URL
+                                       host:(nullable NSString *)host
+                          isLongPollRequest:(BOOL)isLongPoll;
 
 @end
 

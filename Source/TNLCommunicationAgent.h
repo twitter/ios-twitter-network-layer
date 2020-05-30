@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 5/2/16.
-//  Copyright © 2016 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -55,10 +55,13 @@ typedef NS_ENUM(NSInteger, TNLNetworkReachabilityStatus)
     TNLNetworkReachabilityUndetermined = -1,
     /** Unreachable */
     TNLNetworkReachabilityNotReachable = 0,
-    /** reachable via 802.11 WiFi */
-    TNLNetworkReachabilityReachableViaWiFi = 1,
+    /** reachable via 802.3 Ethernet or 802.11 WiFi */
+    TNLNetworkReachabilityReachableViaEthernet = 1,
     /** reachabile via WWAN (cellular) */
     TNLNetworkReachabilityReachableViaWWAN = 2,
+
+    /** deprecated, use `TNLNetworkReachabilityReachableViaEthernet` instead */
+    TNLNetworkReachabilityReachableViaWiFi __attribute__((deprecated)) = TNLNetworkReachabilityReachableViaEthernet,
 };
 
 //! Convert a `TNLNetworkReachabilityStatus` to an `NSString`
@@ -200,6 +203,9 @@ typedef void(^TNLCommunicationAgentIdentifyCaptivePortalStatusCallback)(TNLCapti
 
 /** the network host for the agent */
 @property (nonatomic, copy, readonly) NSString *host;
+
+/** if there is a cellular interface or not */
+@property (class, nonatomic, readonly) BOOL hasCellularInterface;
 
 /** designated initializer */
 - (instancetype)initWithInternetReachabilityHost:(NSString *)host NS_DESIGNATED_INITIALIZER;
@@ -352,6 +358,9 @@ typedef void(^TNLCommunicationAgentIdentifyCaptivePortalStatusCallback)(TNLCapti
 @property (nonatomic, readonly) BOOL allowsVOIP;
 
 @end
+
+//! Convert a `TNLCarrierInfo` into a serializable dictionary, will contain `[NSNull null]` for `nil` properties
+FOUNDATION_EXTERN NSDictionary<NSString *, id> *TNLCarrierInfoToDictionaryDescription(id<TNLCarrierInfo> carrierInfo);
 
 NS_ASSUME_NONNULL_END
 

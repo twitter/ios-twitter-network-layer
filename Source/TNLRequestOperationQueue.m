@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 5/23/14.
-//  Copyright (c) 2014 Twitter, Inc. All rights reserved.
+//  Copyright © 2020 Twitter, Inc. All rights reserved.
 //
 
 #include <objc/message.h>
@@ -14,6 +14,7 @@
 #import "NSURLSessionConfiguration+TNLAdditions.h"
 #import "TNL_Project.h"
 #import "TNLBackgroundURLSessionTaskOperationManager.h"
+#import "TNLBackoff.h"
 #import "TNLGlobalConfiguration.h"
 #import "TNLNetwork.h"
 #import "TNLNetworkObserver.h"
@@ -38,7 +39,7 @@ NSString * const TNLBackgroundRequestURLSessionSharedContainerIdentifierKey = @"
 
 static void _GlobalRequestOperationQueueAddOperation(TNLRequestOperation *op);
 
-static volatile atomic_int_fast64_t __attribute__((aligned(8))) sGlobalExecutingConnectionCount = 0;
+static volatile atomic_int_fast64_t __attribute__((aligned(8))) sGlobalExecutingConnectionCount = ATOMIC_VAR_INIT(0);
 static NSMapTable<NSString *, TNLRequestOperationQueue *> *sGlobalRequestOperationQueueMapTable = nil;
 static NSMutableSet<id<TNLNetworkObserver>> *sGlobalNetworkObservers = nil;
 static NSOperationQueue *sGlobalRequestOperationQueue = nil;
@@ -239,7 +240,7 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
         _stagedRequestOperations = [[NSMutableArray alloc] init];
 
         __block BOOL didRegister = NO;
-        tnl_dispatch_sync_autoreleasing(_GlobalOperationQueueQueue(), ^{
+        dispatch_sync(_GlobalOperationQueueQueue(), ^{
             didRegister = [sGlobalRequestOperationQueueMapTable objectForKey:self.identifier] == nil;
             if (didRegister) {
                 [sGlobalRequestOperationQueueMapTable setObject:self forKey:self.identifier];
@@ -284,7 +285,7 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 
 - (void)setNetworkObserver:(nullable id<TNLNetworkObserver>)networkObserver
 {
-    dispatch_async(_sessionStateQueue, ^{
+    tnl_dispatch_async_autoreleasing(_sessionStateQueue, ^{
         self->_networkObserver = networkObserver;
     });
 }
@@ -309,7 +310,7 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 
     METHOD_LOG();
 
-    dispatch_async(_sessionStateQueue, ^{
+    tnl_dispatch_async_autoreleasing(_sessionStateQueue, ^{
         self->_suspendCount++;
     });
 }
@@ -378,7 +379,7 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 
 - (void)syncAddRequestOperation:(TNLRequestOperation *)op
 {
-    tnl_dispatch_sync_autoreleasing(_sessionStateQueue, ^{
+    dispatch_sync(_sessionStateQueue, ^{
         if (self->_suspendCount > 0) {
             [self->_stagedRequestOperations addObject:op];
         } else {
@@ -570,37 +571,47 @@ static void _GlobalRequestOperationQueueAddOperation(TNLRequestOperation *op)
     }
 }
 
-+ (void)serviceUnavailableEncounteredForURL:(NSURL *)URL
-                            retryAfterDelay:(NSTimeInterval)delay
++ (void)backoffSignalEncounteredForURL:(NSURL *)URL
+                                  host:(nullable NSString *)host
+                   responseHTTPHeaders:(nullable NSDictionary<NSString *, NSString *> *)headers
 {
-    [[TNLURLSessionManager sharedInstance] serviceUnavailableEncounteredForURL:URL
-                                                               retryAfterDelay:delay];
+    [[TNLURLSessionManager sharedInstance] backoffSignalEncounteredForURL:URL
+                                                                     host:host
+                                                      responseHTTPHeaders:headers];
 }
 
 + (void)HTTPURLResponseEncounteredOutsideOfTNL:(NSHTTPURLResponse *)response
+                                          host:(nullable NSString *)host
 {
-    if (response.statusCode == TNLHTTPStatusCodeServiceUnavailable) {
-        NSURL *URL = response.URL;
-        if (URL) {
-            NSTimeInterval delay = TNLGlobalServiceUnavailableRetryAfterBackoffValueDefault;
-            id retryAfterValue = response.tnl_parsedRetryAfterValue;
-            if ([retryAfterValue isKindOfClass:[NSNumber class]]) {
-                delay = [(NSNumber *)retryAfterValue doubleValue];
-            } else if ([retryAfterValue isKindOfClass:[NSDate class]]) {
-                delay = [(NSDate *)retryAfterValue timeIntervalSinceNow];
-            }
-            [self serviceUnavailableEncounteredForURL:URL retryAfterDelay:delay];
-        }
+    NSURL *URL = response.URL;
+    if (!URL) {
+        return;
     }
+
+    const TNLHTTPStatusCode statusCode = response.statusCode;
+    NSDictionary *headers = response.allHeaderFields;
+    const BOOL shouldSignal = [[TNLGlobalConfiguration sharedInstance].backoffSignaler tnl_shouldSignalBackoffForURL:URL
+                                                                                                                host:host
+                                                                                                          statusCode:statusCode
+                                                                                                     responseHeaders:headers];
+    if (!shouldSignal) {
+        return;
+    }
+
+    [self backoffSignalEncounteredForURL:URL
+                                    host:host
+                     responseHTTPHeaders:headers];
 }
 
-+ (void)applyServiceUnavailableBackoffDependenciesToOperation:(NSOperation *)op
-                                                      withURL:(NSURL *)URL
-                                            isLongPollRequest:(BOOL)isLongPoll
++ (void)applyBackoffDependenciesToOperation:(NSOperation *)op
+                                    withURL:(NSURL *)URL
+                                       host:(nullable NSString *)host
+                          isLongPollRequest:(BOOL)isLongPoll
 {
-    [[TNLURLSessionManager sharedInstance] applyServiceUnavailableBackoffDependenciesToOperation:op
-                                                                                         withURL:URL
-                                                                               isLongPollRequest:isLongPoll];
+    [[TNLURLSessionManager sharedInstance] applyBackoffDependenciesToOperation:op
+                                                                       withURL:URL
+                                                                          host:host
+                                                             isLongPollRequest:isLongPoll];
 }
 
 @end

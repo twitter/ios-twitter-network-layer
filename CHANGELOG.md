@@ -2,13 +2,65 @@
 
 ## Info
 
-**Document version:** 2.8.2
+**Document version:** 2.14.0
 
-**Last updated:** 08/30/2019
+**Last updated:** 04/30/2020
 
 **Author:** Nolan O'Brien
 
 ## History
+
+### 2.14.0
+
+- Update `TNLCommunicationAgent` to handle reachability behavior changes
+  - The `Network.framwork` can yield an "other" interface when VPN is enabled (on Mac binaries)
+    - Coerce these into _WiFi_ since we don't have a good way to determine the actual interface used at the moment
+  - The `Network.framework` used to yield _WiFi_ for any network connection on a simulator, but now yields _Wired_
+    - Rename `TNLNetworkReachabilityReachableViaWiFi` to `TNLNetworkReachabilityReachableViaEthernet` and handle both cases as _Ethernet_
+
+### 2.13.0
+
+- Refactor _Service Unavailable Backoff_ system to be more abstract and support *any* trigger for backoff
+  - All `*serviceUnavailableBackoff*` APIs are refactored into `*backoff*` APIs
+  - Introduce `[TNLGlobalConfiguration backoffSignaler]`
+    - Implement your own `TNLBackoffSignaler` to customize behavior ... or ...
+    - Default will use `TNLSimpleBackoffSignaler` which will signal on *HTTP 503*
+
+### 2.12.0
+
+- Abstract out _Service Unavailable Backoff Behavior_ for customization to be applied
+  - See `[TNLGlobalConfiguration serviceUnavailableBackoffBehaviorProvider]` for providing a custom backoff behavior
+    - Implement your own `TNLServiceUnavailableBackoffBehaviorProvider` to customize behavior
+    - Due to _Service Unavailable_ signaling being opaque, only the HTTP Headers and the URL can be provided
+  - Default will use `TNLSimpleServiceUnavailableBackoffBehaviorProvider`
+    - Exact same behavior as before (introduced in **TNL** prior to v2.0 open sourcing)
+
+### 2.11.0
+
+- Change the `TNLURLSessionAuthChallengeCompletionBlock` arguments
+  - Leave the _disposition_ parameter
+  - Change the _credentials_ parameter of `NSURLCredentials` to be _credentialsOrCancelContext_ of `id`
+    - This will permit `TNLAuthenticationChallengeHandler` instance to be able to cancel the challenge and provide extra context in the resulting error code
+    - Twitter will use this to cancel _401_ login auth challenges when we don't want a redundant request to be made (since it just yields the same response)
+      - This is to facilitate working around the behavior in `NSURLSession` where an _HTTP 401_ response with `WWW-Authenticate` header will always be transparently be retried (even when unmodified yielding the identical _401_ response).
+      - An additionaly problem is that canceling the _401_ response will discard the response's body.  If there is information needed in the response body, it will be lost.
+      - Twitter has updated its `WWW-Authenticate` header responses to include additional metadata since the response body cannot be used.
+        - See https://tools.ietf.org/html/rfc7235#section-4.1
+      - Apple Feedback: `FB7697492`
+
+### 2.10.0
+
+- Add retriable dependencies to `TNLRequestOperation`
+  - Whenever a `TNLRetryPolicyProvider` would yield a retry, that retry will be delayed by the longer of 2 things:
+    1. The delay provided by the retry policy provider (minimum of 100 milliseconds)
+    2. Waiting for all `dependencies` on the `TNLRequestOperation` to complete
+    - Normally, all `dependencies` of a retrying `TNLRequestOperation` will be complete before it has started but it is now possible to add dependencies after the request operation has already started to increase the dependencies on a retry starting.
+
+### 2.9.0
+
+- Introduce `tnlcli`, a command-line-interface for __TNL__
+  - Like _cURL_ but with __TNL__ features
+  - Verbose mode provides all __TNL__ logging to stdout / stderr along with lots of other details
 
 ### 2.8.2
 

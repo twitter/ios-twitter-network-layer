@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 4/10/18.
-//  Copyright © 2018 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -12,7 +12,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class TNLRequestOperation;
 
-typedef void(^TNLURLSessionAuthChallengeCompletionBlock)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * __nullable credential);
+typedef void(^TNLURLSessionAuthChallengeCompletionBlock)(NSURLSessionAuthChallengeDisposition disposition,
+                                                         id __nullable credentialOrCancelContext);
 
 /**
  Protocol for handling authentication challenges
@@ -31,12 +32,13 @@ typedef void(^TNLURLSessionAuthChallengeCompletionBlock)(NSURLSessionAuthChallen
 
  See `NSURLSessionAuthChallengeDisposition`
 
-    typedef void(^TNLURLSessionAuthChallengeCompletionBlock)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential);
+    typedef void(^TNLURLSessionAuthChallengeCompletionBlock)(NSURLSessionAuthChallengeDisposition disposition, id credentialOrCancelContext);
 
  - _disposition_
    - the way to handle the _challenge_ (default == `NSURLSessionAuthChallengePerformDefaultHandling`)
- - _credential_
-   - the credential to use in handling the _challenge_
+ - _credentialOrCancelContext_
+   - the credential to use in handling the _challenge_ for `NSURLSessionAuthChallengeUseCredential`
+   - the context to the error that will be yielded from `NSURLSessionAuthChallengeCancelAuthenticationChallenge` (using
 
  @param challenge  The `NSURLAuthenticationChallenge` to respond to
  @param op The `TNLRequestOperation` that triggered the challenge, `nil` is a global challenge

@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 7/28/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "NSNumber+TNLURLCoding.h"
@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 static NSString * __nullable TNLStringValue(id object,
                                             TNLURLEncodingOptions options,
                                             NSString * __nullable contextKey);
+static NSString *TNLNumberStringValue(NSNumber *number);
 static id __nullable TNLURLEncodableValue(id value,
                                           TNLURLEncodableDictionaryOptions options,
                                           NSString * __nullable contextKey);
@@ -283,6 +284,49 @@ NSDictionary *TNLURLEncodableDictionary(NSDictionary * __nullable params,
     return TNL_BITMASK_HAS_SUBSET_FLAGS(options, TNLURLEncodableDictionaryOptionOutputMutableDictionary) ? dict : [dict copy];
 }
 
+// This function is ~15% more performant than `-[NSNumber stringValue]` -- which matters when encoding values as rapidly and often as TNL does
+static NSString *TNLNumberStringValue(NSNumber *number)
+{
+    static NSString * __nonnull kSmallPositives[] = { @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9" };
+    const char *objCType = [number objCType];
+    if (objCType) {
+        switch (*objCType) {
+            case 'c':
+            case 'i':
+            case 's':
+            case 'l':
+            case 'q':
+            {
+                const long long value = [number longLongValue];
+                if (value < 10 && value >= 0) {
+                    return kSmallPositives[value];
+                }
+                return [[NSString alloc] initWithFormat:@"%lli", value];
+            }
+            case 'C':
+            case 'I':
+            case 'S':
+            case 'L':
+            case 'Q':
+            {
+                const unsigned long long value = [number unsignedLongLongValue];
+                if (value < 10) {
+                    return kSmallPositives[value];
+                }
+                return [[NSString alloc] initWithFormat:@"%llu", value];
+            }
+            case 'f':
+                return [[NSString alloc] initWithFormat:@"%0.7g", [number floatValue]];
+            case 'd':
+                return [[NSString alloc] initWithFormat:@"%0.16g", [number doubleValue]];
+            default:
+                break;
+        }
+    }
+
+    return [number descriptionWithLocale:nil];
+}
+
 static NSString *TNLStringValue(id object,
                                 TNLURLEncodingOptions options,
                                 NSString * __nullable contextKey)
@@ -290,20 +334,15 @@ static NSString *TNLStringValue(id object,
     NSString *value = nil;
     if ([object isKindOfClass:[NSString class]]) {
         value = object;
+    } else if ([object isKindOfClass:[NSNumber class]]) {
+        if (TNL_BITMASK_HAS_SUBSET_FLAGS(options, TNLURLEncodingOptionEncodeBooleanNumbersAsTrueOrFalse) && [object tnl_isBoolean]) {
+            // use "true"/"false" instead of default "1"/"0"
+            value = [object boolValue] ? @"true" : @"false";
+        } else {
+            value = TNLNumberStringValue(object);
+        }
     } else if ([object respondsToSelector:@selector(tnl_URLEncodableStringValue)]) {
         value = [object tnl_URLEncodableStringValue];
-    } else if ([object isKindOfClass:[NSNumber class]]) {
-        if ([object tnl_isBoolean]) {
-            if (TNL_BITMASK_HAS_SUBSET_FLAGS(options, TNLURLEncodingOptionEncodeBooleanNumbersAsTrueOrFalse)) {
-                // use "true"/"false"
-                value = [object boolValue] ? @"true" : @"false";
-            } else {
-                // though `stringValue` should emit "1"/"0", we'll be robust in case this underlying implementation detail changes in the future
-                value = [object boolValue] ? @"1" : @"0";
-            }
-        } else {
-            value = [object stringValue];
-        }
     }
 
     if (!value && TNL_BITMASK_HAS_SUBSET_FLAGS(options, TNLURLEncodingOptionTreatUnsupportedValuesAsEmpty)) {
@@ -341,5 +380,15 @@ static id TNLURLEncodableValue(id value,
     }
     return returnValue;
 }
+
+// Implemented in TNLURLCoding.m to utilize the static TNLNumberStringValue function
+@implementation NSNumber (TNLStringCoding)
+
+- (NSString *)tnl_quickStringValue
+{
+    return TNLNumberStringValue(self);
+}
+
+@end
 
 NS_ASSUME_NONNULL_END

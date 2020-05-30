@@ -3,10 +3,11 @@
 //  TwitterNetworkLayer
 //
 //  Created on 1/15/15.
-//  Copyright (c) 2015 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "NSCoder+TNLAdditions.h"
+#import "NSURLSessionTaskMetrics+TNLAdditions.h"
 #import "TNL_Project.h"
 #import "TNLAttemptMetaData_Project.h"
 #import "TNLAttemptMetrics_Project.h"
@@ -199,23 +200,6 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
     _captivePortalStatus = agent.currentCaptivePortalStatus;
 }
 #endif
-
-- (NSString *)description
-{
-    NSMutableString *string = [NSMutableString string];
-    [string appendFormat:@"<%@ %p: type=%@, duration=%.2fs", NSStringFromClass([self class]), self, TNLAttemptTypeToString(self.attemptType), self.duration];
-    if (self.URLResponse) {
-        [string appendFormat:@", HTTP=%ld", (long)self.URLResponse.statusCode];
-    }
-    if (self.operationError) {
-        [string appendFormat:@", error=%@.%ld", self.operationError.domain, (long)self.operationError.code];
-    }
-    if (self.metaData) {
-        [string appendFormat:@", metaData.class=%@", NSStringFromClass([self.metaData class])];
-    }
-    [string appendString:@">"];
-    return string;
-}
 
 - (NSTimeInterval)duration
 {
@@ -435,6 +419,90 @@ TNLStaticAssert(TNLAttemptCompleteDispositionCount == TNLAttemptTypeCount, ATTEM
 #endif
     dupeSubmetric->_final = NO;
     return dupeSubmetric;
+}
+
+#pragma mark Description
+
+- (NSDictionary *)dictionaryDescription:(BOOL)verbose
+{
+    NSMutableDictionary *attemptDict = [NSMutableDictionary dictionary];
+    attemptDict[@"attemptInfo"] = @{
+        @"id" : @(_attemptId),
+        @"type" : TNLAttemptTypeToString(_attemptType),
+        @"duration" : @(self.duration)
+    };
+
+#define UP_D(d, key, val) \
+({ \
+    id value__ = (val); \
+    if (value__) { \
+        (d)[(key)] = value__; \
+    } \
+})
+
+    NSMutableDictionary *other = [[NSMutableDictionary alloc] init];
+    attemptDict[@"other"] = other;
+
+    UP_D(other, @"error", self.operationError.description);
+    if (_URLResponse) {
+        other[@"statusCode"] = @(_URLResponse.statusCode);
+    }
+
+    if (verbose) {
+        UP_D(other, @"timeStart", TNLHTTPDateToString(self.startDate, TNLHTTPDateFormatAuto));
+        UP_D(other, @"timeEnd", TNLHTTPDateToString(self.endDate, TNLHTTPDateFormatAuto));
+        UP_D(other, @"apiErrors", self.APIErrors.firstObject.description);
+        UP_D(other, @"parseErrors", self.responseBodyParseError.description);
+#if !TARGET_OS_WATCH
+        UP_D(other, @"reachStatus", TNLNetworkReachabilityStatusToString(_reachabilityStatus));
+        UP_D(other, @"reachFlags", TNLDebugStringFromNetworkReachabilityFlags(_reachabilityFlags));
+        UP_D(other, @"radio", self.WWANRadioAccessTechnology);
+        UP_D(other, @"captivePortalStatus", TNLCaptivePortalStatusToString(_captivePortalStatus));
+        UP_D(other, @"carrierInfo", self.carrierInfo ? TNLCarrierInfoToDictionaryDescription(self.carrierInfo) : nil);
+#endif
+        if (_URLRequest) {
+            attemptDict[@"zRequest"] = @{
+                @"method" : _URLRequest.HTTPMethod ?: @"GET",
+                @"URL" : _URLRequest.URL.absoluteURL.absoluteString,
+                @"headers" : _URLRequest.allHTTPHeaderFields ?: @{},
+                @"bodyLength" : _URLRequest.HTTPBody ? @(_URLRequest.HTTPBody.length) : [NSNull null],
+            };
+        }
+        if (_URLResponse) {
+            attemptDict[@"zResponse"] = @{
+                @"statusCode" : @(_URLResponse.statusCode),
+                @"URL" : _URLResponse.URL.absoluteString ?: [NSNull null],
+                @"headers" : _URLResponse.allHeaderFields ?: @{}
+            };
+        }
+        if (_metaData) {
+            attemptDict[@"metaData"] = _metaData.dictionaryDescription;
+        }
+        NSDictionary *taskMetrics = self.taskTransactionMetrics.tnl_dictionaryDescription;
+        if (taskMetrics) {
+            attemptDict[@"transactionMetrics"] = taskMetrics;
+        }
+    }
+#undef UP_D
+
+    return attemptDict;
+}
+
+- (NSString *)description
+{
+    NSMutableString *string = [NSMutableString string];
+    [string appendFormat:@"<%@ %p: type=%@, duration=%.2fs", NSStringFromClass([self class]), self, TNLAttemptTypeToString(self.attemptType), self.duration];
+    if (self.URLResponse) {
+        [string appendFormat:@", HTTP=%ld", (long)self.URLResponse.statusCode];
+    }
+    if (self.operationError) {
+        [string appendFormat:@", error=%@.%ld", self.operationError.domain, (long)self.operationError.code];
+    }
+    if (self.metaData) {
+        [string appendFormat:@", metaData.class=%@", NSStringFromClass([self.metaData class])];
+    }
+    [string appendString:@">"];
+    return string;
 }
 
 @end

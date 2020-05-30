@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 7/15/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <TwitterNetworkLayer/TNLHTTP.h>
@@ -159,12 +159,12 @@ typedef NS_OPTIONS(NSInteger, TNLRequestConnectivityOptions) {
  */
 typedef NS_ENUM(NSInteger, TNLResponseHashComputeAlgorithm) {
     TNLResponseHashComputeAlgorithmNone = 0,
-    TNLResponseHashComputeAlgorithmMD2 __attribute__((deprecated)) = 'md_2',
-    TNLResponseHashComputeAlgorithmMD4 __attribute__((deprecated)) = 'md_4',
-    TNLResponseHashComputeAlgorithmMD5 __attribute__((deprecated)) = 'md_5',
-    TNLResponseHashComputeAlgorithmSHA1 = 'sha1',
-    TNLResponseHashComputeAlgorithmSHA256 = 's256',
-    TNLResponseHashComputeAlgorithmSHA512 = 's512',
+    TNLResponseHashComputeAlgorithmMD2 __attribute__((deprecated)) = 'md_2', // 1835294514
+    TNLResponseHashComputeAlgorithmMD4 __attribute__((deprecated)) = 'md_4', // 1835294516
+    TNLResponseHashComputeAlgorithmMD5 __attribute__((deprecated)) = 'md_5', // 1835294517
+    TNLResponseHashComputeAlgorithmSHA1     = 'sha1', // 1936220465
+    TNLResponseHashComputeAlgorithmSHA256   = 's256', // 1932670262
+    TNLResponseHashComputeAlgorithmSHA512   = 's512', // 1932865842
 };
 
 /**

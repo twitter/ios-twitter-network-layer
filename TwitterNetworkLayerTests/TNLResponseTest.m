@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 11/12/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "NSURLResponse+TNLAdditions.h"
@@ -172,8 +172,10 @@
     if (tnl_available_ios_11) {
         error = nil;
         archive = [NSKeyedArchiver archivedDataWithRootObject:response requiringSecureCoding:YES error:&error];
+#if !TARGET_OS_MACCATALYST
     } else {
         archive = [NSKeyedArchiver archivedDataWithRootObject:response];
+#endif
     }
 
     XCTAssertNotEqual(0UL, archive.length);
@@ -181,8 +183,10 @@
     if (tnl_available_ios_11) {
         error = nil;
         decodedResponse = [NSKeyedUnarchiver unarchivedObjectOfClass:[TNLResponse class] fromData:archive error:&error];
+#if !TARGET_OS_MACCATALYST
     } else {
         decodedResponse = [NSKeyedUnarchiver unarchiveObjectWithData:archive];
+#endif
     }
 
     XCTAssertTrue([decodedResponse isKindOfClass:[TNLResponse class]]);
@@ -227,8 +231,10 @@
     if (tnl_available_ios_11) {
         error = nil;
         archive = [NSKeyedArchiver archivedDataWithRootObject:response requiringSecureCoding:YES error:&error];
+#if !TARGET_OS_MACCATALYST
     } else {
         archive = [NSKeyedArchiver archivedDataWithRootObject:response];
+#endif
     }
 
     XCTAssertNotEqual(0UL, archive.length);
@@ -236,8 +242,10 @@
     if (tnl_available_ios_11) {
         error = nil;
         decodedResponse = [NSKeyedUnarchiver unarchivedObjectOfClass:[TNLResponse class] fromData:archive error:&error];
+#if !TARGET_OS_MACCATALYST
     } else {
         decodedResponse = [NSKeyedUnarchiver unarchiveObjectWithData:archive];
+#endif
     }
 
     XCTAssertTrue([decodedResponse isKindOfClass:[TNLResponse class]]);

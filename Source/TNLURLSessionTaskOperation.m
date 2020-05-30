@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 6/11/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #include <mach/mach_time.h>
@@ -21,6 +21,7 @@
 #import "TNL_Project.h"
 #import "TNLAttemptMetaData_Project.h"
 #import "TNLAttemptMetrics.h"
+#import "TNLBackoff.h"
 #import "TNLContentCoding.h"
 #import "TNLError.h"
 #import "TNLGlobalConfiguration.h"
@@ -425,7 +426,7 @@ static BOOL _currentRequestHasBody(SELF_ARG)
     TNLAssert(URLSession != nil);
     _URLSession = URLSession;
     if (!taskMetrics) {
-        dispatch_async(tnl_network_queue(), ^{
+        tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
             // Task metrics are explicity not supported
             self->_flags.encounteredCompletionBeforeTaskMetrics = 1;
         });
@@ -682,15 +683,20 @@ static void _handleTaskResponseObservation(SELF_ARG,
     });
 }
 
-- (void)handler:(id<TNLAuthenticationChallengeHandler>)handler
+- (void)handler:(nullable id<TNLAuthenticationChallengeHandler>)handler
         didCancelAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
         forURLSession:(NSURLSession *)session
+        context:(nullable id)cancelContext
 {
     NSURLProtectionSpace *protectionSpace = challenge.protectionSpace;
     NSString *protectionSpaceHost = protectionSpace.host;
     NSURLRequest *currentRequest = self.currentURLRequest;
     NSArray<NSString *> *certDescriptions = TNLSecTrustGetCertificateChainDescriptions(protectionSpace.serverTrust);
     NSString *authMethod = protectionSpace.authenticationMethod;
+    NSHTTPURLResponse *failedResponse = (id)challenge.failureResponse;
+    if (failedResponse && ![failedResponse isKindOfClass:[NSHTTPURLResponse class]]) {
+        failedResponse = nil;
+    }
 
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
         NSMutableDictionary *userInfo = [[NSMutableDictionary alloc] init];
@@ -703,8 +709,19 @@ static void _handleTaskResponseObservation(SELF_ARG,
         if (authMethod) {
             userInfo[TNLErrorAuthenticationChallengeMethodKey] = authMethod;
         }
+        if (challenge.protectionSpace.realm != nil) {
+            userInfo[TNLErrorAuthenticationChallengeRealmKey] = challenge.protectionSpace.realm;
+        }
         if (certDescriptions) {
             userInfo[TNLErrorCertificateChainDescriptionsKey] = certDescriptions;
+        }
+        if (cancelContext) {
+            userInfo[TNLErrorAuthenticationChallengeCancelContextKey] = cancelContext;
+        }
+        if (failedResponse) {
+            userInfo[TNLErrorResponseKey] = failedResponse;
+            // ... and, if we have the cancelled response, cache it for completion handling
+            self->_cancelledRedirectResponse = failedResponse;
         }
         self->_authChallengeCancelledUserInfo = [userInfo copy];
     });
@@ -860,7 +877,7 @@ static void _network_handleRedirect(SELF_ARG,
         if (sanitiziationError) {
             _network_fail(self, sanitiziationError);
             return;
-        } if (self.isComplete || self.finalizing) {
+        } else if (self.isComplete || self.finalizing) {
             return;
         } else if (_network_shouldCancel(self)) {
             _network_cancel(self);
@@ -982,7 +999,9 @@ static void _network_handleRedirect(SELF_ARG,
             self->_cachedCompletionError = theError;
 
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kTaskMetricsNotSeenOnCompletionDelayCompletionDuration * NSEC_PER_SEC)), tnl_network_queue(), ^{
-                _network_completeCachedCompletionIfPossible(self);
+                @autoreleasepool {
+                    _network_completeCachedCompletionIfPossible(self);
+                }
             });
 
             return;
@@ -2110,16 +2129,24 @@ static void _network_transitionState(SELF_ARG,
             // stop handling responses
             self->_flags.shouldCaptureResponse = 0;
 
-            // service unavailable (HTTP 503) signal
+            // check for backoff signal
             TNLResponseInfo *info = self->_finalResponse.info;
-            if (info.statusCode == TNLHTTPStatusCodeServiceUnavailable) {
-                const NSTimeInterval delay = (info.hasRetryAfterHeader) ?
-                                                [info retryAfterDelayFromNow] :
-                                                TNLGlobalServiceUnavailableRetryAfterBackoffValueDefault;
-                [TNLNetwork serviceUnavailableEncounteredForURL:self->_finalResponse.info.finalURL
-                                                retryAfterDelay:delay];
+            const TNLHTTPStatusCode statusCode = info.statusCode;
+            NSDictionary *headers = info.allHTTPHeaderFieldsWithLowerCaseKeys;
+            NSString *host = nil;
+            NSURL *URL = self->_hydratedURLRequest.URL;
+            if ([TNLGlobalConfiguration sharedInstance].shouldBackoffUseOriginalRequestHost) {
+                host = [self->_originalRequest URL].host;
             }
-
+            const BOOL shouldSignal = [[TNLGlobalConfiguration sharedInstance].backoffSignaler tnl_shouldSignalBackoffForURL:URL
+                                                                                                                        host:host
+                                                                                                                  statusCode:statusCode
+                                                                                                             responseHeaders:headers];
+            if (shouldSignal) {
+                [TNLNetwork backoffSignalEncounteredForURL:URL
+                                                      host:host
+                                       responseHTTPHeaders:headers];
+            }
         }
 
         if (executingDidChange) {

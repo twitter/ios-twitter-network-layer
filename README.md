@@ -508,9 +508,44 @@ APPRetrieveBlobRequest *request = [[APPRetrieveBlobRequest alloc] initWithBlobId
  // APISendMessageResponse's implementation for messageId is just:
  //    return self.result[@"newMessageId"];
 ```
+
+## Using the Command-Line-Interface
+
+__Twitter Network Layer__ includes a target for building a _macOS_ tool called `tnlcli`.  You can build this tool
+run it from _Terminal_ from you _Mac_, similar to _cURL_ or other networking command line utilities.
+
+### Usage
+
+```
+Usage: tnlcli [options] url
+
+    Example: tnlcli --request-method HEAD --response-header-mode file,print --response-header-file response_headers.json https://google.com
+
+Argument Options:
+-----------------
+
+    --request-config-file <filepath>     TNLRequestConfiguration as a json file
+    --request-headers-file <filepath>    json file of key-value-pairs for using as headers
+    --request-body-file <filepath>       file for the HTTP body
+
+    --request-header "Field: Value"      A header to provide with the request (will override the header if also in the request header file). Can provide multiple headers.
+    --request-config "config: value"     A config setting for the TNLRequestConfiguration of the request (will override the config if also in the request config file). Can provide multiple configs.
+    --request-method <method>            HTTP Method from Section 9 in HTTP/1.1 spec (RFC 2616), such as GET, POST, HEAD, etc
+
+    --response-body-mode <mode>          "file" or "print" or a combo using commas
+    --response-body-file <filepath>      file for the response body to save to (requires "file" for --response-body-mode
+    --response-headers-mode <mode>       "file" or "print" or a combo using commas
+    --response-headers-file <filepath>   file for the response headers to save to (as json)
+
+    --dump-cert-chain-directory <dir>    directory for the certification chain to be dumped to (as DER files)
+
+    --verbose                            Will print verbose information and force the --response-body-mode and --responde-headers-mode to have "print".
+    --version                            Will print ther version information.
+```
+
 # License
 
-Copyright 2014-2018 Twitter, Inc.
+Copyright 2014-2020 Twitter, Inc.
 
 Licensed under the Apache License, Version 2.0: https://www.apache.org/licenses/LICENSE-2.0
 

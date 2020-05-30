@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 10/28/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "NSURLCache+TNLAdditions.h"
@@ -73,7 +73,20 @@
 
     NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:NSStringFromSelector(_cmd)];
     [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
-    NSURLCache *cache = [[NSURLCache alloc] initWithMemoryCapacity:1024*1024*10 diskCapacity:1024*1024*10 diskPath:path];
+    NSURLCache *cache;
+    if (tnl_available_ios_13) {
+        cache = [[NSURLCache alloc] initWithMemoryCapacity:1024*1024*10
+                                              diskCapacity:1024*1024*10
+                                              directoryURL:[NSURL URLWithString:path]];
+    }
+#if !TARGET_OS_MACCATALYST
+    else {
+        cache = [[NSURLCache alloc] initWithMemoryCapacity:1024*1024*10
+                                              diskCapacity:1024*1024*10
+                                                  diskPath:path];
+
+    }
+#endif
     [cache removeAllCachedResponses];
     [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:2.0]]; // give cache time to purge
     tnl_defer(^{

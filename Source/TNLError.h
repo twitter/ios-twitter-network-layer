@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 7/17/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -21,9 +21,12 @@ FOUNDATION_EXTERN NSString * const TNLErrorCancelSourceLocalizedDescriptionKey;
 FOUNDATION_EXTERN NSString * const TNLErrorCodeStringKey;
 FOUNDATION_EXTERN NSString * const TNLErrorHostKey;
 FOUNDATION_EXTERN NSString * const TNLErrorRequestKey;
+FOUNDATION_EXTERN NSString * const TNLErrorResponseKey;
 FOUNDATION_EXTERN NSString * const TNLErrorProtectionSpaceHostKey;
 FOUNDATION_EXTERN NSString * const TNLErrorCertificateChainDescriptionsKey;
 FOUNDATION_EXTERN NSString * const TNLErrorAuthenticationChallengeMethodKey;
+FOUNDATION_EXTERN NSString * const TNLErrorAuthenticationChallengeRealmKey;
+FOUNDATION_EXTERN NSString * const TNLErrorAuthenticationChallengeCancelContextKey;
 
 #define TNLErrorCodePageSize        (100)
 

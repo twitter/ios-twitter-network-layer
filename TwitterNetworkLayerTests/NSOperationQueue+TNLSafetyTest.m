@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 10/6/15.
-//  Copyright © 2015 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #include <stdatomic.h>

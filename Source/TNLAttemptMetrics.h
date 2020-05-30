@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 1/15/15.
-//  Copyright (c) 2015 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <TwitterNetworkLayer/TNLCommunicationAgent.h>
@@ -140,6 +140,9 @@ static const NSInteger TNLAttemptCompleteDispositionCount = 3;
 
 /** calculate the duration of the attempt */
 - (NSTimeInterval)duration;
+
+/** description of the attempt metrics in a serializable dictionary */
+- (NSDictionary *)dictionaryDescription:(BOOL)verbose;
 
 @end
 
