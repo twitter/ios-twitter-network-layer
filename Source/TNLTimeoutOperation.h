@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 12/7/17.
-//  Copyright © 2017 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "TNLSafeOperation.h"

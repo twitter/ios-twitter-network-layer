@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 6/1/17
-//  Copyright © 2017 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "TNL_Project.h"
@@ -60,4 +60,5 @@ static BOOL _NSOperationHasCompletionBlockBug(void)
 @end
 
 NS_ASSUME_NONNULL_END
+
 

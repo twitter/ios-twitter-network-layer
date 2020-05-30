@@ -3,19 +3,23 @@
 //  TwitterNetworkLayer
 //
 //  Created on 10/23/15.
-//  Copyright © 2015 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #include <mach/mach_time.h>
 #include <stdatomic.h>
 
 #import "NSCachedURLResponse+TNLAdditions.h"
+#import "NSDictionary+TNLAdditions.h"
 #import "NSOperationQueue+TNLSafety.h"
+#import "NSURLAuthenticationChallenge+TNLAdditions.h"
+#import "NSURLResponse+TNLAdditions.h"
 #import "NSURLSessionConfiguration+TNLAdditions.h"
 #import "NSURLSessionTaskMetrics+TNLAdditions.h"
 #import "TNL_Project.h"
 #import "TNLAuthenticationChallengeHandler.h"
 #import "TNLBackgroundURLSessionTaskOperationManager.h"
+#import "TNLBackoff.h"
 #import "TNLGlobalConfiguration_Project.h"
 #import "TNLLRUCache.h"
 #import "TNLNetwork.h"
@@ -34,9 +38,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 static const NSUInteger kMaxURLSessionContextCount = 12;
 
-NSTimeInterval TNLGlobalServiceUnavailableRetryAfterBackoffValueDefault = 1.0;
-NSTimeInterval TNLGlobalServiceUnavailableRetryAfterMaximumBackoffValueBeforeTreatedAsGoAway = 10.0;
-
 static NSString * const kInAppURLSessionContextIdentifier = @"tnl.op.queue";
 static NSString * const kManagerVersionKey = @"smv";
 
@@ -44,10 +45,12 @@ static NSString * const kManagerVersionKey = @"smv";
 
 static NSString *_GenerateReuseIdentifier(NSString * __nullable operationQueueId, NSString *URLSessionConfigurationIdentificationString, TNLRequestExecutionMode executionmode);
 static void _ConfigureSessionConfigurationWithRequestConfiguration(NSURLSessionConfiguration * __nullable sessionConfig, TNLRequestConfiguration * requestConfig);
-static NSString * __nullable _ServiceUnavailableBackoffKeyFromURL(const TNLGlobalConfigurationServiceUnavailableBackoffMode mode, NSURL *URL);
+static NSString * __nullable _BackoffKeyFromURL(const TNLGlobalConfigurationBackoffMode mode, NSURL *URL, NSString * __nullable host);
 static void TNLMutableParametersStripNonURLSessionProperties(TNLMutableParameterCollection *params);
 static void TNLMutableParametersStripNonBackgroundURLSessionProperties(TNLMutableParameterCollection *params);
 static void TNLMutableParametersStripOverriddenURLSessionProperties(TNLMutableParameterCollection *params);
+typedef BOOL (^_FilterBlock)(id obj);
+static NSArray *_FilterArray(NSArray *source, _FilterBlock filterBlock);
 
 #pragma mark - Global Session Management
 
@@ -56,14 +59,16 @@ static void _PrepareSessionManagement(void);
 static dispatch_queue_t sSynchronizeQueue;
 static NSOperationQueue *sSynchronizeOperationQueue;
 static NSOperationQueue *sURLSessionTaskOperationQueue;
-static BOOL sSynchronizeOperationQueueIsBackedBySynchronizeQueue = NO;
 static TNLURLSessionContextLRUCacheDelegate *sSessionContextsDelegate;
 static TNLLRUCache *sAppSessionContexts;
 static TNLLRUCache *sBackgroundSessionContexts;
 static NSMutableSet<TNLURLSessionTaskOperation *> *sActiveURLSessionTaskOperations;
 static NSMutableDictionary<NSString *, dispatch_block_t> *sBackgroundSessionCompletionHandlerDictionary;
 static NSMutableDictionary<NSString *, NSHashTable<NSOperation *> *> *sOutstandingBackoffOperations = nil;
-static TNLGlobalConfigurationServiceUnavailableBackoffMode sBackoffMode = TNLGlobalConfigurationServiceUnavailableBackoffModeDisabled;
+static NSMutableDictionary<NSString *, NSHashTable<NSOperation *> *> *sOutstandingSerializeOperations = nil;
+static NSTimeInterval sSerialDelayDuration = 0.0;
+static TNLGlobalConfigurationBackoffMode sBackoffMode = TNLGlobalConfigurationBackoffModeDisabled;
+static id<TNLBackoffBehaviorProvider> sBackoffBehaviorProvider = nil;
 
 #pragma mark - Session Context
 
@@ -133,13 +138,15 @@ static void _synchronize_removeContext(PRIVATE_SELF(TNLURLSessionManagerV1),
                                        TNLURLSessionContext *context);
 static void _synchronize_storeContext(PRIVATE_SELF(TNLURLSessionManagerV1),
                                       TNLURLSessionContext *context);
-static void _synchronize_applyServiceUnavailableBackoffDependencies(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                                    NSOperation *op,
-                                                                    NSURL *URL,
-                                                                    BOOL isLongPoll);
-static void _synchronize_serviceUnavailableEncountered(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                       NSURL *URL,
-                                                       NSTimeInterval retryAfterDelay);
+static void _synchronize_applyBackoffDependencies(PRIVATE_SELF(TNLURLSessionManagerV1),
+                                                  NSOperation *op,
+                                                  NSURL *URL,
+                                                  NSString * __nullable host,
+                                                  BOOL isLongPoll);
+static void _synchronize_backoffSignalEncountered(PRIVATE_SELF(TNLURLSessionManagerV1),
+                                                  NSURL *URL,
+                                                  NSString * __nullable host,
+                                                  NSDictionary<NSString *, NSString *> * __nullable headers);
 static void _synchronize_pruneLimit(PRIVATE_SELF(TNLURLSessionManagerV1));
 static void _synchronize_pruneUnused(PRIVATE_SELF(TNLURLSessionManagerV1));
 static void _synchronize_pruneConfig(PRIVATE_SELF(TNLURLSessionManagerV1),
@@ -147,6 +154,20 @@ static void _synchronize_pruneConfig(PRIVATE_SELF(TNLURLSessionManagerV1),
                                      NSString * __nullable operationQueueId);
 
 static void _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(dispatch_block_t block);
+
+static void _private_notifyAuthChallengeCanceled(PRIVATE_SELF(TNLURLSessionManagerV1),
+                                                 TNLURLSessionTaskOperation * __nullable operation,
+                                                 NSURLAuthenticationChallenge *challenge,
+                                                 id<TNLAuthenticationChallengeHandler> __nullable handler,
+                                                 NSURLSession *session,
+                                                 id __nullable cancelContext);
+static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
+                                         NSURLAuthenticationChallenge *challenge,
+                                         NSURLSession *session,
+                                         TNLURLSessionTaskOperation * __nullable operation,
+                                         NSNumber * __nullable currentDisposition,
+                                         NSMutableArray<id<TNLAuthenticationChallengeHandler>> * remainingAuthChallengeHandlers,
+                                         TNLURLSessionAuthChallengeCompletionBlock completion);
 
 @end
 
@@ -340,52 +361,78 @@ static void _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(dispatch_
         const NSTimeInterval attemptTimeout = op.requestConfiguration.attemptTimeout;
         const BOOL isLongPollRequest = (attemptTimeout < 1.0) || (attemptTimeout >= NSTimeIntervalSince1970);
         NSURL *URL = op.hydratedURLRequest.URL;
-        _synchronize_applyServiceUnavailableBackoffDependencies(self,
-                                                                op,
-                                                                URL,
-                                                                isLongPollRequest);
+        NSString *host = nil;
+        if ([TNLGlobalConfiguration sharedInstance].shouldBackoffUseOriginalRequestHost) {
+            host = op.originalURLRequest.URL.host;
+        }
+        _synchronize_applyBackoffDependencies(self,
+                                              op,
+                                              URL,
+                                              host,
+                                              isLongPollRequest);
         [sURLSessionTaskOperationQueue tnl_safeAddOperation:op];
     });
 }
 
-- (void)applyServiceUnavailableBackoffDependenciesToOperation:(NSOperation *)op
-                                                      withURL:(NSURL *)URL
-                                            isLongPollRequest:(BOOL)isLongPoll
+- (void)applyBackoffDependenciesToOperation:(NSOperation *)op
+                                    withURL:(NSURL *)URL
+                                       host:(nullable NSString *)host
+                          isLongPollRequest:(BOOL)isLongPoll
 {
     dispatch_sync(sSynchronizeQueue, ^{
-        _synchronize_applyServiceUnavailableBackoffDependencies(self,
-                                                                op,
-                                                                URL,
-                                                                isLongPoll);
+        _synchronize_applyBackoffDependencies(self,
+                                              op,
+                                              URL,
+                                              host,
+                                              isLongPoll);
     });
 }
 
-- (void)serviceUnavailableEncounteredForURL:(NSURL *)URL
-                            retryAfterDelay:(NSTimeInterval)delay
+- (void)backoffSignalEncounteredForURL:(NSURL *)URL
+                                  host:(nullable NSString *)host
+                   responseHTTPHeaders:(nullable NSDictionary<NSString *, NSString *> *)headers
 {
     tnl_dispatch_async_autoreleasing(sSynchronizeQueue, ^{
-        _synchronize_serviceUnavailableEncountered(self, URL, delay);
+        _synchronize_backoffSignalEncountered(self, URL, host, headers);
     });
 }
 
-- (void)setServiceUnavailableBackoffMode:(TNLGlobalConfigurationServiceUnavailableBackoffMode)mode
+- (void)setBackoffMode:(TNLGlobalConfigurationBackoffMode)mode
 {
     tnl_dispatch_async_autoreleasing(sSynchronizeQueue, ^{
         if (sBackoffMode != mode) {
             sBackoffMode = mode;
             // reset our backoffs
             [sOutstandingBackoffOperations removeAllObjects];
+            [sOutstandingSerializeOperations removeAllObjects];
         }
     });
 }
 
-- (TNLGlobalConfigurationServiceUnavailableBackoffMode)serviceUnavailableBackoffMode
+- (TNLGlobalConfigurationBackoffMode)backoffMode
 {
-    __block TNLGlobalConfigurationServiceUnavailableBackoffMode mode;
+    __block TNLGlobalConfigurationBackoffMode mode;
     dispatch_sync(sSynchronizeQueue, ^{
         mode = sBackoffMode;
     });
     return mode;
+}
+
+- (void)setBackoffBehaviorProvider:(nullable id<TNLBackoffBehaviorProvider>)provider
+{
+    tnl_dispatch_async_autoreleasing(sSynchronizeQueue, ^{
+        sBackoffBehaviorProvider = provider ?: [[TNLSimpleBackoffBehaviorProvider alloc] init];
+        // does not affect our existing backoffs
+    });
+}
+
+- (id<TNLBackoffBehaviorProvider>)backoffBehaviorProvider
+{
+    __block id<TNLBackoffBehaviorProvider> provider;
+    dispatch_sync(sSynchronizeQueue, ^{
+        provider = sBackoffBehaviorProvider;
+    });
+    return provider;
 }
 
 - (void)pruneUnusedURLSessions
@@ -410,10 +457,12 @@ static void _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(dispatch_
 
 static void _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(dispatch_block_t block)
 {
-    if (dispatch_queue_get_label(sSynchronizeQueue) == dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL)) {
-        block();
-    } else {
-        tnl_dispatch_sync_autoreleasing(sSynchronizeQueue, block);
+    @autoreleasepool {
+        if (dispatch_queue_get_label(sSynchronizeQueue) == dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL)) {
+            block();
+        } else {
+            dispatch_sync(sSynchronizeQueue, block);
+        }
     }
 }
 
@@ -588,7 +637,7 @@ static TNLURLSessionContext * __nullable _synchronize_getSessionContextWithQueue
                                                               delegate:self
                                                          delegateQueue:sSynchronizeOperationQueue];
 
-        static volatile atomic_int_fast64_t __attribute__((aligned(8))) sSessionId = 0;
+        static volatile atomic_int_fast64_t __attribute__((aligned(8))) sSessionId = ATOMIC_VAR_INIT(0);
         const int64_t sessionId = atomic_fetch_add(&sSessionId, 1);
 
         context = [[TNLURLSessionContext alloc] initWithURLSession:session
@@ -732,82 +781,135 @@ static void _synchronize_pruneConfig(PRIVATE_SELF(TNLURLSessionManagerV1),
     }
 }
 
-static void _synchronize_applyServiceUnavailableBackoffDependencies(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                                    NSOperation *op,
-                                                                    NSURL *URL,
-                                                                    BOOL isLongPoll)
+static void _synchronize_applyBackoffDependencies(PRIVATE_SELF(TNLURLSessionManagerV1),
+                                                  NSOperation *op,
+                                                  NSURL *URL,
+                                                  NSString * __nullable host,
+                                                  BOOL isLongPoll)
 {
     if (!self) {
         return;
     }
 
     // get the key (depends on the mode)
-    NSString *key = _ServiceUnavailableBackoffKeyFromURL(sBackoffMode, URL);
+    NSString *key = _BackoffKeyFromURL(sBackoffMode, URL, host);
     if (!key) {
         // no key, no dependencies to apply
         return;
     }
 
-    // do we have backoff ops?
-    NSHashTable<NSOperation *> *ops = sOutstandingBackoffOperations[key];
-    if (!ops) {
-        return;
+    NSHashTable<NSOperation *> *serialOps = sOutstandingSerializeOperations[key];
+    NSArray<NSOperation *> *serialOpsArray = _FilterArray(serialOps.allObjects, ^BOOL(NSOperation * obj){
+        return !obj.isFinished;
+    });
+    if (!serialOpsArray.count) {
+        // no serial ops left, clear it
+        [sOutstandingSerializeOperations removeObjectForKey:key];
+        serialOps = nil;
+        serialOpsArray = nil;
     }
 
-    // we have an in process backoff!
-    NSArray<NSOperation *> *opsArray = ops.allObjects;
-    if (!opsArray.count) {
-        // no backoff ops left, clear it out
-        [sOutstandingBackoffOperations removeObjectForKey:key];
+    NSHashTable<NSOperation *> *backoffOps = sOutstandingBackoffOperations[key];
+    NSArray<NSOperation *> *backoffOpsArray = _FilterArray(backoffOps.allObjects, ^BOOL(NSOperation * obj){
+        return !obj.isFinished;
+    });
+    if (!backoffOpsArray.count) {
+        if (!serialOps) {
+            // no backoff ops left, clear it
+            [sOutstandingBackoffOperations removeObjectForKey:key];
+            backoffOps = nil;
+            backoffOpsArray = nil;
+        } else if (!backoffOps) {
+            // serial ops but no backoff ops, establish an empty hash-table to populate
+            backoffOps = [NSHashTable weakObjectsHashTable];
+            sOutstandingBackoffOperations[key] = backoffOps;
+        }
+    }
+
+    // No backoff ops or serializing ops to back off with
+    if (!serialOps && !backoffOps) {
         return;
     }
+    TNLAssert(backoffOps != nil);
 
     // make this new operation dependent on prior backoff ops
-    for (NSOperation *otherOp in opsArray) {
+    for (NSOperation *otherOp in backoffOpsArray) {
         [op addDependency:otherOp];
     }
 
-    // store the op if not a long poll request
-    if (!isLongPoll) {
-        [ops addObject:op];
+    // add serial delay to slow things down while running serially
+    if (sSerialDelayDuration > 0 && serialOps.count > 0) {
+        NSOperation *timeoutOperation = [[TNLTimeoutOperation alloc] initWithTimeoutDuration:sSerialDelayDuration];
+        for (NSOperation *dep in op.dependencies) {
+            [timeoutOperation addDependency:dep];
+        }
+        [backoffOps addObject:timeoutOperation];
+        [sURLSessionTaskOperationQueue tnl_safeAddOperation:timeoutOperation];
+    }
+
+    // store the op if not a long poll request AND we are still in a serialization mode
+    if (!isLongPoll && serialOps.count > 0) {
+        [backoffOps addObject:op];
     }
 }
 
-static void _synchronize_serviceUnavailableEncountered(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                       NSURL *URL,
-                                                       NSTimeInterval backoffDuration)
+static void _synchronize_backoffSignalEncountered(PRIVATE_SELF(TNLURLSessionManagerV1),
+                                                  NSURL *URL,
+                                                  NSString * __nullable host,
+                                                  NSDictionary<NSString *, NSString *> * __nullable headers)
 {
     if (!self) {
         return;
     }
 
-    if (backoffDuration < 0.1) {
-        backoffDuration = 0.1;
-    } else if (backoffDuration > TNLGlobalServiceUnavailableRetryAfterMaximumBackoffValueBeforeTreatedAsGoAway) {
-        // too long to be treated as a backoff, fall back to the reasonable default
-        backoffDuration = TNLGlobalServiceUnavailableRetryAfterBackoffValueDefault;
-    }
-
-    NSString *key = _ServiceUnavailableBackoffKeyFromURL(sBackoffMode, URL);
+    NSString *key = _BackoffKeyFromURL(sBackoffMode, URL, host);
     if (!key) {
         // no key, no backoff to apply
         return;
     }
 
-    NSOperation *timeoutOperation = [[TNLTimeoutOperation alloc] initWithTimeoutDuration:backoffDuration];
-    NSHashTable<NSOperation *> *ops = sOutstandingBackoffOperations[key];
-    if (!ops) {
-        ops = [NSHashTable weakObjectsHashTable];
-        sOutstandingBackoffOperations[key] = ops;
+    const TNLBackoffBehavior backoffBehavior = [sBackoffBehaviorProvider tnl_backoffBehaviorForURL:URL
+                                                                                                     responseHeaders:headers];
+
+    if (backoffBehavior.backoffDuration > 0) {
+        NSOperation *timeoutOperation = [[TNLTimeoutOperation alloc] initWithTimeoutDuration:backoffBehavior.backoffDuration];
+        NSHashTable<NSOperation *> *ops = sOutstandingBackoffOperations[key];
+        if (!ops) {
+            ops = [NSHashTable weakObjectsHashTable];
+            sOutstandingBackoffOperations[key] = ops;
+        }
+
+        // make all outstanding backed off ops depend on this new backoff op
+        for (NSOperation *op in ops.allObjects) {
+            [op addDependency:timeoutOperation];
+        }
+
+        [ops addObject:timeoutOperation];
+        [sURLSessionTaskOperationQueue tnl_safeAddOperation:timeoutOperation];
+
+        // also add to the outstanding serialization ops
+        NSHashTable<NSOperation *> *serialOps = sOutstandingSerializeOperations[key];
+        if (!serialOps) {
+            serialOps = [NSHashTable weakObjectsHashTable];
+            sOutstandingSerializeOperations[key] = serialOps;
+        }
+        [serialOps addObject:timeoutOperation];
     }
 
-    // make all outstanding backed off ops depend on this new backoff op
-    for (NSOperation *op in ops.allObjects) {
-        [op addDependency:timeoutOperation];
+    if (backoffBehavior.serializeDuration > 0) {
+        NSOperation *timeoutOperation = [[TNLTimeoutOperation alloc] initWithTimeoutDuration:backoffBehavior.serializeDuration];
+        NSHashTable<NSOperation *> *ops = sOutstandingSerializeOperations[key];
+        if (!ops) {
+            ops = [NSHashTable weakObjectsHashTable];
+            sOutstandingSerializeOperations[key] = ops;
+        }
+
+        // track the new serialize timer
+        [ops addObject:timeoutOperation];
+        [sURLSessionTaskOperationQueue tnl_safeAddOperation:timeoutOperation];
     }
 
-    [ops addObject:timeoutOperation];
-    [sURLSessionTaskOperationQueue tnl_safeAddOperation:timeoutOperation];
+    sSerialDelayDuration = backoffBehavior.serialDelayDuration;
 }
 
 @end
@@ -839,29 +941,70 @@ static void _synchronize_serviceUnavailableEncountered(PRIVATE_SELF(TNLURLSessio
     METHOD_LOG();
 
     NSMutableArray<id<TNLAuthenticationChallengeHandler>> *handlers = [[[TNLGlobalConfiguration sharedInstance] internalAuthenticationChallengeHandlers] mutableCopy];
-    [self private_handleAuthChallenge:challenge
-                              session:session
-                            operation:nil
-                   currentDisposition:nil
-       remainingAuthChallengeHandlers:handlers
-                           completion:completionHandler];
+    _private_handleAuthChallenge(self,
+                                 challenge,
+                                 session,
+                                 nil /*operation*/,
+                                 nil /*currentDisposition*/,
+                                 handlers,
+                                 completionHandler);
 }
 
-- (void)private_handleAuthChallenge:(NSURLAuthenticationChallenge *)challenge
-                            session:(NSURLSession *)session
-                          operation:(nullable TNLURLSessionTaskOperation *)operation
-                 currentDisposition:(nullable NSNumber *)currentDisposition
-     remainingAuthChallengeHandlers:(NSMutableArray<id<TNLAuthenticationChallengeHandler>> *)handlers
-                         completion:(TNLURLSessionAuthChallengeCompletionBlock)completion
+static void _private_notifyAuthChallengeCanceled(PRIVATE_SELF(TNLURLSessionManagerV1),
+                                                 TNLURLSessionTaskOperation * __nullable operation,
+                                                 NSURLAuthenticationChallenge *challenge,
+                                                 id<TNLAuthenticationChallengeHandler> __nullable handler,
+                                                 NSURLSession *session,
+                                                 id __nullable cancelContext)
 {
-    void (^challengeBlock)(id<TNLAuthenticationChallengeHandler> handler, NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential);
-    challengeBlock = ^(id<TNLAuthenticationChallengeHandler> handler, NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential) {
+    if (!self) {
+        return;
+    }
+
+    if (operation) {
+        // just the provided operation
+         if ((id)[NSNull null] != operation) {
+             [operation handler:handler
+                        didCancelAuthenticationChallenge:challenge
+                        forURLSession:session
+                        context:cancelContext];
+         }
+        return;
+    }
+
+     // all the downstream operations
+     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
+         TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+         for (TNLURLSessionTaskOperation *op in context.URLSessionTaskOperations) {
+             [op handler:handler
+                 didCancelAuthenticationChallenge:challenge
+                 forURLSession:session
+                 context:cancelContext];
+         }
+     });
+}
+
+static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
+                                         NSURLAuthenticationChallenge *challenge,
+                                         NSURLSession *session,
+                                         TNLURLSessionTaskOperation * __nullable operation,
+                                         NSNumber * __nullable currentDisposition,
+                                         NSMutableArray<id<TNLAuthenticationChallengeHandler>> * handlers,
+                                         TNLURLSessionAuthChallengeCompletionBlock completion)
+{
+    if (!self) {
+        return;
+    }
+
+    void (^challengeBlock)(id<TNLAuthenticationChallengeHandler> handler, NSURLSessionAuthChallengeDisposition disposition, id credentialOrContext);
+    challengeBlock = ^(id<TNLAuthenticationChallengeHandler> handler, NSURLSessionAuthChallengeDisposition disposition, id credentialOrContext) {
         NSNumber *newDisposition = currentDisposition;
         switch (disposition) {
             case NSURLSessionAuthChallengeUseCredential:
             {
                 // There are credentials! Done!
-                completion(disposition, credential);
+                TNLAssert(!credentialOrContext || [credentialOrContext isKindOfClass:[NSURLCredential class]]);
+                completion(disposition, (NSURLCredential *)credentialOrContext);
                 return;
             }
             case NSURLSessionAuthChallengeCancelAuthenticationChallenge:
@@ -869,24 +1012,12 @@ static void _synchronize_serviceUnavailableEncountered(PRIVATE_SELF(TNLURLSessio
                 // The challenge is forced to cancel!
 
                 // 1) notify downstream request operations
-                if (operation) {
-                    // just the provided operation
-                    if ((id)[NSNull null] != operation) {
-                        [operation handler:handler
-          didCancelAuthenticationChallenge:challenge
-                             forURLSession:session];
-                    }
-                } else {
-                    // all the downstream operations
-                    _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-                        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
-                        for (TNLURLSessionTaskOperation *op in context.URLSessionTaskOperations) {
-                            [op handler:handler
-       didCancelAuthenticationChallenge:challenge
-                          forURLSession:session];
-                        }
-                    });
-                }
+                _private_notifyAuthChallengeCanceled(self,
+                                                     operation,
+                                                     challenge,
+                                                     handler,
+                                                     session,
+                                                     credentialOrContext);
 
                 // 2) complete
                 completion(disposition, nil);
@@ -905,12 +1036,13 @@ static void _synchronize_serviceUnavailableEncountered(PRIVATE_SELF(TNLURLSessio
             }
             // default: keep the disposition unchanged
         }
-        [self private_handleAuthChallenge:challenge
-                                  session:session
-                                operation:operation
-                       currentDisposition:newDisposition
-           remainingAuthChallengeHandlers:handlers
-                               completion:completion];
+        _private_handleAuthChallenge(self,
+                                     challenge,
+                                     session,
+                                     operation,
+                                     newDisposition,
+                                     handlers,
+                                     completion);
     };
 
     if (currentDisposition) {
@@ -1009,12 +1141,13 @@ willPerformHTTPRedirection:response
         }
     }
 
-    [self private_handleAuthChallenge:challenge
-                              session:session
-                            operation:op ?: (id)[NSNull null]
-                   currentDisposition:nil
-       remainingAuthChallengeHandlers:handlers
-                           completion:completionHandler];
+    _private_handleAuthChallenge(self,
+                                 challenge,
+                                 session,
+                                 op ?: (id)[NSNull null],
+                                 nil /*currentDisposition*/,
+                                 handlers,
+                                 completionHandler);
 }
 
 - (void)URLSession:(NSURLSession *)session
@@ -1697,6 +1830,42 @@ static void TNLMutableParametersStripOverriddenURLSessionProperties(TNLMutablePa
     params[TNLRequestConfigurationPropertyKeyNetworkServiceType] = nil;
 }
 
+static NSArray *_FilterArray(NSArray *source, _FilterBlock filterBlock)
+{
+    NSMutableIndexSet *set = [[NSMutableIndexSet alloc] init];
+    [source enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if (filterBlock(obj)) {
+            [set addIndex:idx];
+        }
+    }];
+
+    if (set.count == 0) {
+        // no matches
+        return nil;
+    }
+
+    if (((set.lastIndex - set.firstIndex) + 1) == set.count) {
+        // contiguous!
+
+        if (set.firstIndex == 0 && set.lastIndex == (source.count - 1)) {
+            // same as source
+            return [source copy];
+        } else {
+            return [source subarrayWithRange:NSMakeRange(set.firstIndex, set.count)];
+        }
+    }
+
+    // non-contiguous
+
+    NSMutableArray *destination = [[NSMutableArray alloc] initWithCapacity:set.count];
+    [source enumerateObjectsAtIndexes:set
+                              options:0
+                           usingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        [destination addObject:obj];
+    }];
+    return [destination copy];
+}
+
 BOOL TNLURLSessionIdentifierIsTaggedForTNL(NSString *identifier)
 {
     return [identifier hasPrefix:[TNLTwitterNetworkLayerURLScheme stringByAppendingString:@"://"]];
@@ -1790,15 +1959,26 @@ static void _ConfigureSessionConfigurationWithRequestConfiguration(NSURLSessionC
     sessionConfig.timeoutIntervalForResource = (requestConfig.attemptTimeout < MIN_TIMER_INTERVAL) ? NSTimeIntervalSince1970 : requestConfig.attemptTimeout;
 }
 
-static NSString * __nullable _ServiceUnavailableBackoffKeyFromURL(const TNLGlobalConfigurationServiceUnavailableBackoffMode mode,
-                                                                  NSURL *URL)
+static NSString * __nullable _BackoffKeyFromURL(const TNLGlobalConfigurationBackoffMode mode,
+                                                NSURL *URL,
+                                                NSString * __nullable host)
 {
+    if (TNLGlobalConfigurationBackoffModeDisabled == mode) {
+        // return early to avoid the lowercase string overhead
+        return nil;
+    }
+
+    if (host) {
+        host = host.lowercaseString;
+    } else {
+        host = URL.host.lowercaseString;
+    }
+
     switch (mode) {
-        case TNLGlobalConfigurationServiceUnavailableBackoffModeKeyOffHost:
-            return [URL.host lowercaseString];
-        case TNLGlobalConfigurationServiceUnavailableBackoffModeKeyOffHostAndPath:
+        case TNLGlobalConfigurationBackoffModeKeyOffHost:
+            return host;
+        case TNLGlobalConfigurationBackoffModeKeyOffHostAndPath:
         {
-            NSString *host = [URL.host lowercaseString];
             NSString *path = [URL.path lowercaseString];
             const BOOL pathPrefixedWithSlash = [path hasPrefix:@"/"];
 
@@ -1815,7 +1995,7 @@ static NSString * __nullable _ServiceUnavailableBackoffKeyFromURL(const TNLGloba
 
             return [NSString stringWithFormat:@"%@%@%@", host, (pathPrefixedWithSlash) ? @"" : @"/", path];
         }
-        case TNLGlobalConfigurationServiceUnavailableBackoffModeDisabled:
+        case TNLGlobalConfigurationBackoffModeDisabled:
             return nil;
     }
 
@@ -1834,28 +2014,23 @@ static void _PrepareSessionManagement()
         sSynchronizeOperationQueue = [[NSOperationQueue alloc] init];
         sSynchronizeOperationQueue.name = @"TNLURLSessionManager.synchronize.operation.queue";
         sSynchronizeOperationQueue.maxConcurrentOperationCount = 1;
-        if ([sSynchronizeOperationQueue respondsToSelector:@selector(setQualityOfService:)]) {
-            sSynchronizeOperationQueue.qualityOfService = (NSQualityOfServiceUtility + NSQualityOfServiceUserInitiated / 2);
-        }
-        if ([sSynchronizeOperationQueue respondsToSelector:@selector(setUnderlyingQueue:)]) {
-            sSynchronizeOperationQueue.underlyingQueue = sSynchronizeQueue;
-            sSynchronizeOperationQueueIsBackedBySynchronizeQueue = YES;
-        }
+        sSynchronizeOperationQueue.qualityOfService = (NSQualityOfServiceUtility + NSQualityOfServiceUserInitiated / 2);
+        sSynchronizeOperationQueue.underlyingQueue = sSynchronizeQueue;
         sURLSessionTaskOperationQueue = [[NSOperationQueue alloc] init];
         sURLSessionTaskOperationQueue.name = @"TNLURLSessionManager.task.operation.queue";
         sURLSessionTaskOperationQueue.maxConcurrentOperationCount = NSOperationQueueDefaultMaxConcurrentOperationCount;
-        if ([sURLSessionTaskOperationQueue respondsToSelector:@selector(setQualityOfService:)]) {
-            sURLSessionTaskOperationQueue.qualityOfService = (NSQualityOfServiceUtility + NSQualityOfServiceUserInitiated / 2);
-        }
+        sURLSessionTaskOperationQueue.qualityOfService = (NSQualityOfServiceUtility + NSQualityOfServiceUserInitiated / 2);
 
         // State
 
         sOutstandingBackoffOperations = [[NSMutableDictionary alloc] init];
+        sOutstandingSerializeOperations = [[NSMutableDictionary alloc] init];
         sSessionContextsDelegate = [[TNLURLSessionContextLRUCacheDelegate alloc] init];
         sAppSessionContexts = [[TNLLRUCache alloc] initWithEntries:nil delegate:sSessionContextsDelegate];
         sBackgroundSessionContexts = [[TNLLRUCache alloc] initWithEntries:nil delegate:sSessionContextsDelegate];
         sActiveURLSessionTaskOperations = [[NSMutableSet alloc] init];
         sBackgroundSessionCompletionHandlerDictionary = [[NSMutableDictionary alloc] init];
+        sBackoffBehaviorProvider = [[TNLSimpleBackoffBehaviorProvider alloc] init];
     });
 }
 

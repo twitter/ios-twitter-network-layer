@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 12/7/17.
-//  Copyright © 2017 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #include <stdatomic.h>
@@ -66,7 +66,9 @@ NS_ASSUME_NONNULL_BEGIN
 
     if (_timeoutDuration > 0.0) {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_timeoutDuration * NSEC_PER_SEC)), dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
-            _complete(self);
+            @autoreleasepool {
+                _complete(self);
+            }
         });
     } else {
         _complete(self);

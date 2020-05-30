@@ -65,6 +65,9 @@
 		8B490DDD22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B490DD622A82B9D002D2296 /* NSCoder+TNLAdditions.m */; };
 		8B490DDE22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B490DD622A82B9D002D2296 /* NSCoder+TNLAdditions.m */; };
 		8B4AA7621E1F297C00BF7EA0 /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B4AA75D1E1F28DF00BF7EA0 /* CoreTelephony.framework */; };
+		8B4AF738245A359A00ABB8D5 /* TNLCommunicationAgentTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B4AF737245A359A00ABB8D5 /* TNLCommunicationAgentTest.m */; };
+		8B4AF739245A359A00ABB8D5 /* TNLCommunicationAgentTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B4AF737245A359A00ABB8D5 /* TNLCommunicationAgentTest.m */; };
+		8B4AF73A245A359A00ABB8D5 /* TNLCommunicationAgentTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B4AF737245A359A00ABB8D5 /* TNLCommunicationAgentTest.m */; };
 		8B4CBEA91A169A6800230318 /* TNLRequestRetryPolicyConfigurationTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B4CBEA81A169A6800230318 /* TNLRequestRetryPolicyConfigurationTest.m */; };
 		8B4DEFF91986AA64008A31EB /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B4DEFF81986AA64008A31EB /* SystemConfiguration.framework */; };
 		8B4DEFFC1986AE55008A31EB /* TNLURLCoding.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B4DEFFA1986AE55008A31EB /* TNLURLCoding.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -102,6 +105,8 @@
 		8B84348A1A13B8E500D006DA /* TNLResponseTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B8434891A13B8E500D006DA /* TNLResponseTest.m */; };
 		8B84348C1A13BF3C00D006DA /* TNLRequestOperationTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B84348B1A13BF3C00D006DA /* TNLRequestOperationTest.m */; };
 		8B84348E1A1509F500D006DA /* NSURLCache+TNLAdditionsTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B84348D1A1509F500D006DA /* NSURLCache+TNLAdditionsTest.m */; };
+		8B84E5C0232AC621001CC260 /* TNLCLIExecution.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B84E5BF232AC621001CC260 /* TNLCLIExecution.m */; };
+		8B84E5C3232ACB10001CC260 /* TNLCLIPrint.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B84E5C2232ACB10001CC260 /* TNLCLIPrint.m */; };
 		8B86BF3A1A2D0998005AE96B /* TNLGlobalConfiguration_Project.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B86BF381A2D0998005AE96B /* TNLGlobalConfiguration_Project.h */; };
 		8B879D8619F1B5F500FE95FF /* TAPIRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B879D8519F1B5F500FE95FF /* TAPIRequest.m */; };
 		8B879D8919F1B74E00FE95FF /* TAPIError.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B879D8819F1B74E00FE95FF /* TAPIError.m */; };
@@ -251,6 +256,10 @@
 		8BB26ABB1D8B142E00D1AB5A /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B6DCB4B1974598300235576 /* CFNetwork.framework */; };
 		8BB26ABC1D8B143900D1AB5A /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B6DCB491974583B00235576 /* UIKit.framework */; };
 		8BB8B87D1A1E710E0093AE63 /* TNLRequestDelegate.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BB8B87B1A1E710E0093AE63 /* TNLRequestDelegate.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8BBF551323297F3900C94709 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BBF551223297F3900C94709 /* main.m */; };
+		8BBF551923297F5800C94709 /* TwitterNetworkLayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF4AA13B1EE61D47001647B5 /* TwitterNetworkLayer.framework */; };
+		8BBF551C23297FEE00C94709 /* TNLCLIExecutionContext.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BBF551B23297FEE00C94709 /* TNLCLIExecutionContext.m */; };
+		8BBF551F232980FC00C94709 /* TNLCLIError.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BBF551E232980FC00C94709 /* TNLCLIError.m */; };
 		8BC1AC3D19A27559008687EE /* TNLXImageSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BC1AC3C19A27559008687EE /* TNLXImageSupport.m */; };
 		8BCA626419C356AE00F3F8CA /* TNLRequestOperationState.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BCA626319C356AE00F3F8CA /* TNLRequestOperationState.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BCAF8C519F716370043EB22 /* TNLRequestOperationCancelSource.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BCAF8C319F716370043EB22 /* TNLRequestOperationCancelSource.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -266,6 +275,9 @@
 		8BD500E71D8765F200D828C7 /* TNLURLStringCoding.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BD500E61D8765F200D828C7 /* TNLURLStringCoding.m */; };
 		8BD500F51D87762200D828C7 /* TNL_ProjectCommon.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BD500F31D87762200D828C7 /* TNL_ProjectCommon.h */; };
 		8BD500F61D87762200D828C7 /* TNL_ProjectCommon.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BD500F41D87762200D828C7 /* TNL_ProjectCommon.m */; };
+		8BD5F4C42331DE3A00C46FAA /* TNLCLIUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BD5F4C32331DE3A00C46FAA /* TNLCLIUtils.m */; };
+		8BD5F4C72331DF6800C46FAA /* TNLGlobalConfiguration+TNLCLI.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BD5F4C62331DF6800C46FAA /* TNLGlobalConfiguration+TNLCLI.m */; };
+		8BD5F4CA2331E0ED00C46FAA /* TNLMutableRequestConfiguration+TNLCLI.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BD5F4C92331E0ED00C46FAA /* TNLMutableRequestConfiguration+TNLCLI.m */; };
 		8BD8715D22AD82360011DACA /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BCC9EEF22AC36C400A5D1C8 /* Network.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		8BD8715E22AD823A0011DACA /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BCC9EEF22AC36C400A5D1C8 /* Network.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		8BDA9D2D197881DE00678D90 /* TNLError.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BDA9D2B197881DE00678D90 /* TNLError.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -276,11 +288,18 @@
 		8BDB97E31D24D28700861951 /* TwitterNetworkLayer.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8BE402C61946743D00C7241E /* TwitterNetworkLayer.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8BDC0E3C1BDFE15C0077F8FC /* TNLLRUCache.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BDC0E391BDFE15C0077F8FC /* TNLLRUCache.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BDC0E3E1BDFE15C0077F8FC /* TNLLRUCache.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDC0E3A1BDFE15C0077F8FC /* TNLLRUCache.m */; };
+		8BDC839E243408E70001BA82 /* TNLBackoff.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BDC839D243408E70001BA82 /* TNLBackoff.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8BDC839F243408E70001BA82 /* TNLBackoff.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BDC839D243408E70001BA82 /* TNLBackoff.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8BDC83A0243408E70001BA82 /* TNLBackoff.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BDC839D243408E70001BA82 /* TNLBackoff.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8BDC83A2243449220001BA82 /* TNLBackoff.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDC83A1243449220001BA82 /* TNLBackoff.m */; };
+		8BDC83A3243449220001BA82 /* TNLBackoff.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDC83A1243449220001BA82 /* TNLBackoff.m */; };
+		8BDC83A4243449220001BA82 /* TNLBackoff.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDC83A1243449220001BA82 /* TNLBackoff.m */; };
+		8BDC83A5243449220001BA82 /* TNLBackoff.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDC83A1243449220001BA82 /* TNLBackoff.m */; };
+		8BDC83A6243449280001BA82 /* TNLBackoff.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BDC839D243408E70001BA82 /* TNLBackoff.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BDDDF1D19C0D0BB00D7C0CD /* TNLXMultipartFormData.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDDDF1C19C0D0BB00D7C0CD /* TNLXMultipartFormData.m */; };
 		8BDFFC0519814D3100F7F670 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BE402C91946743D00C7241E /* Foundation.framework */; };
 		8BDFFC0719814D3100F7F670 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BDFFC0619814D3100F7F670 /* CoreGraphics.framework */; };
 		8BDFFC0819814D3100F7F670 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B6DCB491974583B00235576 /* UIKit.framework */; };
-		8BDFFC0E19814D3100F7F670 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8BDFFC0C19814D3100F7F670 /* InfoPlist.strings */; };
 		8BDFFC1019814D3100F7F670 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDFFC0F19814D3100F7F670 /* main.m */; };
 		8BDFFC1419814D3100F7F670 /* TNLXAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BDFFC1319814D3100F7F670 /* TNLXAppDelegate.m */; };
 		8BDFFC1719814D3100F7F670 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 8BDFFC1519814D3100F7F670 /* Main.storyboard */; };
@@ -319,6 +338,14 @@
 		8BE68D021B7E421100A0F853 /* NSOperationQueue+TNLSafety.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE68CFE1B7E421100A0F853 /* NSOperationQueue+TNLSafety.m */; };
 		8BE857661DD396B100F79F3D /* NSURLRequest+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE857641DD396B100F79F3D /* NSURLRequest+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BE857671DD396B100F79F3D /* NSURLRequest+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE857651DD396B100F79F3D /* NSURLRequest+TNLAdditions.m */; };
+		8BEB80B224216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BEB80B024216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8BEB80B324216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BEB80B024216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8BEB80B424216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BEB80B024216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8BEB80B524216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BEB80B024216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8BEB80B624216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BEB80B124216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m */; };
+		8BEB80B724216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BEB80B124216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m */; };
+		8BEB80B824216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BEB80B124216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m */; };
+		8BEB80B924216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BEB80B124216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m */; };
 		8BED1FC11A89480C00279141 /* TNLRequestRedirecter.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BED1FBF1A89480C00279141 /* TNLRequestRedirecter.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BEE98C31ADC5E3100A58A92 /* TNLHTTPHeaderProvider.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BEE98C11ADC5E3100A58A92 /* TNLHTTPHeaderProvider.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BF3D2B71A76EAF800DABD9D /* TNLXNetworkHeuristicObserver.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BF3D2B61A76EAF700DABD9D /* TNLXNetworkHeuristicObserver.m */; };
@@ -656,6 +683,13 @@
 			remoteGlobalIDString = 8BFDF90C2135AB2C002F6A80;
 			remoteInfo = "TwitterNetworkLayer tvOS";
 		};
+		8BBF551723297F4E00C94709 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8BE402BE1946743D00C7241E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BF4AA0C01EE61D46001647B5;
+			remoteInfo = "TwitterNetworkLayer macOS";
+		};
 		BF4765F81EEEFC5B00A23506 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8BE402BE1946743D00C7241E /* Project object */;
@@ -666,6 +700,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		8BBF550E23297F3900C94709 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		8BDB97E71D24D28800861951 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -732,6 +775,8 @@
 		8B490DD522A82B9D002D2296 /* NSCoder+TNLAdditions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSCoder+TNLAdditions.h"; sourceTree = "<group>"; };
 		8B490DD622A82B9D002D2296 /* NSCoder+TNLAdditions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSCoder+TNLAdditions.m"; sourceTree = "<group>"; };
 		8B4AA75D1E1F28DF00BF7EA0 /* CoreTelephony.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreTelephony.framework; path = System/Library/Frameworks/CoreTelephony.framework; sourceTree = SDKROOT; };
+		8B4AF736245A341E00ABB8D5 /* TNLExample.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TNLExample.entitlements; sourceTree = "<group>"; };
+		8B4AF737245A359A00ABB8D5 /* TNLCommunicationAgentTest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TNLCommunicationAgentTest.m; sourceTree = "<group>"; };
 		8B4CBEA81A169A6800230318 /* TNLRequestRetryPolicyConfigurationTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLRequestRetryPolicyConfigurationTest.m; sourceTree = "<group>"; };
 		8B4DEFF81986AA64008A31EB /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		8B4DEFFA1986AE55008A31EB /* TNLURLCoding.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLURLCoding.h; sourceTree = "<group>"; };
@@ -771,6 +816,10 @@
 		8B8434891A13B8E500D006DA /* TNLResponseTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLResponseTest.m; sourceTree = "<group>"; };
 		8B84348B1A13BF3C00D006DA /* TNLRequestOperationTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLRequestOperationTest.m; sourceTree = "<group>"; };
 		8B84348D1A1509F500D006DA /* NSURLCache+TNLAdditionsTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSURLCache+TNLAdditionsTest.m"; sourceTree = "<group>"; };
+		8B84E5BE232AC621001CC260 /* TNLCLIExecution.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TNLCLIExecution.h; sourceTree = "<group>"; };
+		8B84E5BF232AC621001CC260 /* TNLCLIExecution.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TNLCLIExecution.m; sourceTree = "<group>"; };
+		8B84E5C1232ACB10001CC260 /* TNLCLIPrint.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TNLCLIPrint.h; sourceTree = "<group>"; };
+		8B84E5C2232ACB10001CC260 /* TNLCLIPrint.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TNLCLIPrint.m; sourceTree = "<group>"; };
 		8B86BF381A2D0998005AE96B /* TNLGlobalConfiguration_Project.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLGlobalConfiguration_Project.h; sourceTree = "<group>"; };
 		8B879D8419F1B5F500FE95FF /* TAPIRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TAPIRequest.h; path = TAPI/TAPIRequest.h; sourceTree = "<group>"; };
 		8B879D8519F1B5F500FE95FF /* TAPIRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TAPIRequest.m; path = TAPI/TAPIRequest.m; sourceTree = "<group>"; };
@@ -805,6 +854,12 @@
 		8BB1190D1D83537C00E75CD9 /* NSData+TNLAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+TNLAdditions.h"; sourceTree = "<group>"; };
 		8BB1190E1D83537C00E75CD9 /* NSData+TNLAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+TNLAdditions.m"; sourceTree = "<group>"; };
 		8BB8B87B1A1E710E0093AE63 /* TNLRequestDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLRequestDelegate.h; sourceTree = "<group>"; };
+		8BBF551023297F3900C94709 /* tnlcli */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = tnlcli; sourceTree = BUILT_PRODUCTS_DIR; };
+		8BBF551223297F3900C94709 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		8BBF551A23297FEE00C94709 /* TNLCLIExecutionContext.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TNLCLIExecutionContext.h; sourceTree = "<group>"; };
+		8BBF551B23297FEE00C94709 /* TNLCLIExecutionContext.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TNLCLIExecutionContext.m; sourceTree = "<group>"; };
+		8BBF551D232980FC00C94709 /* TNLCLIError.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TNLCLIError.h; sourceTree = "<group>"; };
+		8BBF551E232980FC00C94709 /* TNLCLIError.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TNLCLIError.m; sourceTree = "<group>"; };
 		8BC1AC3B19A27559008687EE /* TNLXImageSupport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLXImageSupport.h; sourceTree = "<group>"; };
 		8BC1AC3C19A27559008687EE /* TNLXImageSupport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLXImageSupport.m; sourceTree = "<group>"; };
 		8BCA626319C356AE00F3F8CA /* TNLRequestOperationState.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLRequestOperationState.h; sourceTree = "<group>"; };
@@ -820,18 +875,25 @@
 		8BD500E61D8765F200D828C7 /* TNLURLStringCoding.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLURLStringCoding.m; sourceTree = "<group>"; };
 		8BD500F31D87762200D828C7 /* TNL_ProjectCommon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNL_ProjectCommon.h; sourceTree = "<group>"; };
 		8BD500F41D87762200D828C7 /* TNL_ProjectCommon.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNL_ProjectCommon.m; sourceTree = "<group>"; };
+		8BD5F4C22331DE3A00C46FAA /* TNLCLIUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TNLCLIUtils.h; sourceTree = "<group>"; };
+		8BD5F4C32331DE3A00C46FAA /* TNLCLIUtils.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TNLCLIUtils.m; sourceTree = "<group>"; };
+		8BD5F4C52331DF6800C46FAA /* TNLGlobalConfiguration+TNLCLI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TNLGlobalConfiguration+TNLCLI.h"; sourceTree = "<group>"; };
+		8BD5F4C62331DF6800C46FAA /* TNLGlobalConfiguration+TNLCLI.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "TNLGlobalConfiguration+TNLCLI.m"; sourceTree = "<group>"; };
+		8BD5F4C82331E0ED00C46FAA /* TNLMutableRequestConfiguration+TNLCLI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TNLMutableRequestConfiguration+TNLCLI.h"; sourceTree = "<group>"; };
+		8BD5F4C92331E0ED00C46FAA /* TNLMutableRequestConfiguration+TNLCLI.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "TNLMutableRequestConfiguration+TNLCLI.m"; sourceTree = "<group>"; };
 		8BDA9D2B197881DE00678D90 /* TNLError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLError.h; sourceTree = "<group>"; };
 		8BDA9D2C197881DE00678D90 /* TNLError.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLError.m; sourceTree = "<group>"; };
 		8BDA9D311978822300678D90 /* TNLPriority.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLPriority.h; sourceTree = "<group>"; };
 		8BDA9D321978822300678D90 /* TNLPriority.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLPriority.m; sourceTree = "<group>"; };
 		8BDC0E391BDFE15C0077F8FC /* TNLLRUCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLLRUCache.h; sourceTree = "<group>"; };
 		8BDC0E3A1BDFE15C0077F8FC /* TNLLRUCache.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLLRUCache.m; sourceTree = "<group>"; };
+		8BDC839D243408E70001BA82 /* TNLBackoff.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TNLBackoff.h; sourceTree = "<group>"; };
+		8BDC83A1243449220001BA82 /* TNLBackoff.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLBackoff.m; sourceTree = "<group>"; };
 		8BDDDF1B19C0D0BB00D7C0CD /* TNLXMultipartFormData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLXMultipartFormData.h; sourceTree = "<group>"; };
 		8BDDDF1C19C0D0BB00D7C0CD /* TNLXMultipartFormData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLXMultipartFormData.m; sourceTree = "<group>"; };
 		8BDFFC0419814D3100F7F670 /* TNLExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TNLExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8BDFFC0619814D3100F7F670 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		8BDFFC0B19814D3100F7F670 /* TNLExample-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TNLExample-Info.plist"; sourceTree = "<group>"; };
-		8BDFFC0D19814D3100F7F670 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		8BDFFC0F19814D3100F7F670 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		8BDFFC1219814D3100F7F670 /* TNLXAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TNLXAppDelegate.h; sourceTree = "<group>"; };
 		8BDFFC1319814D3100F7F670 /* TNLXAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TNLXAppDelegate.m; sourceTree = "<group>"; };
@@ -872,6 +934,8 @@
 		8BE68CFE1B7E421100A0F853 /* NSOperationQueue+TNLSafety.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSOperationQueue+TNLSafety.m"; sourceTree = "<group>"; };
 		8BE857641DD396B100F79F3D /* NSURLRequest+TNLAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSURLRequest+TNLAdditions.h"; sourceTree = "<group>"; };
 		8BE857651DD396B100F79F3D /* NSURLRequest+TNLAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSURLRequest+TNLAdditions.m"; sourceTree = "<group>"; };
+		8BEB80B024216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSURLAuthenticationChallenge+TNLAdditions.h"; sourceTree = "<group>"; };
+		8BEB80B124216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSURLAuthenticationChallenge+TNLAdditions.m"; sourceTree = "<group>"; };
 		8BED1FBF1A89480C00279141 /* TNLRequestRedirecter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLRequestRedirecter.h; sourceTree = "<group>"; };
 		8BEE98C11ADC5E3100A58A92 /* TNLHTTPHeaderProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLHTTPHeaderProvider.h; sourceTree = "<group>"; };
 		8BF3D2B51A76EAF700DABD9D /* TNLXNetworkHeuristicObserver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLXNetworkHeuristicObserver.h; sourceTree = "<group>"; };
@@ -903,6 +967,14 @@
 				8B9EBDE82135B4B100E6E466 /* Foundation.framework in Frameworks */,
 				8B9EBDE92135B4B100E6E466 /* Security.framework in Frameworks */,
 				8B9EBDEB2135B4B100E6E466 /* UIKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8BBF550D23297F3900C94709 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8BBF551923297F5800C94709 /* TwitterNetworkLayer.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1079,6 +1151,28 @@
 			name = Private;
 			sourceTree = "<group>";
 		};
+		8BBF551123297F3900C94709 /* TNLCLI */ = {
+			isa = PBXGroup;
+			children = (
+				8BBF551223297F3900C94709 /* main.m */,
+				8BBF551D232980FC00C94709 /* TNLCLIError.h */,
+				8BBF551E232980FC00C94709 /* TNLCLIError.m */,
+				8B84E5BE232AC621001CC260 /* TNLCLIExecution.h */,
+				8B84E5BF232AC621001CC260 /* TNLCLIExecution.m */,
+				8BBF551A23297FEE00C94709 /* TNLCLIExecutionContext.h */,
+				8BBF551B23297FEE00C94709 /* TNLCLIExecutionContext.m */,
+				8B84E5C1232ACB10001CC260 /* TNLCLIPrint.h */,
+				8B84E5C2232ACB10001CC260 /* TNLCLIPrint.m */,
+				8BD5F4C22331DE3A00C46FAA /* TNLCLIUtils.h */,
+				8BD5F4C32331DE3A00C46FAA /* TNLCLIUtils.m */,
+				8BD5F4C52331DF6800C46FAA /* TNLGlobalConfiguration+TNLCLI.h */,
+				8BD5F4C62331DF6800C46FAA /* TNLGlobalConfiguration+TNLCLI.m */,
+				8BD5F4C82331E0ED00C46FAA /* TNLMutableRequestConfiguration+TNLCLI.h */,
+				8BD5F4C92331E0ED00C46FAA /* TNLMutableRequestConfiguration+TNLCLI.m */,
+			);
+			path = TNLCLI;
+			sourceTree = "<group>";
+		};
 		8BDFFC0919814D3100F7F670 /* TNLExample */ = {
 			isa = PBXGroup;
 			children = (
@@ -1087,6 +1181,7 @@
 				8BDFFC1519814D3100F7F670 /* Main.storyboard */,
 				8BDFFC0A19814D3100F7F670 /* Supporting Files */,
 				8B879D8019F1B5CB00FE95FF /* TAPI */,
+				8B4AF736245A341E00ABB8D5 /* TNLExample.entitlements */,
 				8BDFFC1219814D3100F7F670 /* TNLXAppDelegate.h */,
 				8BDFFC1319814D3100F7F670 /* TNLXAppDelegate.m */,
 				8B2EC95019B13F1700EE8816 /* TNLXDummy.h */,
@@ -1109,7 +1204,6 @@
 			isa = PBXGroup;
 			children = (
 				8BDFFC0B19814D3100F7F670 /* TNLExample-Info.plist */,
-				8BDFFC0C19814D3100F7F670 /* InfoPlist.strings */,
 				8BDFFC0F19814D3100F7F670 /* main.m */,
 			);
 			name = "Supporting Files";
@@ -1125,6 +1219,7 @@
 				8BE402C71946743D00C7241E /* Products */,
 				8B109D6B20B63F15000D10AA /* README.md */,
 				8BE402CB1946743E00C7241E /* Source */,
+				8BBF551123297F3900C94709 /* TNLCLI */,
 				8BDFFC0919814D3100F7F670 /* TNLExample */,
 				8BE402DF1946743E00C7241E /* TwitterNetworkLayerTests */,
 			);
@@ -1141,6 +1236,7 @@
 				8BFDF98D2135AB2C002F6A80 /* TwitterNetworkLayer.framework */,
 				8BFDF9BD2135ACDB002F6A80 /* TwitterNetworkLayerTests tvOS.xctest */,
 				8B9EBE362135B4B100E6E466 /* TwitterNetworkLayer.framework */,
+				8BBF551023297F3900C94709 /* tnlcli */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1187,6 +1283,8 @@
 				8BE68CFE1B7E421100A0F853 /* NSOperationQueue+TNLSafety.m */,
 				8B87BA3D1E09DA20005A8926 /* NSURL+TNLAdditions.h */,
 				8B87BA3E1E09DA20005A8926 /* NSURL+TNLAdditions.m */,
+				8BEB80B024216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h */,
+				8BEB80B124216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m */,
 				8B8434831A13B77700D006DA /* NSURLCache+TNLAdditions.h */,
 				8B8434841A13B77700D006DA /* NSURLCache+TNLAdditions.m */,
 				8BA336D81A3271A0005D7B35 /* NSURLCredentialStorage+TNLAdditions.h */,
@@ -1208,6 +1306,8 @@
 				8BF953DC1A67DD3F00E9C1AA /* TNLAttemptMetrics.m */,
 				8B153161207D1DA400A1288F /* TNLAuthenticationChallengeHandler.h */,
 				8B2924BC1992E42900AC139A /* TNLBackgroundURLSessionTaskOperationManager.m */,
+				8BDC839D243408E70001BA82 /* TNLBackoff.h */,
+				8BDC83A1243449220001BA82 /* TNLBackoff.m */,
 				8B00D5A91CFF512100D1728D /* TNLCommunicationAgent.h */,
 				8B00D5AA1CFF512100D1728D /* TNLCommunicationAgent.m */,
 				8B6E34241DE0B755004A35C7 /* TNLContentCoding.h */,
@@ -1283,6 +1383,7 @@
 				8BE402E01946743E00C7241E /* Supporting Files */,
 				5C7E65741B0298670037AD91 /* TNLAttemptMetaDataTest.m */,
 				8B68AA5C1D95BF2E00AFD0C8 /* TNLAutoDependencyTest.m */,
+				8B4AF737245A359A00ABB8D5 /* TNLCommunicationAgentTest.m */,
 				8B6E34261DE35F71004A35C7 /* TNLContentEncodingTests.m */,
 				8B986C641BE3EF1D0053BB14 /* TNLHTTPTests.m */,
 				8B8A684219FF13F0008623E8 /* TNLNetworkTests.m */,
@@ -1354,6 +1455,7 @@
 				8B9EBE0B2135B4B100E6E466 /* TNL_ProjectCommon.h in Headers */,
 				8B9EBE0C2135B4B100E6E466 /* TNLNetworkObserver.h in Headers */,
 				8B9EBE0D2135B4B100E6E466 /* TNLTiming.h in Headers */,
+				8BEB80B524216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h in Headers */,
 				8B9EBE0E2135B4B100E6E466 /* TNLRequestOperationCancelSource.h in Headers */,
 				8B9EBE0F2135B4B100E6E466 /* TNLError.h in Headers */,
 				8B9EBE102135B4B100E6E466 /* TNLAttemptMetrics_Project.h in Headers */,
@@ -1382,6 +1484,7 @@
 				8B9EBE272135B4B100E6E466 /* TNLRequestOperationQueue.h in Headers */,
 				8B9EBE282135B4B100E6E466 /* TNLRequestOperationState.h in Headers */,
 				8B9EBE292135B4B100E6E466 /* TNLRequestRedirecter.h in Headers */,
+				8BDC83A6243449280001BA82 /* TNLBackoff.h in Headers */,
 				8B9EBE2A2135B4B100E6E466 /* TNLCommunicationAgent_Project.h in Headers */,
 				8B9EBE2B2135B4B100E6E466 /* TNLNetwork.h in Headers */,
 				8B9EBE2C2135B4B100E6E466 /* TNLResponse_Project.h in Headers */,
@@ -1430,6 +1533,7 @@
 				8BD500F51D87762200D828C7 /* TNL_ProjectCommon.h in Headers */,
 				8B82A5A71948D3E900A16237 /* TNLNetworkObserver.h in Headers */,
 				8B5141231CE530E100830987 /* TNLTiming.h in Headers */,
+				8BEB80B224216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h in Headers */,
 				8BCAF8C519F716370043EB22 /* TNLRequestOperationCancelSource.h in Headers */,
 				8BDA9D2D197881DE00678D90 /* TNLError.h in Headers */,
 				8BF953E31A67E73E00E9C1AA /* TNLAttemptMetrics_Project.h in Headers */,
@@ -1456,6 +1560,7 @@
 				8B86BF3A1A2D0998005AE96B /* TNLGlobalConfiguration_Project.h in Headers */,
 				8B9038E219799D7C001A3DDD /* TNLTemporaryFile_Project.h in Headers */,
 				8BE403211946794300C7241E /* TNLRequestOperationQueue.h in Headers */,
+				8BDC839E243408E70001BA82 /* TNLBackoff.h in Headers */,
 				8BCA626419C356AE00F3F8CA /* TNLRequestOperationState.h in Headers */,
 				8BED1FC11A89480C00279141 /* TNLRequestRedirecter.h in Headers */,
 				8B5DBBFE206D8F9D007EF65B /* TNLCommunicationAgent_Project.h in Headers */,
@@ -1506,6 +1611,7 @@
 				8BFDF9622135AB2C002F6A80 /* TNL_ProjectCommon.h in Headers */,
 				8BFDF9632135AB2C002F6A80 /* TNLNetworkObserver.h in Headers */,
 				8BFDF9642135AB2C002F6A80 /* TNLTiming.h in Headers */,
+				8BEB80B424216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h in Headers */,
 				8BFDF9652135AB2C002F6A80 /* TNLRequestOperationCancelSource.h in Headers */,
 				8BFDF9662135AB2C002F6A80 /* TNLError.h in Headers */,
 				8BFDF9672135AB2C002F6A80 /* TNLAttemptMetrics_Project.h in Headers */,
@@ -1532,6 +1638,7 @@
 				8BFDF97C2135AB2C002F6A80 /* TNLGlobalConfiguration_Project.h in Headers */,
 				8BFDF97D2135AB2C002F6A80 /* TNLTemporaryFile_Project.h in Headers */,
 				8BFDF97E2135AB2C002F6A80 /* TNLRequestOperationQueue.h in Headers */,
+				8BDC83A0243408E70001BA82 /* TNLBackoff.h in Headers */,
 				8BFDF97F2135AB2C002F6A80 /* TNLRequestOperationState.h in Headers */,
 				8BFDF9802135AB2C002F6A80 /* TNLRequestRedirecter.h in Headers */,
 				8BFDF9812135AB2C002F6A80 /* TNLCommunicationAgent_Project.h in Headers */,
@@ -1598,6 +1705,7 @@
 				BF4AA1241EE61D46001647B5 /* NSURLResponse+TNLAdditions.h in Headers */,
 				BF4AA1251EE61D46001647B5 /* TNLURLCoding.h in Headers */,
 				BF4AA1261EE61D46001647B5 /* TNLPseudoURLProtocol.h in Headers */,
+				8BEB80B324216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h in Headers */,
 				BF4AA1271EE61D46001647B5 /* TNLLogger.h in Headers */,
 				8BD083CB1FD9C20E0090B7C3 /* TNLTimeoutOperation.h in Headers */,
 				BF4AA1281EE61D46001647B5 /* TwitterNetworkLayer.h in Headers */,
@@ -1613,6 +1721,7 @@
 				BF4AA1311EE61D46001647B5 /* TNLNetwork.h in Headers */,
 				BF4AA1321EE61D46001647B5 /* TNLResponse_Project.h in Headers */,
 				BF4AA1331EE61D46001647B5 /* TNLLRUCache.h in Headers */,
+				8BDC839F243408E70001BA82 /* TNLBackoff.h in Headers */,
 				8B153163207D1DA400A1288F /* TNLAuthenticationChallengeHandler.h in Headers */,
 				BF4AA1341EE61D46001647B5 /* TNLRequestConfiguration_Project.h in Headers */,
 				BF4AA1351EE61D46001647B5 /* NSURL+TNLAdditions.h in Headers */,
@@ -1640,6 +1749,24 @@
 			productName = TwitterNetworkLayer;
 			productReference = 8B9EBE362135B4B100E6E466 /* TwitterNetworkLayer.framework */;
 			productType = "com.apple.product-type.framework";
+		};
+		8BBF550F23297F3900C94709 /* tnlcli */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8BBF551623297F3900C94709 /* Build configuration list for PBXNativeTarget "tnlcli" */;
+			buildPhases = (
+				8BBF550C23297F3900C94709 /* Sources */,
+				8BBF550D23297F3900C94709 /* Frameworks */,
+				8BBF550E23297F3900C94709 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8BBF551823297F4E00C94709 /* PBXTargetDependency */,
+			);
+			name = tnlcli;
+			productName = TNLCLI;
+			productReference = 8BBF551023297F3900C94709 /* tnlcli */;
+			productType = "com.apple.product-type.tool";
 		};
 		8BDFFC0319814D3100F7F670 /* TNLExample */ = {
 			isa = PBXNativeTarget;
@@ -1772,11 +1899,15 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = TNL;
-				LastUpgradeCheck = 1030;
+				LastUpgradeCheck = 1140;
 				ORGANIZATIONNAME = Twitter;
 				TargetAttributes = {
 					8B9EBDB52135B4B100E6E466 = {
 						ProvisioningStyle = Manual;
+					};
+					8BBF550F23297F3900C94709 = {
+						CreatedOnToolsVersion = 11.0;
+						ProvisioningStyle = Automatic;
 					};
 					8BDFFC0319814D3100F7F670 = {
 						ProvisioningStyle = Manual;
@@ -1823,6 +1954,7 @@
 				8BFDF90C2135AB2C002F6A80 /* TwitterNetworkLayer tvOS */,
 				8BFDF98F2135ACDB002F6A80 /* TwitterNetworkLayerTests tvOS */,
 				8B9EBDB52135B4B100E6E466 /* TwitterNetworkLayer watchOS */,
+				8BBF550F23297F3900C94709 /* tnlcli */,
 			);
 		};
 /* End PBXProject section */
@@ -1833,7 +1965,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				8BDFFC1F19814D3100F7F670 /* Images.xcassets in Resources */,
-				8BDFFC0E19814D3100F7F670 /* InfoPlist.strings in Resources */,
 				8BDFFC1719814D3100F7F670 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1899,6 +2030,7 @@
 				8B9EBDCC2135B4B100E6E466 /* NSCachedURLResponse+TNLAdditions.m in Sources */,
 				8B9EBDCD2135B4B100E6E466 /* TNLLRUCache.m in Sources */,
 				8B9EBDCE2135B4B100E6E466 /* TNLParameterCollection.m in Sources */,
+				8BDC83A5243449220001BA82 /* TNLBackoff.m in Sources */,
 				8B9EBDCF2135B4B100E6E466 /* TNLPseudoURLProtocol.m in Sources */,
 				8B9EBDD02135B4B100E6E466 /* TNL_ProjectCommon.m in Sources */,
 				8B9EBDD12135B4B100E6E466 /* TNLPriority.m in Sources */,
@@ -1910,6 +2042,7 @@
 				8B9EBDD62135B4B100E6E466 /* TNLAttemptMetrics.m in Sources */,
 				8B9EBDD72135B4B100E6E466 /* TNLCommunicationAgent.m in Sources */,
 				8B9EBDD82135B4B100E6E466 /* TNLTemporaryFile.m in Sources */,
+				8BEB80B924216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m in Sources */,
 				8B9EBDD92135B4B100E6E466 /* TNLRequestOperationQueue.m in Sources */,
 				8B9EBDDA2135B4B100E6E466 /* TNLHTTP.m in Sources */,
 				8B9EBDDB2135B4B100E6E466 /* TNLError.m in Sources */,
@@ -1920,6 +2053,21 @@
 				8B9EBDE02135B4B100E6E466 /* TNLBackgroundURLSessionTaskOperationManager.m in Sources */,
 				8B9EBDE12135B4B100E6E466 /* TNLTimeoutOperation.m in Sources */,
 				8B9EBDE22135B4B100E6E466 /* TNLRequestOperationCancelSource.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8BBF550C23297F3900C94709 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8BBF551C23297FEE00C94709 /* TNLCLIExecutionContext.m in Sources */,
+				8BBF551323297F3900C94709 /* main.m in Sources */,
+				8B84E5C0232AC621001CC260 /* TNLCLIExecution.m in Sources */,
+				8BBF551F232980FC00C94709 /* TNLCLIError.m in Sources */,
+				8BD5F4CA2331E0ED00C46FAA /* TNLMutableRequestConfiguration+TNLCLI.m in Sources */,
+				8BD5F4C72331DF6800C46FAA /* TNLGlobalConfiguration+TNLCLI.m in Sources */,
+				8B84E5C3232ACB10001CC260 /* TNLCLIPrint.m in Sources */,
+				8BD5F4C42331DE3A00C46FAA /* TNLCLIUtils.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1976,6 +2124,7 @@
 				8B277E4C1C022B5C00279EA9 /* NSCachedURLResponse+TNLAdditions.m in Sources */,
 				8BDC0E3E1BDFE15C0077F8FC /* TNLLRUCache.m in Sources */,
 				8B4E017219FB0632004D3CED /* TNLParameterCollection.m in Sources */,
+				8BDC83A2243449220001BA82 /* TNLBackoff.m in Sources */,
 				8B0AFAA91A018EBE00C8C81F /* TNLPseudoURLProtocol.m in Sources */,
 				8BD500F61D87762200D828C7 /* TNL_ProjectCommon.m in Sources */,
 				8BDA9D351978822300678D90 /* TNLPriority.m in Sources */,
@@ -1987,6 +2136,7 @@
 				8BF953E01A67DD3F00E9C1AA /* TNLAttemptMetrics.m in Sources */,
 				8B00D5AC1CFF512100D1728D /* TNLCommunicationAgent.m in Sources */,
 				8B9038DE19799D4A001A3DDD /* TNLTemporaryFile.m in Sources */,
+				8BEB80B624216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m in Sources */,
 				8BE403221946794300C7241E /* TNLRequestOperationQueue.m in Sources */,
 				8BE4032619467A1400C7241E /* TNLHTTP.m in Sources */,
 				8BDA9D2F197881DE00678D90 /* TNLError.m in Sources */,
@@ -2014,6 +2164,7 @@
 				8B8A683E19FEEB51008623E8 /* TNLParameterCollectionTests.m in Sources */,
 				8B84348C1A13BF3C00D006DA /* TNLRequestOperationTest.m in Sources */,
 				8B84348E1A1509F500D006DA /* NSURLCache+TNLAdditionsTest.m in Sources */,
+				8B4AF738245A359A00ABB8D5 /* TNLCommunicationAgentTest.m in Sources */,
 				8BFF0A6319FFEFED001F42B7 /* NSURLSessionConfiguration+TNLAdditionsTest.m in Sources */,
 				8B5F44861A1903A100720DEA /* TNLXMultipartFormData.m in Sources */,
 				8B4CBEA91A169A6800230318 /* TNLRequestRetryPolicyConfigurationTest.m in Sources */,
@@ -2059,6 +2210,7 @@
 				8BFDF9232135AB2C002F6A80 /* NSCachedURLResponse+TNLAdditions.m in Sources */,
 				8BFDF9242135AB2C002F6A80 /* TNLLRUCache.m in Sources */,
 				8BFDF9252135AB2C002F6A80 /* TNLParameterCollection.m in Sources */,
+				8BDC83A4243449220001BA82 /* TNLBackoff.m in Sources */,
 				8BFDF9262135AB2C002F6A80 /* TNLPseudoURLProtocol.m in Sources */,
 				8BFDF9272135AB2C002F6A80 /* TNL_ProjectCommon.m in Sources */,
 				8BFDF9282135AB2C002F6A80 /* TNLPriority.m in Sources */,
@@ -2070,6 +2222,7 @@
 				8BFDF92D2135AB2C002F6A80 /* TNLAttemptMetrics.m in Sources */,
 				8BFDF92E2135AB2C002F6A80 /* TNLCommunicationAgent.m in Sources */,
 				8BFDF92F2135AB2C002F6A80 /* TNLTemporaryFile.m in Sources */,
+				8BEB80B824216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m in Sources */,
 				8BFDF9302135AB2C002F6A80 /* TNLRequestOperationQueue.m in Sources */,
 				8BFDF9312135AB2C002F6A80 /* TNLHTTP.m in Sources */,
 				8BFDF9322135AB2C002F6A80 /* TNLError.m in Sources */,
@@ -2097,6 +2250,7 @@
 				8BFDF9992135ACDB002F6A80 /* TNLParameterCollectionTests.m in Sources */,
 				8BFDF99A2135ACDB002F6A80 /* TNLRequestOperationTest.m in Sources */,
 				8BFDF99B2135ACDB002F6A80 /* NSURLCache+TNLAdditionsTest.m in Sources */,
+				8B4AF73A245A359A00ABB8D5 /* TNLCommunicationAgentTest.m in Sources */,
 				8BFDF99C2135ACDB002F6A80 /* NSURLSessionConfiguration+TNLAdditionsTest.m in Sources */,
 				8BFDF99D2135ACDB002F6A80 /* TNLXMultipartFormData.m in Sources */,
 				8BFDF99E2135ACDB002F6A80 /* TNLRequestRetryPolicyConfigurationTest.m in Sources */,
@@ -2142,6 +2296,7 @@
 				BF4AA0D71EE61D46001647B5 /* NSCachedURLResponse+TNLAdditions.m in Sources */,
 				BF4AA0D81EE61D46001647B5 /* TNLLRUCache.m in Sources */,
 				BF4AA0D91EE61D46001647B5 /* TNLParameterCollection.m in Sources */,
+				8BDC83A3243449220001BA82 /* TNLBackoff.m in Sources */,
 				BF4AA0DA1EE61D46001647B5 /* TNLPseudoURLProtocol.m in Sources */,
 				BF4AA0DB1EE61D46001647B5 /* TNL_ProjectCommon.m in Sources */,
 				BF4AA0DC1EE61D46001647B5 /* TNLPriority.m in Sources */,
@@ -2153,6 +2308,7 @@
 				BF4AA0E11EE61D46001647B5 /* TNLAttemptMetrics.m in Sources */,
 				BF4AA0E21EE61D46001647B5 /* TNLCommunicationAgent.m in Sources */,
 				BF4AA0E31EE61D46001647B5 /* TNLTemporaryFile.m in Sources */,
+				8BEB80B724216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.m in Sources */,
 				BF4AA0E41EE61D46001647B5 /* TNLRequestOperationQueue.m in Sources */,
 				BF4AA0E51EE61D46001647B5 /* TNLHTTP.m in Sources */,
 				BF4AA0E61EE61D46001647B5 /* TNLError.m in Sources */,
@@ -2180,6 +2336,7 @@
 				BF4AA1481EE626ED001647B5 /* TNLParameterCollectionTests.m in Sources */,
 				BF4AA1491EE626ED001647B5 /* TNLRequestOperationTest.m in Sources */,
 				BF4AA14A1EE626ED001647B5 /* NSURLCache+TNLAdditionsTest.m in Sources */,
+				8B4AF739245A359A00ABB8D5 /* TNLCommunicationAgentTest.m in Sources */,
 				BF4AA14B1EE626ED001647B5 /* NSURLSessionConfiguration+TNLAdditionsTest.m in Sources */,
 				BF4AA14C1EE626ED001647B5 /* TNLXMultipartFormData.m in Sources */,
 				BF4AA14D1EE626ED001647B5 /* TNLRequestRetryPolicyConfigurationTest.m in Sources */,
@@ -2215,6 +2372,11 @@
 			target = 8BFDF90C2135AB2C002F6A80 /* TwitterNetworkLayer tvOS */;
 			targetProxy = 8B9EBDB32135B2D700E6E466 /* PBXContainerItemProxy */;
 		};
+		8BBF551823297F4E00C94709 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BF4AA0C01EE61D46001647B5 /* TwitterNetworkLayer macOS */;
+			targetProxy = 8BBF551723297F4E00C94709 /* PBXContainerItemProxy */;
+		};
 		BF4765F91EEEFC5B00A23506 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = BF4AA0C01EE61D46001647B5 /* TwitterNetworkLayer macOS */;
@@ -2223,14 +2385,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		8BDFFC0C19814D3100F7F670 /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				8BDFFC0D19814D3100F7F670 /* en */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
 		8BDFFC1519814D3100F7F670 /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -2278,6 +2432,63 @@
 			};
 			name = Release;
 		};
+		8BBF551423297F3900C94709 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path . /usr/local/lib";
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		8BBF551523297F3900C94709 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path . /usr/local/lib";
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
 		8BDFFC3219814D3100F7F670 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2301,6 +2512,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.twitter.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				WRAPPER_EXTENSION = app;
 			};
@@ -2326,6 +2538,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.twitter.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				WRAPPER_EXTENSION = app;
 			};
@@ -2363,8 +2576,9 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2.8;
+				CURRENT_PROJECT_VERSION = 2.14;
 				DEAD_CODE_STRIPPING = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
 				DYLIB_CURRENT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_BITCODE = NO;
@@ -2430,7 +2644,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 2.8;
+				CURRENT_PROJECT_VERSION = 2.14;
 				DEAD_CODE_STRIPPING = NO;
 				DYLIB_CURRENT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -2478,6 +2692,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_MODULES_AUTOLINK = NO;
+				"DEBUG_INFORMATION_FORMAT[sdk=macosx*]" = "dwarf-with-dsym";
 				DEFINES_MODULE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
 				PRODUCT_BUNDLE_IDENTIFIER = com.twitter.TwitterNetworkLayer;
@@ -2490,6 +2705,7 @@
 		8BE402ED1946743E00C7241E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				INFOPLIST_FILE = "TwitterNetworkLayerTests/TwitterNetworkLayerTests-Info.plist";
 				OTHER_LDFLAGS = (
@@ -2506,6 +2722,7 @@
 		8BE402EE1946743E00C7241E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				INFOPLIST_FILE = "TwitterNetworkLayerTests/TwitterNetworkLayerTests-Info.plist";
 				ONLY_ACTIVE_ARCH = YES;
@@ -2650,6 +2867,15 @@
 			buildConfigurations = (
 				8B9EBE342135B4B100E6E466 /* Debug */,
 				8B9EBE352135B4B100E6E466 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8BBF551623297F3900C94709 /* Build configuration list for PBXNativeTarget "tnlcli" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8BBF551423297F3900C94709 /* Debug */,
+				8BBF551523297F3900C94709 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

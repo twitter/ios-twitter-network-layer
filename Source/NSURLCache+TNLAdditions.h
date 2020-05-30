@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 8/12/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
  This is useful for setting on a `TNLRequestConfiguration` so that if the configuration is reused
  for multiple `TNLRequestOperation` instances, the `NSURLCache` that will be used will be the
  `[NSURLCache sharedURLCache]` at the time the `TNLRequestOperation` run.  This is in contrast to
- having the `[TNLRequestConfiguration URLCached]` being set to the `[NSURLCache sharedURLCache]`
+ having the `[TNLRequestConfiguration URLCache]` being set to the `[NSURLCache sharedURLCache]`
  since that will not updated as the shared `NSURLCache` is updated.
 
  @return the shared `NSURLCache` proxy

@@ -3,10 +3,11 @@
 //  TwitterNetworkLayer
 //
 //  Created on 11/21/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "TNL_Project.h"
+#import "TNLBackoff.h"
 #import "TNLGlobalConfiguration_Project.h"
 #import "TNLLogger.h"
 #import "TNLRequestOperationQueue_Project.h"
@@ -38,6 +39,7 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
     NSMutableDictionary<NSNumber *, TNLBackgroundTaskHandleInternal *> *_runningBackgroundTasks;
     dispatch_queue_t _backgroundTaskQueue;
     NSArray<id<TNLAuthenticationChallengeHandler>> *_authHandlers;
+    id<TNLBackoffSignaler> _backoffSignaler;
 
 #if TARGET_OS_IOS || TARGET_OS_TV
     UIBackgroundTaskIdentifier _sharedUIApplicationBackgroundTaskIdentifier;
@@ -77,6 +79,7 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
         _timeoutIntervalBetweenDataTransfer = 0.0;
         _operationAutomaticDependencyPriorityThreshold = (TNLPriority)NSIntegerMax;
         _internalURLSessionInactivityThreshold = TNLGlobalConfigurationURLSessionInactivityThresholdDefault;
+        _backoffSignaler = [[TNLSimpleBackoffSignaler alloc] init];
 
 #if TARGET_OS_IOS || TARGET_OS_TV
         _sharedUIApplicationBackgroundTaskIdentifier = 0;
@@ -116,7 +119,7 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
                     _lastApplicationState = sharedUIApplication.applicationState;
                 } else {
                     _lastApplicationState = UIApplicationStateInactive;
-                    dispatch_async(dispatch_get_main_queue(), ^{
+                    tnl_dispatch_async_autoreleasing(dispatch_get_main_queue(), ^{
                         self.lastApplicationState = sharedUIApplication.applicationState;
                     });
                 }
@@ -214,14 +217,53 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
     return [TNLRequestOperationQueue allGlobalHeaderProviders];
 }
 
-- (TNLGlobalConfigurationServiceUnavailableBackoffMode)serviceUnavailableBackoffMode
+- (TNLGlobalConfigurationBackoffMode)backoffMode
 {
-    return [TNLURLSessionManager sharedInstance].serviceUnavailableBackoffMode;
+    return [TNLURLSessionManager sharedInstance].backoffMode;
 }
 
-- (void)setServiceUnavailableBackoffMode:(TNLGlobalConfigurationServiceUnavailableBackoffMode)mode
+- (void)setBackoffMode:(TNLGlobalConfigurationBackoffMode)mode
 {
-    [TNLURLSessionManager sharedInstance].serviceUnavailableBackoffMode = mode;
+    [TNLURLSessionManager sharedInstance].backoffMode = mode;
+}
+
+- (id<TNLBackoffBehaviorProvider>)backoffBehaviorProvider
+{
+    return [TNLURLSessionManager sharedInstance].backoffBehaviorProvider;
+}
+
+- (void)setBackoffBehaviorProvider:(nullable id<TNLBackoffBehaviorProvider>)provider
+{
+    [TNLURLSessionManager sharedInstance].backoffBehaviorProvider = provider;
+}
+
+- (id<TNLBackoffSignaler>)backoffSignaler
+{
+    if (dispatch_queue_get_label(tnl_network_queue()) == dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL)) {
+        return _backoffSignaler;
+    }
+
+    __block id<TNLBackoffSignaler> signaler = nil;
+    dispatch_sync(tnl_network_queue(), ^{
+        signaler = self->_backoffSignaler;
+    });
+    return signaler;
+}
+
+- (void)setBackoffSignaler:(nullable id<TNLBackoffSignaler>)backoffSignaler
+{
+    if (!backoffSignaler) {
+        backoffSignaler = [[TNLSimpleBackoffSignaler alloc] init];
+    }
+
+    if (dispatch_queue_get_label(tnl_network_queue()) == dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL)) {
+        _backoffSignaler = backoffSignaler;
+        return;
+    }
+
+    dispatch_async(tnl_network_queue(), ^{
+        self->_backoffSignaler = backoffSignaler;
+    });
 }
 
 - (TNLGlobalConfigurationURLSessionPruneOptions)URLSessionPruneOptions
@@ -296,10 +338,12 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
 - (void)removeAuthenticationChallengeHandler:(id<TNLAuthenticationChallengeHandler>)handler
 {
     dispatch_barrier_async(_configurationQueue, ^{
-        if (self->_authHandlers) {
-            NSMutableArray<id<TNLAuthenticationChallengeHandler>> *handlers = [self->_authHandlers mutableCopy];
-            [handlers removeObject:handler];
-            self->_authHandlers = (handlers.count > 0) ? [handlers copy] : nil;
+        @autoreleasepool {
+            if (self->_authHandlers) {
+                NSMutableArray<id<TNLAuthenticationChallengeHandler>> *handlers = [self->_authHandlers mutableCopy];
+                [handlers removeObject:handler];
+                self->_authHandlers = (handlers.count > 0) ? [handlers copy] : nil;
+            }
         }
     });
 }

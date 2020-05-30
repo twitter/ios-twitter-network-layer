@@ -2,8 +2,8 @@
 //  NSCoder+TNLAdditions.h
 //  TwitterNetworkLayer
 //
-//  Created by Nolan on 6/5/19.
-//  Copyright © 2019 Twitter. All rights reserved.
+//  Created on 6/5/19.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>

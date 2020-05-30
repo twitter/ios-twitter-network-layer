@@ -2,8 +2,8 @@
 //  TNLInternalKeys.h
 //  TwitterNetworkLayer
 //
-//  Created by Nolan O'Brien on 6/15/18.
-//  Copyright © 2018 Twitter. All rights reserved.
+//  Created on 6/15/18.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #pragma mark Global Keys

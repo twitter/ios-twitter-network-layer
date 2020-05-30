@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 1/16/15.
-//  Copyright (c) 2015 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "TNLAttemptMetaData_Project.h"
@@ -15,7 +15,7 @@ static NSString * const kFinalKey = @"final";
 
 @interface TNLAttemptMetaData ()
 {
-    NSDictionary *_metaDataDictionary;
+    NSDictionary<NSString *, id> *_metaDataDictionary;
     BOOL _final;
 }
 @end
@@ -94,6 +94,28 @@ static NSString * const kFinalKey = @"final";
 
     _final = YES;
     _metaDataDictionary = [_metaDataDictionary copy];
+}
+
+- (NSDictionary<NSString *, id> *)dictionaryDescription
+{
+    NSMutableDictionary *d = [[NSMutableDictionary alloc] initWithCapacity:_metaDataDictionary.count];
+    [_metaDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString *key, id obj, BOOL *stop) {
+        if ([obj isKindOfClass:[NSString class]] || [obj isKindOfClass:[NSNumber class]]) {
+            d[key] = obj;
+            return;
+        }
+        if ([obj isKindOfClass:[NSData class]]) {
+            const NSUInteger length = [(NSData *)obj length];
+            if (length <= 256) {
+                d[key] = [(NSData *)obj base64EncodedStringWithOptions:0];
+            } else {
+                d[key] = [NSString stringWithFormat:@"NSData: %lu bytes", (unsigned long)length];
+            }
+            return;
+        }
+        // other types, just skip
+    }];
+    return d;
 }
 
 @end

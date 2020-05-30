@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 6/9/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -218,7 +218,7 @@ NS_INLINE BOOL TNLHTTPStatusCodeIsDefinitiveSuccess(TNLHTTPStatusCode statusCode
     }
 }
 
-// HTTP Content-Type constants
+#pragma mark - HTTP Content-Type constants
 
 FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeJPEGImage;
 FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeQuicktimeVideo;
@@ -230,6 +230,8 @@ FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeURLEncodedString;
 
 //! Is the content type a textual format (limited to UTF8 [default] and ASCII currently), helpful for determining if something is printable or compressable
 FOUNDATION_EXTERN BOOL TNLHTTPContentTypeIsTextual(NSString * __nullable contentType);
+
+#pragma mark - HTTP Dates
 
 /**
  Enum for the different HTTP formats specified by the HTTP specification.

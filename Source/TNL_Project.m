@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 5/24/14.
-//  Copyright (c) 2014 Twitter, Inc. All rights reserved.
+//  Copyright © 2020 Twitter, Inc. All rights reserved.
 //
 
 #include <objc/runtime.h>
@@ -40,6 +40,18 @@ NSString *TNLVersion()
 }
 
 #pragma mark - Threading
+
+NSOperationQueue *TNLNetworkOperationQueue()
+{
+    static NSOperationQueue *sQueue;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sQueue = [[NSOperationQueue alloc] init];
+        sQueue.name = @"tnl.network.queue";
+        sQueue.underlyingQueue = tnl_network_queue();
+    });
+    return sQueue;
+}
 
 dispatch_queue_t tnl_network_queue()
 {
@@ -214,7 +226,7 @@ static void ConnLoad(void)
 
 void TNLIncrementObjectCount(Class class)
 {
-    dispatch_async(sCountsQueue, ^{
+    tnl_dispatch_async_autoreleasing(sCountsQueue, ^{
         NSString *className = NSStringFromClass(class);
         if (className) {
             NSUInteger count = [sCounts[className] unsignedIntegerValue];
@@ -225,7 +237,7 @@ void TNLIncrementObjectCount(Class class)
 
 void TNLDecrementObjectCount(Class class)
 {
-    dispatch_async(sCountsQueue, ^{
+    tnl_dispatch_async_autoreleasing(sCountsQueue, ^{
         NSString *className = NSStringFromClass(class);
         if (className) {
             NSUInteger count = [sCounts[className] unsignedIntegerValue];

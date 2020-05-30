@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 6/9/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #pragma Headers
@@ -11,6 +11,7 @@
 #import <TwitterNetworkLayer/TNLAttemptMetaData.h>
 #import <TwitterNetworkLayer/TNLAttemptMetrics.h>
 #import <TwitterNetworkLayer/TNLAuthenticationChallengeHandler.h>
+#import <TwitterNetworkLayer/TNLBackoff.h>
 #import <TwitterNetworkLayer/TNLCommunicationAgent.h>
 #import <TwitterNetworkLayer/TNLContentCoding.h>
 #import <TwitterNetworkLayer/TNLError.h>
@@ -55,6 +56,7 @@
 #import <TwitterNetworkLayer/NSNumber+TNLURLCoding.h>
 #import <TwitterNetworkLayer/NSOperationQueue+TNLSafety.h>
 #import <TwitterNetworkLayer/NSURL+TNLAdditions.h>
+#import <TwitterNetworkLayer/NSURLAuthenticationChallenge+TNLAdditions.h>
 #import <TwitterNetworkLayer/NSURLCache+TNLAdditions.h>
 #import <TwitterNetworkLayer/NSURLCredentialStorage+TNLAdditions.h>
 #import <TwitterNetworkLayer/NSURLRequest+TNLAdditions.h>

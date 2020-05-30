@@ -3,7 +3,7 @@
 //  TNLExample
 //
 //  Created on 5/24/18.
-//  Copyright © 2018 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "TAPIModel.h"

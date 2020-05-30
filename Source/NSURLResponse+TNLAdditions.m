@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 11/13/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #include <objc/runtime.h>
@@ -78,6 +78,16 @@ static const char TNLContentEncodingAssociatedObjectKey[] = "tnl.content.encodin
         // value is a string that MUST be an HTTP date (otherwise, the value is invalid)
         return TNLHTTPDateFromString(retryAfterStringValue, NULL);
     }
+}
+
++ (NSTimeInterval)tnl_delayFromRetryAfterValue:(nullable id)retryAfterValue
+{
+    if ([retryAfterValue isKindOfClass:[NSNumber class]]) {
+        return [(NSNumber *)retryAfterValue doubleValue];
+    } else if ([retryAfterValue isKindOfClass:[NSDate class]]) {
+        return [(NSDate *)retryAfterValue timeIntervalSinceNow];
+    }
+    return 0;
 }
 
 - (nullable id)tnl_parsedRetryAfterValue

@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 7/25/16.
-//  Copyright © 2016 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -36,6 +36,11 @@ NS_ASSUME_NONNULL_BEGIN
  A dictionary representation of the transaction metrics
  */
 - (NSDictionary<NSString *, id> *)tnl_dictionaryValue;
+
+/**
+ A dictionary description of the transaction metrics that is serializable
+ */
+- (NSDictionary<NSString *, id> *)tnl_dictionaryDescription;
 
 /**
  returns the `resourceFetchType` as a readable debug string

@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 1/16/15.
-//  Copyright (c) 2015 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <TwitterNetworkLayer/TNLPriority.h>
@@ -19,6 +19,8 @@ NS_ASSUME_NONNULL_BEGIN
 @interface TNLAttemptMetaData : NSObject <NSSecureCoding>
 /** The meta data as a dictionary */
 - (NSDictionary<NSString *, id> *)metaDataDictionary;
+/** Meta data in a serializable format (can be lossy and drop info if not serializable!) */
+- (NSDictionary<NSString *, id> *)dictionaryDescription;
 @end
 
 /**

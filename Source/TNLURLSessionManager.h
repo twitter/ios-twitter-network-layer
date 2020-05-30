@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 10/23/15.
-//  Copyright © 2015 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <TwitterNetworkLayer/TNLGlobalConfiguration.h>
@@ -28,11 +28,6 @@ TNLMutableParametersFromURLSessionConfiguration(NSURLSessionConfiguration * __nu
 
 FOUNDATION_EXTERN BOOL
 TNLURLSessionIdentifierIsTaggedForTNL(NSString *identifier);
-
-#pragma mark Constants
-
-FOUNDATION_EXTERN NSTimeInterval TNLGlobalServiceUnavailableRetryAfterBackoffValueDefault;
-FOUNDATION_EXTERN NSTimeInterval TNLGlobalServiceUnavailableRetryAfterMaximumBackoffValueBeforeTreatedAsGoAway;
 
 #pragma mark Declarations
 
@@ -61,12 +56,15 @@ typedef void(^TNLURLSessionManagerGetAllSessionsCallback)(NSArray<NSURLSession *
                                    response:(TNLResponse *)response;
 
 - (void)syncAddURLSessionTaskOperation:(TNLURLSessionTaskOperation *)op;
-- (void)applyServiceUnavailableBackoffDependenciesToOperation:(NSOperation *)op
-                                                      withURL:(NSURL *)URL
-                                            isLongPollRequest:(BOOL)isLongPoll;
-- (void)serviceUnavailableEncounteredForURL:(NSURL *)URL
-                            retryAfterDelay:(NSTimeInterval)delay;
-@property (atomic) TNLGlobalConfigurationServiceUnavailableBackoffMode serviceUnavailableBackoffMode;
+- (void)applyBackoffDependenciesToOperation:(NSOperation *)op
+                                    withURL:(NSURL *)URL
+                                       host:(nullable NSString *)host
+                          isLongPollRequest:(BOOL)isLongPoll;
+- (void)backoffSignalEncounteredForURL:(NSURL *)URL
+                                  host:(nullable NSString *)host
+                   responseHTTPHeaders:(nullable NSDictionary<NSString *, NSString *> *)headers;
+@property (atomic) TNLGlobalConfigurationBackoffMode backoffMode;
+@property (atomic, null_resettable) id<TNLBackoffBehaviorProvider> backoffBehaviorProvider;
 
 - (void)pruneUnusedURLSessions;
 - (void)pruneURLSessionMatchingRequestConfiguration:(TNLRequestConfiguration *)config

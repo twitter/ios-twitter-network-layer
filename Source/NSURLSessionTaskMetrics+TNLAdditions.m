@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 7/25/16.
-//  Copyright © 2016 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import "NSURLSessionTaskMetrics+TNLAdditions.h"
@@ -52,7 +52,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSDictionary<NSString *, id> *)tnl_dictionaryValue
 {
-    NSMutableDictionary<NSString *, id> *d = [[self tnl_medadata] mutableCopy];
+    return [self _tnl_dictionaryValue:NO];
+}
+
+- (NSDictionary<NSString *, id> *)tnl_dictionaryDescription
+{
+    return [self _tnl_dictionaryValue:YES];
+}
+
+- (NSMutableDictionary<NSString *, id> *)_tnl_dictionaryValue:(BOOL)sanitizeForSerialization
+{
+    NSMutableDictionary<NSString *, id> *d = [self _tnl_metadata:sanitizeForSerialization];
 
 #define APPLY_VALUE(key, value) \
     do { \
@@ -72,7 +82,11 @@ NS_ASSUME_NONNULL_BEGIN
     APPLY_VALUE(@"total", [self tnl_totalDuration]);
 
     d[@"statusCode"] = @([(NSHTTPURLResponse *)self.response statusCode]);
-    APPLY_VALUE(@"URL", self.request.URL);
+    if (sanitizeForSerialization) {
+        APPLY_VALUE(@"URL", self.request.URL.absoluteString);
+    } else {
+        APPLY_VALUE(@"URL", self.request.URL);
+    }
 
 #undef APPLY_VALUE
 
@@ -80,6 +94,11 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (NSDictionary<NSString *, id> *)tnl_medadata
+{
+    return [self _tnl_metadata:NO];
+}
+
+- (NSMutableDictionary<NSString *, id> *)_tnl_metadata:(BOOL)sanitizeForSerialization
 {
     NSMutableDictionary<NSString *, id> *d = [[NSMutableDictionary alloc] init];
 
@@ -97,7 +116,13 @@ NS_ASSUME_NONNULL_BEGIN
     d[@"newConnection"] = @(!self.reusedConnection);
     d[@"proxy"] = @(self.proxyConnection);
 
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+#if TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+#define TNL_CAN_LOG_NEW_METRICS 1
+#elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500
+#define TNL_CAN_LOG_NEW_METRICS 1
+#endif
+
+#if TNL_CAN_LOG_NEW_METRICS
     if (tnl_available_ios_13) {
         d[@"header_tx"] = @(self.countOfRequestHeaderBytesSent);
         d[@"body_tx"] = @(self.countOfRequestBodyBytesSent);

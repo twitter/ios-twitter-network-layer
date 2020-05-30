@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 11/21/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #import <TwitterNetworkLayer/TNLPriority.h>
@@ -15,6 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol TNLHostSanitizer;
 @protocol TNLLogger;
 @protocol TNLNetworkObserver;
+@protocol TNLBackoffBehaviorProvider;
+@protocol TNLBackoffSignaler;
 @class TNLRequestConfiguration;
 @class TNLRequestOperation;
 
@@ -45,28 +47,27 @@ typedef NS_ENUM(NSInteger, TNLGlobalConfigurationIdleTimeoutMode)
 };
 
 /**
-`TNLGlobalConfigurationServiceUnavailableBackoffMode` enumerates the modes for how to handle
- service unavailable (503) responses with backoff behavior. The backoff behavior is to observe the
- `Retry-After` of the last matching request receiving a service unavailable response (503) before
- executing backed off requests one at a time until either A) all requests are flushed or B) another
- 503 is encountered restarting the backoff.
+`TNLGlobalConfigurationBackoffMode` enumerates the modes for how to handle
+ responses that signal for backoff with a backoff behavior.
 
- https://docs.google.com/document/d/1Gs3P0aSuEYMjvCfKkolRseS4Fnm3p%5FVDQwbu4LNCRKA/edit?usp=sharing
+ The backoff behavior is defined by a `TNLBackoffBehavior` which is provided
+ per backoff signaling response via a `TNLBackoffBehaviorProvider` set on the
+ `TNLGlobalConfiguration.backoffBehaviorProvider`.
  */
-typedef NS_ENUM(NSInteger, TNLGlobalConfigurationServiceUnavailableBackoffMode)
+typedef NS_ENUM(NSInteger, TNLGlobalConfigurationBackoffMode)
 {
     /**
      Don't automatically back off when 503s are encountered
      */
-    TNLGlobalConfigurationServiceUnavailableBackoffModeDisabled = 0,
+    TNLGlobalConfigurationBackoffModeDisabled = 0,
     /**
      Automatically back off requests when the `host` matches prior requests that saw a 503.
      */
-    TNLGlobalConfigurationServiceUnavailableBackoffModeKeyOffHost = 1,
+    TNLGlobalConfigurationBackoffModeKeyOffHost = 1,
     /**
      Automatically back off requests when the `host` and `path` match prior requests that saw a 503.
      */
-    TNLGlobalConfigurationServiceUnavailableBackoffModeKeyOffHostAndPath = 2,
+    TNLGlobalConfigurationBackoffModeKeyOffHostAndPath = 2,
 };
 
 /**
@@ -216,11 +217,32 @@ FOUNDATION_EXTERN NSTimeInterval const TNLGlobalConfigurationURLSessionInactivit
 @property (nonatomic) TNLPriority operationAutomaticDependencyPriorityThreshold;
 
 /**
- The backoff mode when a 503 is encountered.
+ The backoff mode when a backoff signal is encountered.
 
- Default == `TNLGlobalConfigurationServiceUnavailableBackoffModeDisabled`
+ Default == `TNLGlobalConfigurationBackoffModeDisabled`
  */
-@property (atomic) TNLGlobalConfigurationServiceUnavailableBackoffMode serviceUnavailableBackoffMode;
+@property (atomic) TNLGlobalConfigurationBackoffMode backoffMode;
+
+/**
+ The backoff behavior provider when a backoff signal is encountered and `backoffMode` is not `Disabled`.
+ Setting to `nil` will reset to an instance of `TNLSimpleBackoffBehaviorProvider`.
+ Default == an instance of `TNLSimpleBackoffBehaviorProvider`.
+ */
+@property (atomic, null_resettable) id<TNLBackoffBehaviorProvider> backoffBehaviorProvider;
+
+/**
+ The backoff signaler for when an HTTP response should trigger a backoff signal.
+ Setting to `nil` will reset to an instance of `TNLSimpleBackoffSignaler`.
+ Default == an instance of `TNLSimpleBackoffSignaler`
+ */
+@property (atomic, null_resettable) id<TNLBackoffSignaler> backoffSignaler;
+
+/**
+ Whether the backoff behavior should use the original request's host or the hydrated request's host.
+
+ Default == `NO` (don't use original request's host, use the hydrated request's host)
+ */
+@property (atomic) BOOL shouldBackoffUseOriginalRequestHost;
 
 #pragma mark Pruning inactive NSURLSession instances
 
@@ -302,8 +324,8 @@ FOUNDATION_EXTERN NSTimeInterval const TNLGlobalConfigurationURLSessionInactivit
  Configure the how "data" timeouts behave within *TNL*. Zero or negative disables the timeout.
 
  Default == `0.0`
+ TODO: have this be on the request configuration!
  */
-// TODO: have this be on the configuration!
 @property (nonatomic, readwrite) NSTimeInterval timeoutIntervalBetweenDataTransfer;
 
 #pragma mark Runtime Config

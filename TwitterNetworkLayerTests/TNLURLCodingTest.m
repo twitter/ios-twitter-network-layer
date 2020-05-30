@@ -3,9 +3,10 @@
 //  TwitterNetworkLayer
 //
 //  Created on 11/12/14.
-//  Copyright (c) 2014 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
+#import "NSNumber+TNLURLCoding.h"
 #import "TNLURLCoding.h"
 
 @import XCTest;
@@ -75,6 +76,103 @@
     mDict[@"ok"] = @"not-empty";
     query = TNLURLEncodeDictionary(mDict, 0);
     XCTAssertEqualObjects(query, @"ok=not-empty");
+}
+
+- (void)testNumberCoding
+{
+    NSArray<NSNumber *> *numbers = @[
+        @((BOOL)YES),
+        @((BOOL)NO),
+        @((BOOL)7),
+
+        @((uint8_t)0),
+        @((uint8_t)UINT8_MAX),
+        @((int8_t)INT8_MIN),
+        @((int8_t)0),
+        @((int8_t)INT8_MAX),
+
+        @((uint16_t)0),
+        @((uint16_t)UINT16_MAX),
+        @((int16_t)INT16_MIN),
+        @((int16_t)0),
+        @((int16_t)INT16_MAX),
+
+        @((uint32_t)0),
+        @((uint32_t)UINT32_MAX),
+        @((int32_t)INT32_MIN),
+        @((int32_t)0),
+        @((int32_t)INT32_MAX),
+
+        @((uint64_t)0),
+        @((uint64_t)UINT64_MAX),
+        @((int64_t)INT64_MIN),
+        @((int64_t)0),
+        @((int64_t)INT64_MAX),
+
+        @(FLT_MIN),
+        @(0.f),
+        @(FLT_MAX),
+        @((float)M_PI),
+
+        @(DBL_MIN),
+        @(0.f),
+        @(DBL_MAX),
+        @(M_PI),
+    ];
+
+    NSTimeInterval nsDuration, tnlDuration;
+    const NSUInteger iterations = 20000;
+#define PRINT_NUMBERS 0
+
+    {
+#if PRINT_NUMBERS
+        BOOL didPrint = NO;
+#endif
+        const CFAbsoluteTime nsStart = CFAbsoluteTimeGetCurrent();
+        for (NSUInteger i = 0; i < iterations; i++) {
+            for (NSNumber *number in numbers) {
+                NSString *value = [number stringValue];
+#if PRINT_NUMBERS
+                if (!didPrint) {
+                    NSLog(@"%@", value);
+                }
+#endif
+                (void)value;
+            }
+#if PRINT_NUMBERS
+            didPrint = YES;
+#endif
+        }
+        const CFAbsoluteTime nsEnd = CFAbsoluteTimeGetCurrent();
+        nsDuration = nsEnd - nsStart;
+        NSLog(@"-[NSNumber stringValue] = %fs", nsDuration);
+    }
+
+    {
+#if PRINT_NUMBERS
+        BOOL didPrint = NO;
+#endif
+        const CFAbsoluteTime tnlStart = CFAbsoluteTimeGetCurrent();
+        for (NSUInteger i = 0; i < iterations; i++) {
+            for (NSNumber *number in numbers) {
+                NSString *value = [number tnl_quickStringValue];
+#if PRINT_NUMBERS
+                if (!didPrint) {
+                    NSLog(@"%@", value);
+                }
+#endif
+                (void)value;
+            }
+#if PRINT_NUMBERS
+            didPrint = YES;
+#endif
+        }
+        const CFAbsoluteTime tnlEnd = CFAbsoluteTimeGetCurrent();
+        tnlDuration = tnlEnd - tnlStart;
+        NSLog(@"-[NSNumber tnl_quickStringValue] = %fs", tnlDuration);
+    }
+
+    XCTAssertLessThan(tnlDuration, nsDuration, @"-[NSNumber tnl_quickStringValue] ought to be faster than -[NSNumber stringValue]!");
 }
 
 @end

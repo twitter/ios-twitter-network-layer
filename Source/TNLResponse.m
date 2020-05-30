@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 5/23/14.
-//  Copyright (c) 2014 Twitter, Inc. All rights reserved.
+//  Copyright © 2020 Twitter, Inc. All rights reserved.
 //
 
 #import <mach/mach_time.h>
@@ -752,41 +752,31 @@ static void _addAttemptStart(PRIVATE_SELF(TNLResponseMetrics),
     }
 }
 
-- (NSString *)description
+- (NSDictionary *)dictionaryDescription:(BOOL)verbose
 {
     NSMutableDictionary *topDictionary = [NSMutableDictionary dictionary];
     topDictionary[@"complete"] = (_completeMachTime != 0) ? @"true" : @"false";
     topDictionary[@"duration"] = @(self.totalDuration);
-    topDictionary[@"attemptTime"] = @(self.currentAttemptDuration);
-    topDictionary[@"queueTime"] = @(self.queuedDuration);
-    topDictionary[@"allAttemptsTime"] = @(self.allAttemptsDuration);
+    if (verbose) {
+        topDictionary[@"attemptTime"] = @(self.currentAttemptDuration);
+        topDictionary[@"queueTime"] = @(self.queuedDuration);
+        topDictionary[@"allAttemptsTime"] = @(self.allAttemptsDuration);
+    }
 
     NSMutableArray *attempts = [NSMutableArray arrayWithCapacity:self.attemptMetrics.count];
     for (TNLAttemptMetrics *metrics in self.attemptMetrics) {
-        NSMutableDictionary *attemptDict = [NSMutableDictionary dictionary];
-        attemptDict[@"duration"] = @(metrics.duration);
-        attemptDict[@"type"] = TNLAttemptTypeToString(metrics.attemptType);
-        if (metrics.metaData != nil) {
-            attemptDict[@"metadata"] = metrics.metaData;
-        }
-        attemptDict[@"statusCode"] = @(metrics.URLResponse.statusCode);
-        if (metrics.URLResponse.URL) {
-            attemptDict[@"URL"] = metrics.URLResponse.URL;
-        }
-        if (metrics.operationError) {
-            attemptDict[@"error"] = [NSString stringWithFormat:@"%@.%ld", metrics.operationError.domain, (long)metrics.operationError.code];
-        }
-#if DEBUG
-        if (metrics.taskTransactionMetrics) {
-            attemptDict[@"transactionMetrics"] = metrics.taskTransactionMetrics.tnl_dictionaryValue;
-        }
-#endif
+        NSDictionary *attemptDict = [metrics dictionaryDescription:verbose];
         [attempts addObject:attemptDict];
     }
     if (attempts.count > 0) {
         topDictionary[@"attempts"] = attempts;
     }
-    return [NSString stringWithFormat:@"<%@ %p: %@>", NSStringFromClass([self class]), self, topDictionary];
+    return topDictionary;
+}
+
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"<%@ %p: %@>", NSStringFromClass([self class]), self, [self dictionaryDescription:NO]];
 }
 
 - (NSUInteger)hash

@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 03/29/2018.
-//  Copyright © 2018 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 

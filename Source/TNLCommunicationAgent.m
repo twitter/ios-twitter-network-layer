@@ -3,7 +3,7 @@
 //  TwitterNetworkLayer
 //
 //  Created on 5/2/16.
-//  Copyright © 2016 Twitter. All rights reserved.
+//  Copyright © 2020 Twitter. All rights reserved.
 //
 
 #include <TargetConditionals.h>
@@ -32,6 +32,7 @@ static void _ReachabilityCallback(__unused SCNetworkReachabilityRef target,
                                   void* info);
 static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(TNLNetworkReachabilityFlags flags) __attribute__((const));
 static TNLNetworkReachabilityFlags _NetworkReachabilityFlagsFromPath(nw_path_t path);
+static BOOL _HasCellularInterface(void);
 
 #define _NWPathStatusToFlag(status) ((status > 0) ? ((uint32_t)1 << (uint32_t)((status) - 1)) : 0)
 #define _NWInterfaceTypeToFlag(itype) ((uint32_t)1 << (uint32_t)8 << (uint32_t)(itype))
@@ -136,6 +137,16 @@ static void _updateCarrier(SELF_ARG,
     } _flags;
 }
 
++ (BOOL)hasCellularInterface
+{
+    static BOOL sHasCellular = NO;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sHasCellular = _HasCellularInterface();
+    });
+    return sHasCellular;
+}
+
 - (instancetype)initWithInternetReachabilityHost:(NSString *)host
 {
     TNLAssert(host != nil);
@@ -157,9 +168,7 @@ static void _updateCarrier(SELF_ARG,
         _agentOperationQueue.name = @"TNLCommunicationAgent.queue";
         _agentOperationQueue.maxConcurrentOperationCount = 1;
         _agentOperationQueue.underlyingQueue = _agentQueue;
-        if ([_agentOperationQueue respondsToSelector:@selector(setQualityOfService:)]) {
-            _agentOperationQueue.qualityOfService = NSQualityOfServiceUtility;
-        }
+        _agentOperationQueue.qualityOfService = NSQualityOfServiceUtility;
         _agentWrapper = [[TNLCommunicationAgentWeakWrapper alloc] init];
         _agentWrapper.communicationAgent = self;
 
@@ -204,7 +213,7 @@ static void _updateCarrier(SELF_ARG,
     dispatch_queue_t agentQueue = _agentQueue;
     TNLCommunicationAgentWeakWrapper *weakWrapper = _agentWrapper;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC)), agentQueue, ^{
-        dispatch_async(agentQueue, ^{
+        tnl_dispatch_async_autoreleasing(agentQueue, ^{
             weakWrapper.communicationAgent = nil;
         });
     });
@@ -212,42 +221,42 @@ static void _updateCarrier(SELF_ARG,
 
 - (void)addObserver:(id<TNLCommunicationAgentObserver>)observer
 {
-    dispatch_async(_agentQueue, ^{
+    tnl_dispatch_async_autoreleasing(_agentQueue, ^{
         _agent_addObserver(self, observer);
     });
 }
 
 - (void)removeObserver:(id<TNLCommunicationAgentObserver>)observer
 {
-    dispatch_async(_agentQueue, ^{
+    tnl_dispatch_async_autoreleasing(_agentQueue, ^{
         _agent_removeObserver(self, observer);
     });
 }
 
 - (void)identifyReachability:(TNLCommunicationAgentIdentifyReachabilityCallback)callback
 {
-    dispatch_async(_agentQueue, ^{
+    tnl_dispatch_async_autoreleasing(_agentQueue, ^{
         _agent_identifyReachability(self, callback);
     });
 }
 
 - (void)identifyCarrierInfo:(TNLCommunicationAgentIdentifyCarrierInfoCallback)callback
 {
-    dispatch_async(_agentQueue, ^{
+    tnl_dispatch_async_autoreleasing(_agentQueue, ^{
         _agent_identifyCarrierInfo(self, callback);
     });
 }
 
 - (void)identifyWWANRadioAccessTechnology:(TNLCommunicationAgentIdentifyWWANRadioAccessTechnologyCallback)callback
 {
-    dispatch_async(_agentQueue, ^{
+    tnl_dispatch_async_autoreleasing(_agentQueue, ^{
         _agent_identifyWWANRadioAccessTechnology(self, callback);
     });
 }
 
 - (void)identifyCaptivePortalStatus:(TNLCommunicationAgentIdentifyCaptivePortalStatusCallback)callback
 {
-    dispatch_async(_agentQueue, ^{
+    tnl_dispatch_async_autoreleasing(_agentQueue, ^{
         _agent_identifyCaptivePortalStatus(self, callback);
     });
 }
@@ -600,7 +609,9 @@ static void _agent_startCaptivePortalCheckTimer(SELF_ARG, NSTimeInterval delay)
 
     __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), self->_agentQueue, ^{
-        _agent_triggerCaptivePortalCheckIfNeeded(weakSelf);
+        @autoreleasepool {
+            _agent_triggerCaptivePortalCheckIfNeeded(weakSelf);
+        }
     });
 }
 
@@ -907,11 +918,22 @@ static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(TNLNetwo
         }
 
         if ((mask & TNLNetworkReachabilityMaskPathIntefaceTypeWifi) != 0) {
-            return TNLNetworkReachabilityReachableViaWiFi;
+            return TNLNetworkReachabilityReachableViaEthernet;
+        }
+
+        if ((mask & TNLNetworkReachabilityMaskPathIntefaceTypeWired) != 0) {
+            return TNLNetworkReachabilityReachableViaEthernet;
         }
 
         if ((mask & TNLNetworkReachabilityMaskPathIntefaceTypeCellular) != 0) {
             return TNLNetworkReachabilityReachableViaWWAN;
+        }
+
+        // "Other" happens when using VPN or other tunneling protocol.
+        // On iOS/tvOS/watchOS devices: WiFi or Wired or Cellular would have been hit above.
+        // On Mac and iOS Simulator: WiFi or Wired will _NOT_ be provide in the flags so, even though we coerce to WiFi in this case on Mac, presume Ethernet if we get here.
+        if ((mask & TNLNetworkReachabilityMaskPathIntefaceTypeOther) != 0) {
+            return TNLNetworkReachabilityReachableViaEthernet;
         }
 
         return TNLNetworkReachabilityUndetermined;
@@ -928,15 +950,15 @@ static TNLNetworkReachabilityStatus _NetworkReachabilityStatusFromFlags(TNLNetwo
 #endif
 
     if ((flags & kSCNetworkReachabilityFlagsConnectionRequired) == 0) {
-        return TNLNetworkReachabilityReachableViaWiFi;
+        return TNLNetworkReachabilityReachableViaEthernet;
     }
 
     if ((flags & kSCNetworkReachabilityFlagsInterventionRequired) == 0) {
         if ((flags & kSCNetworkReachabilityFlagsConnectionOnDemand) != 0) {
-            return TNLNetworkReachabilityReachableViaWiFi;
+            return TNLNetworkReachabilityReachableViaEthernet;
         }
         if ((flags & kSCNetworkReachabilityFlagsConnectionOnTraffic) != 0) {
-            return TNLNetworkReachabilityReachableViaWiFi;
+            return TNLNetworkReachabilityReachableViaEthernet;
         }
     }
 
@@ -973,6 +995,17 @@ static TNLNetworkReachabilityFlags _NetworkReachabilityFlagsFromPath(nw_path_t p
                     flags |= _NWInterfaceTypeToFlag(itype);
                 }
             }
+
+#if TARGET_OS_SIMULATOR || TARGET_OS_MACCATALYST || TARGET_OS_OSX
+            // When run on macOS (however the avenue) we will coerce
+            // to have an ethernet connection when we detect `Other` but no actual interface.
+            // This is most commonly due to VPN connections "hiding" the physical interface on Macs.
+            if (flags & TNLNetworkReachabilityMaskPathIntefaceTypeOther) {
+                if (TNL_BITMASK_EXCLUDES_FLAGS(flags, TNLNetworkReachabilityMaskPathIntefaceTypeWifi | TNLNetworkReachabilityMaskPathIntefaceTypeCellular | TNLNetworkReachabilityMaskPathIntefaceTypeWired)) {
+                    flags |= TNLNetworkReachabilityMaskPathIntefaceTypeWifi;
+                }
+            }
+#endif
 
             if (tnl_available_ios_13) {
                 if (nw_path_is_expensive(path)) {
@@ -1092,7 +1125,7 @@ NSString *TNLNetworkReachabilityStatusToString(TNLNetworkReachabilityStatus stat
     switch (status) {
         case TNLNetworkReachabilityNotReachable:
             return @"unreachable";
-        case TNLNetworkReachabilityReachableViaWiFi:
+        case TNLNetworkReachabilityReachableViaEthernet:
             return @"wifi";
         case TNLNetworkReachabilityReachableViaWWAN:
             return @"wwan";
@@ -1204,6 +1237,42 @@ NSString *TNLDebugStringFromNetworkReachabilityFlags(TNLNetworkReachabilityFlags
             , _DebugCharFromReachabilityFlag(flags, kSCNetworkReachabilityFlagsIsWWAN, 'W')
 #endif
             ];
+}
+
+NSDictionary<NSString *, id> *TNLCarrierInfoToDictionaryDescription(id<TNLCarrierInfo> carrierInfo)
+{
+    return @{
+        @"carrierName" : carrierInfo.carrierName ?: [NSNull null],
+        @"mobileCountryCode" : carrierInfo.mobileCountryCode ?: [NSNull null],
+        @"mobileNetworkCode" : carrierInfo.mobileNetworkCode ?: [NSNull null],
+        @"isoCountryCode" : carrierInfo.isoCountryCode ?: [NSNull null],
+        @"allowsVOIP" : @(carrierInfo.allowsVOIP)
+    };
+}
+
+#import <ifaddrs.h>
+
+static BOOL _HasCellularInterface()
+{
+    struct ifaddrs * addrs;
+    if (getifaddrs(&addrs) != 0) {
+        return NO;
+    }
+
+    tnl_defer(^{
+        freeifaddrs(addrs);
+    });
+
+    for (const struct ifaddrs * cursor = addrs; cursor != NULL; cursor = cursor->ifa_next) {
+        NSString *name = @(cursor->ifa_name);
+        if ([name isEqualToString:@"pdp_ip0"]) {
+            // All cellular interfaces are `pdp_ip`.
+            // There can be multiple, but the first one will always be number `0`.
+            return YES;
+        }
+    }
+
+    return NO;
 }
 
 #endif // !TARGET_OS_WATCH
