@@ -22,6 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class TNLURLSessionTaskOperation;
 @class TNLTemporaryFile;
 
+// TODO: TNL_OBJC_DIRECT_MEMBERS -- requires moving implemented methods to matching category
 @interface TNLRequestOperationQueue (Project)
 
 + (NSOperationQueue *)globalRequestOperationQueue;

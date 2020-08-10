@@ -47,7 +47,7 @@ typedef void(^TNLRequestHydrateCompletionBlock)(id<TNLRequest> __nullable hydrat
    - The hydrated request conforming to `TNLRequest`
    - Can be the source _request_
    - Can be `nil`, effectively the same as passing in the source _request_
-   - If the _hydratedRequest_ does not pass the `[TNLRequest validateRequest:againstConfiguration:error:]` test the request operation will fail (obviously)
+   - If the _hydratedRequest_ does not pass the `TNLRequestValidate(...)` test the request operation will fail (obviously)
  - _error_
    - The `NSError` if the _request_ could not be hydrated or `nil`
    - _hydratedRequest_ will be ignored if _error_ is not `nil`

@@ -20,6 +20,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+TNL_OBJC_FINAL TNL_OBJC_DIRECT_MEMBERS
 @interface TNLCarrierInfoInternal : NSObject <TNLCarrierInfo>
 
 + (instancetype)carrierWithCarrier:(id<TNLCarrierInfo>)carrier;

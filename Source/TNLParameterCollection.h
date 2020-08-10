@@ -130,7 +130,7 @@ typedef NS_ENUM(NSInteger, TNLParameterCollectionAddParametersFromDictionaryMode
 
  This object has a mutable subclass: `TNLMutableParameterCollection`
  */
-@interface TNLParameterCollection : NSObject <NSMutableCopying, NSSecureCoding, NSFastEnumeration>
+@interface TNLParameterCollection : NSObject <NSCopying, NSMutableCopying, NSSecureCoding, NSFastEnumeration>
 
 #pragma mark Initializers
 

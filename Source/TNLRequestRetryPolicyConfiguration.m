@@ -171,7 +171,7 @@ NS_INLINE NSUInteger _HTTPStatusCodeToIndex(TNLHTTPStatusCode code)
 
     // check if the method can be retried
 
-    if (![self methodCanBeRetried:[TNLRequest HTTPMethodValueForRequest:info.finalURLRequest]]) {
+    if (![self methodCanBeRetried:TNLRequestGetHTTPMethodValue(info.finalURLRequest)]) {
         return NO;
     }
 

@@ -11,9 +11,13 @@
 NS_ASSUME_NONNULL_BEGIN
 
 //! Content Encoding error domain
-FOUNDATION_EXTERN NSString * const TNLContentEncodingErrorDomain;
-//! Specific Content Encoding error code to stop encoding instead of fail
-static const NSInteger TNLContentEncodingErrorCodeSkipEncoding = -1;
+FOUNDATION_EXTERN NSErrorDomain const TNLContentEncodingErrorDomain;
+
+//! Content Encoding error codes
+typedef NS_ERROR_ENUM(TNLContentEncodingErrorDomain, TNLContentEncodingErrorCode) {
+    //! Specific Content Encoding error code to stop encoding instead of fail
+    TNLContentEncodingErrorCodeSkipEncoding = -1
+};
 
 /**
  Protocol for supporting custom request _Content-Encoding_

@@ -38,10 +38,7 @@
 
 - (void)testConfigRoundTrips
 {
-    BOOL connectivityOptionsForciblyDisabled = NO;
-    if (tnl_available_ios_11) {
-        connectivityOptionsForciblyDisabled = ![NSURLSessionConfiguration tnl_URLSessionCanUseWaitsForConnectivity];
-    }
+    const BOOL connectivityOptionsDisabled = ![NSURLSessionConfiguration tnl_URLSessionCanUseWaitsForConnectivity];
     TNLMutableRequestConfiguration *config = [TNLMutableRequestConfiguration defaultConfiguration];
     TNLMutableParameterCollection *params;
     TNLParameterCollection *roundTripParams;
@@ -93,7 +90,7 @@
     config.attemptTimeout = 360.1;
     config.operationTimeout = 720.1;
     config.deferrableInterval = 30.1;
-    config.cachePolicy = NSURLCacheStorageAllowedInMemoryOnly;
+    config.cachePolicy = NSURLRequestReturnCacheDataElseLoad;
     config.networkServiceType = NSURLNetworkServiceTypeBackground;
     config.allowsCellularAccess = NO;
     config.discretionary = YES;
@@ -113,7 +110,7 @@
     XCTAssertNotEqual(roundTripConfig.contributeToExecutingNetworkConnectionsCount, config.contributeToExecutingNetworkConnectionsCount);
     roundTripConfig.contributeToExecutingNetworkConnectionsCount = config.contributeToExecutingNetworkConnectionsCount;
 
-    testParamString = [NSString stringWithFormat:@"aca=0&atmpTO=360.1&ckiplcy=1&cnvty=%@&dfrI=30.1&dis=1&idlTO=180.1&nst=3&opTO=720.1&ptcls=2&rcp=1&rdcm=2&rdp=0&%@setcki=0&ssle=0&xbim=1", (connectivityOptionsForciblyDisabled) ? @0 : @5, config.sharedContainerIdentifier ? @"scid=container.id&" : @""];
+    testParamString = [NSString stringWithFormat:@"aca=0&atmpTO=360.1&ckiplcy=1&cnvty=%@&dfrI=30.1&dis=1&idlTO=180.1&nst=3&opTO=720.1&ptcls=2&rcp=2&rdcm=2&rdp=0&%@setcki=0&ssle=0&xbim=1", (connectivityOptionsDisabled) ? @0 : @5, config.sharedContainerIdentifier ? @"scid=container.id&" : @""];
     XCTAssertEqualObjects(paramString, testParamString);
     [self runTestParamsEqualBetweenOriginal:params roundTrip:roundTripParams];
     XCTAssertEqualObjects(roundTripConfig, config);
@@ -134,7 +131,7 @@
     roundTripConfig.URLCredentialStorage = config.URLCredentialStorage;
     roundTripConfig.URLCache = config.URLCache;
     roundTripConfig.cookieStorage = config.cookieStorage;
-    testParamString = [NSString stringWithFormat:@"aca=0&atmpTO=360.1&ckiplcy=1&ckisto=NSHTTPCookieStorage_%p&cnvty=%@&crdsto=NSURLCredentialStorage_%p&dfrI=30.1&dis=1&idlTO=180.1&nst=3&opTO=720.1&ptcls=2&rcp=1&rdcm=2&rdp=0&%@setcki=0&ssle=0&urlcch=NSURLCache_%p&xbim=1", config.cookieStorage, (connectivityOptionsForciblyDisabled) ? @0 : @5, config.URLCredentialStorage, config.sharedContainerIdentifier ? @"scid=container.id&" : @"", config.URLCache];
+    testParamString = [NSString stringWithFormat:@"aca=0&atmpTO=360.1&ckiplcy=1&ckisto=NSHTTPCookieStorage_%p&cnvty=%@&crdsto=NSURLCredentialStorage_%p&dfrI=30.1&dis=1&idlTO=180.1&nst=3&opTO=720.1&ptcls=2&rcp=2&rdcm=2&rdp=0&%@setcki=0&ssle=0&urlcch=NSURLCache_%p&xbim=1", config.cookieStorage, (connectivityOptionsDisabled) ? @0 : @5, config.URLCredentialStorage, config.sharedContainerIdentifier ? @"scid=container.id&" : @"", config.URLCache];
     XCTAssertEqualObjects(paramString, testParamString);
     [self runTestParamsEqualBetweenOriginal:params roundTrip:roundTripParams];
     XCTAssertEqualObjects(roundTripConfig, config);
@@ -155,9 +152,9 @@
     roundTripConfig.URLCredentialStorage = config.URLCredentialStorage;
     roundTripConfig.URLCache = config.URLCache;
     roundTripConfig.cookieStorage = config.cookieStorage;
-    testParamString = [NSString stringWithFormat:@"aca=0&atmpTO=360.1&ckiplcy=1&ckisto=NSHTTPCookieStorage_%p&cnvty=%@&crdsto=NSURLCredentialStorage_%p&dfrI=30.1&dis=1&idlTO=180.1&nst=3&opTO=720.1&ptcls=2&rcp=1&rdcm=2&rdp=0&%@setcki=0&ssle=0&urlcch=NSURLCache_%p&xbim=1", config.cookieStorage, (connectivityOptionsForciblyDisabled) ? @0 : @5, config.URLCredentialStorage, config.sharedContainerIdentifier ? @"scid=container.id&" : @"", config.URLCache];
+    testParamString = [NSString stringWithFormat:@"aca=0&atmpTO=360.1&ckiplcy=1&ckisto=NSHTTPCookieStorage_%p&cnvty=%@&crdsto=NSURLCredentialStorage_%p&dfrI=30.1&dis=1&idlTO=180.1&nst=3&opTO=720.1&ptcls=2&rcp=2&rdcm=2&rdp=0&%@setcki=0&ssle=0&urlcch=NSURLCache_%p&xbim=1", config.cookieStorage, (connectivityOptionsDisabled) ? @0 : @5, config.URLCredentialStorage, config.sharedContainerIdentifier ? @"scid=container.id&" : @"", config.URLCache];
     XCTAssertNotEqualObjects(paramString, testParamString);
-    testParamString = [NSString stringWithFormat:@"aca=0&atmpTO=360.1&ckiplcy=1&ckisto=NSHTTPCookieStorage_%p&cnvty=%@&crdsto=NSURLCredentialStorage_%p&dfrI=30.1&dis=1&idlTO=180.1&nst=3&opTO=720.1&ptcls=2&rcp=1&rdcm=2&rdp=0&%@setcki=0&ssle=0&urlcch=NSURLCache_%p&xbim=1", TNLUnwrappedCookieStorage(config.cookieStorage), (connectivityOptionsForciblyDisabled) ? @0 : @5, TNLUnwrappedURLCredentialStorage(config.URLCredentialStorage), config.sharedContainerIdentifier ? @"scid=container.id&" : @"", TNLUnwrappedURLCache(config.URLCache)];
+    testParamString = [NSString stringWithFormat:@"aca=0&atmpTO=360.1&ckiplcy=1&ckisto=NSHTTPCookieStorage_%p&cnvty=%@&crdsto=NSURLCredentialStorage_%p&dfrI=30.1&dis=1&idlTO=180.1&nst=3&opTO=720.1&ptcls=2&rcp=2&rdcm=2&rdp=0&%@setcki=0&ssle=0&urlcch=NSURLCache_%p&xbim=1", TNLUnwrappedCookieStorage(config.cookieStorage), (connectivityOptionsDisabled) ? @0 : @5, TNLUnwrappedURLCredentialStorage(config.URLCredentialStorage), config.sharedContainerIdentifier ? @"scid=container.id&" : @"", TNLUnwrappedURLCache(config.URLCache)];
     XCTAssertEqualObjects(paramString, testParamString);
     [self runTestParamsEqualBetweenOriginal:params roundTrip:roundTripParams];
     XCTAssertEqualObjects(roundTripConfig, config);

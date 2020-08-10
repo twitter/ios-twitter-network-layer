@@ -23,7 +23,7 @@ const NSTimeInterval TNLSimpleRetryAfterMaximumBackoffValueBeforeTreatedAsGoAway
 {
     NSTimeInterval backoff = TNLSimpleRetryAfterBackoffValueDefault;
 
-    NSString *retryAfterString = [headers tnl_objectsForCaseInsensitiveKey:@"retry-after"].firstObject;
+    NSString *retryAfterString = [headers tnl_objectForCaseInsensitiveKey:@"retry-after"];
     id retryAfterValue = [NSHTTPURLResponse tnl_parseRetryAfterValueFromString:retryAfterString];
     if (retryAfterValue) {
         backoff = [NSHTTPURLResponse tnl_delayFromRetryAfterValue:retryAfterValue];

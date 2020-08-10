@@ -27,7 +27,6 @@
 #import <TwitterNetworkLayer/TNLParameterCollection.h>
 #import <TwitterNetworkLayer/TNLPriority.h>
 #import <TwitterNetworkLayer/TNLPseudoURLProtocol.h>
-#import <TwitterNetworkLayer/TNLRequest+Utilities.h>
 #import <TwitterNetworkLayer/TNLRequest.h>
 #import <TwitterNetworkLayer/TNLRequestAuthorizer.h>
 #import <TwitterNetworkLayer/TNLRequestConfiguration.h>
@@ -54,7 +53,6 @@
 #import <TwitterNetworkLayer/NSDictionary+TNLAdditions.h>
 #import <TwitterNetworkLayer/NSHTTPCookieStorage+TNLAdditions.h>
 #import <TwitterNetworkLayer/NSNumber+TNLURLCoding.h>
-#import <TwitterNetworkLayer/NSOperationQueue+TNLSafety.h>
 #import <TwitterNetworkLayer/NSURL+TNLAdditions.h>
 #import <TwitterNetworkLayer/NSURLAuthenticationChallenge+TNLAdditions.h>
 #import <TwitterNetworkLayer/NSURLCache+TNLAdditions.h>

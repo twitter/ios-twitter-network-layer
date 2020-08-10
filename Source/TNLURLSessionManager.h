@@ -6,8 +6,9 @@
 //  Copyright © 2020 Twitter. All rights reserved.
 //
 
-#import <TwitterNetworkLayer/TNLGlobalConfiguration.h>
-#import <TwitterNetworkLayer/TNLRequestConfiguration.h>
+#import "TNL_Project.h"
+#import "TNLGlobalConfiguration.h"
+#import "TNLRequestConfiguration.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -99,6 +100,7 @@ NS_ROOT_CLASS
 
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface NSURLSessionConfiguration (TNLRequestConfiguration)
 
 + (NSURLSessionConfiguration *)sessionConfigurationWithConfiguration:(TNLRequestConfiguration *)configuration;

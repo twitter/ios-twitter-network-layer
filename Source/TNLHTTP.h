@@ -46,8 +46,10 @@ typedef NS_ENUM(NSInteger, TNLHTTPMethod) {
     TNLHTTPMethodCONNECT    = 9
 };
 
-FOUNDATION_EXTERN NSString * __nullable TNLHTTPMethodToString(TNLHTTPMethod method);
-FOUNDATION_EXTERN TNLHTTPMethod TNLHTTPMethodFromString(NSString *methodString);
+FOUNDATION_EXTERN NSString * __nullable TNLHTTPMethodToString(TNLHTTPMethod method)
+NS_SWIFT_NAME(getter:TNLHTTPMethod.description(self:));
+FOUNDATION_EXTERN TNLHTTPMethod TNLHTTPMethodFromString(NSString *methodString)
+NS_SWIFT_NAME(TNLHTTPMethod.init(method:));
 
 #pragma mark - HTTP Status Code
 
@@ -189,17 +191,50 @@ typedef NS_ENUM(NSInteger, TNLHTTPStatusCode) {
 
 #define TNLHTTPStatusCodePageSize               (100)
 
-#define TNLHTTPStatusCodeIsInformational(code)  (((code) / TNLHTTPStatusCodePageSize) == (TNLHTTPStatusCodePageInformational / TNLHTTPStatusCodePageSize))
-#define TNLHTTPStatusCodeIsSuccess(code)        (((code) / TNLHTTPStatusCodePageSize) == (TNLHTTPStatusCodePageSuccess / TNLHTTPStatusCodePageSize))
-#define TNLHTTPStatusCodeIsRedirection(code)    (((code) / TNLHTTPStatusCodePageSize) == (TNLHTTPStatusCodePageRedirection / TNLHTTPStatusCodePageSize))
-#define TNLHTTPStatusCodeIsClientError(code)    (((code) / TNLHTTPStatusCodePageSize) == (TNLHTTPStatusCodePageClientError / TNLHTTPStatusCodePageSize))
-#define TNLHTTPStatusCodeIsServerError(code)    (((code) / TNLHTTPStatusCodePageSize) == (TNLHTTPStatusCodePageServerError / TNLHTTPStatusCodePageSize))
+//! HTTP 1xx
+NS_SWIFT_NAME(getter:TNLHTTPStatusCode.isInformational(self:))
+NS_INLINE BOOL TNLHTTPStatusCodeIsInformational(TNLHTTPStatusCode code)
+{
+    return (code / TNLHTTPStatusCodePageSize) == (TNLHTTPStatusCodePageInformational / TNLHTTPStatusCodePageSize);
+}
 
+//! HTTP 2xx
+NS_SWIFT_NAME(getter:TNLHTTPStatusCode.isSuccess(self:))
+NS_INLINE BOOL TNLHTTPStatusCodeIsSuccess(TNLHTTPStatusCode code)
+{
+    return (code / TNLHTTPStatusCodePageSize) == (TNLHTTPStatusCodePageSuccess / TNLHTTPStatusCodePageSize);
+}
+
+//! HTTP 3xx
+NS_SWIFT_NAME(getter:TNLHTTPStatusCode.isRedirection(self:))
+NS_INLINE BOOL TNLHTTPStatusCodeIsRedirection(TNLHTTPStatusCode code)
+{
+    return (code / TNLHTTPStatusCodePageSize) == (TNLHTTPStatusCodePageRedirection / TNLHTTPStatusCodePageSize);
+}
+
+//! HTTP 4xx
+NS_SWIFT_NAME(getter:TNLHTTPStatusCode.isClientError(self:))
+NS_INLINE BOOL TNLHTTPStatusCodeIsClientError(TNLHTTPStatusCode code)
+{
+    return (code / TNLHTTPStatusCodePageSize) == (TNLHTTPStatusCodePageClientError / TNLHTTPStatusCodePageSize);
+}
+
+//! HTTP 5xx
+NS_SWIFT_NAME(getter:TNLHTTPStatusCode.isServerError(self:))
+NS_INLINE BOOL TNLHTTPStatusCodeIsServerError(TNLHTTPStatusCode code)
+{
+    return (code / TNLHTTPStatusCodePageSize) == (TNLHTTPStatusCodePageServerError / TNLHTTPStatusCodePageSize);
+}
+
+//! HTTP response is 2xx AND definitely a success (not 202, 203, 207, 208, 226)
+NS_SWIFT_NAME(getter:TNLHTTPStatusCode.isDefinitiveSuccess(self:))
 NS_INLINE BOOL TNLHTTPStatusCodeIsDefinitiveSuccess(TNLHTTPStatusCode statusCode)
 {
     if (!TNLHTTPStatusCodeIsSuccess(statusCode)) {
         return NO;
     }
+
+    /// Start: ignore these comments in Swift which are for the relevant ObjC code
 
     switch (statusCode) {
         case TNLHTTPStatusCodeAccepted:                     // 202
@@ -216,20 +251,26 @@ NS_INLINE BOOL TNLHTTPStatusCodeIsDefinitiveSuccess(TNLHTTPStatusCode statusCode
             return YES;
         }
     }
+
+    /// End: ignore these comments in Swift which are for the relevant ObjC code
 }
 
 #pragma mark - HTTP Content-Type constants
 
-FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeJPEGImage;
-FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeQuicktimeVideo;
-FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeJSON;
-FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeTextPlain;
-FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeMultipartFormData;
-FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeOctetStream;
-FOUNDATION_EXTERN NSString * const TNLHTTPContentTypeURLEncodedString;
+typedef NSString * const TNLHTTPContentType NS_EXTENSIBLE_STRING_ENUM;
+
+FOUNDATION_EXTERN TNLHTTPContentType TNLHTTPContentTypeJPEGImage;           // image/jpeg
+FOUNDATION_EXTERN TNLHTTPContentType TNLHTTPContentTypeQuicktimeVideo;      // video/quicktime
+FOUNDATION_EXTERN TNLHTTPContentType TNLHTTPContentTypeJSON;                // application/json
+FOUNDATION_EXTERN TNLHTTPContentType TNLHTTPContentTypeTextPlain;           // text/plain
+FOUNDATION_EXTERN TNLHTTPContentType TNLHTTPContentTypeMultipartFormData;   // multipart/form-data
+FOUNDATION_EXTERN TNLHTTPContentType TNLHTTPContentTypeOctetStream;         // application/octet-stream
+FOUNDATION_EXTERN TNLHTTPContentType TNLHTTPContentTypeURLEncodedString;    // application/x-www-form-urlencoded
+FOUNDATION_EXTERN TNLHTTPContentType TNLHTTPContentTypeThriftBinary;        // application/vnd.apache.thrift.binary
 
 //! Is the content type a textual format (limited to UTF8 [default] and ASCII currently), helpful for determining if something is printable or compressable
-FOUNDATION_EXTERN BOOL TNLHTTPContentTypeIsTextual(NSString * __nullable contentType);
+FOUNDATION_EXTERN BOOL TNLHTTPContentTypeIsTextual(NSString * __nullable contentType)
+NS_SWIFT_NAME(getter:TNLHTTPContentType.isTextual(self:));
 
 #pragma mark - HTTP Dates
 
@@ -263,10 +304,12 @@ typedef NS_ENUM(NSInteger, TNLHTTPDateFormat)
 
 //! Convert an `NSString` to an `NSDate`, optionally decting the format
 FOUNDATION_EXTERN NSDate * __nullable TNLHTTPDateFromString(NSString * __nullable string,
-                                                            TNLHTTPDateFormat * __nullable detectedFormat);
+                                                            TNLHTTPDateFormat * __nullable detectedFormat)
+NS_SWIFT_NAME(TNLHTTPDateFormat.convert(string:detectedFormat:));
 //! Convert an `NSDate` to an `NSString` in the specified _format_
 FOUNDATION_EXTERN NSString * __nullable TNLHTTPDateToString(NSDate * __nullable date,
-                                                            TNLHTTPDateFormat format);
+                                                            TNLHTTPDateFormat format)
+NS_SWIFT_NAME(TNLHTTPDateFormat.convert(self:date:));
 
 #if APPLEDOC
 /**

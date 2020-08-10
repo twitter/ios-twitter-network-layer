@@ -57,7 +57,7 @@ typedef void(^TNLRequestDidCompleteBlock)(TNLRequestOperation *op, TNLResponse *
   - setting up dependencies
   - setting priority
   - setting a completion block
-  - setting a _name_ (iOS 8+)
+  - setting a _name_
   - using `waitUntilFinished`
   - using `cancel`
 

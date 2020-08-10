@@ -11,8 +11,6 @@
 #import "TNL_Project.h"
 #import "TNLTimeoutOperation.h"
 
-#define SELF_ARG PRIVATE_SELF(TNLTimeoutOperation)
-
 NS_ASSUME_NONNULL_BEGIN
 
 @implementation TNLTimeoutOperation
@@ -67,24 +65,20 @@ NS_ASSUME_NONNULL_BEGIN
     if (_timeoutDuration > 0.0) {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_timeoutDuration * NSEC_PER_SEC)), dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
             @autoreleasepool {
-                _complete(self);
+                [self _complete];
             }
         });
     } else {
-        _complete(self);
+        [self _complete];
     }
 }
 
-static void _complete(SELF_ARG)
+- (void)_complete TNL_OBJC_DIRECT
 {
-    if (!self) {
-        return;
-    }
-
     [self willChangeValueForKey:@"isFinished"];
     [self willChangeValueForKey:@"isExecuting"];
-    atomic_store(&self->_executingFlag, false);
-    atomic_store(&self->_finishedFlag, true);
+    atomic_store(&_executingFlag, false);
+    atomic_store(&_finishedFlag, true);
     [self didChangeValueForKey:@"isExecuting"];
     [self didChangeValueForKey:@"isFinished"];
 }

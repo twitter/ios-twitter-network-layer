@@ -9,7 +9,6 @@
 #include <objc/message.h>
 #include <stdatomic.h>
 
-#import "NSOperationQueue+TNLSafety.h"
 #import "NSURLResponse+TNLAdditions.h"
 #import "NSURLSessionConfiguration+TNLAdditions.h"
 #import "TNL_Project.h"
@@ -25,8 +24,6 @@
 #import "TNLRequestOperationQueue_Project.h"
 #import "TNLResponse.h"
 #import "TNLURLSessionTaskOperation.h"
-
-#define SELF_ARG PRIVATE_SELF(TNLRequestOperationQueue)
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -64,7 +61,7 @@ static void _GlobalEnqueueOperation(NSOperation *op);
 static void _GlobalEnqueueOperation(NSOperation *op)
 {
     @try {
-        [sGlobalRequestOperationQueue tnl_safeAddOperation:op];
+        [sGlobalRequestOperationQueue addOperation:op];
     } @catch (NSException *exception) {
         TNLLogError(@"[%@ addOperation:%@] - %@", sGlobalRequestOperationQueue, op, exception);
         @throw exception;
@@ -123,6 +120,7 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 @interface TNLRequestOperationQueue (NSURLSessionDelegate) <NSURLSessionDataDelegate, NSURLSessionDownloadDelegate>
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLRequestOperationQueue ()
 @property (nonatomic, readonly) dispatch_queue_t sessionStateQueue;
 @end
@@ -397,15 +395,10 @@ static void _GlobalApplyAutoDependenciesToOperation(TNLRequestOperation *op)
 
 #pragma mark Cancel
 
-static void _cancelAllStagedRequestOperations(SELF_ARG,
-                                              id<TNLRequestOperationCancelSource> source,
-                                              NSError * __nullable optionalUnderlyingError)
+- (void)_cancelAllStagedRequestOperations:(id<TNLRequestOperationCancelSource>)source
+                          underlyingError:(nullable NSError *)optionalUnderlyingError TNL_OBJC_DIRECT
 {
-    if (!self) {
-        return;
-    }
-
-    tnl_dispatch_async_autoreleasing(self->_sessionStateQueue, ^{
+    tnl_dispatch_async_autoreleasing(_sessionStateQueue, ^{
         NSArray<TNLRequestOperation *> *ops = [self->_stagedRequestOperations copy];
         [self->_stagedRequestOperations removeAllObjects];
         for (TNLRequestOperation *op in ops) {
@@ -418,7 +411,8 @@ static void _cancelAllStagedRequestOperations(SELF_ARG,
 - (void)cancelAllWithSource:(id<TNLRequestOperationCancelSource>)source
             underlyingError:(nullable NSError *)optionalUnderlyingError
 {
-    _cancelAllStagedRequestOperations(self, source, optionalUnderlyingError);
+    [self _cancelAllStagedRequestOperations:source
+                            underlyingError:optionalUnderlyingError];
     [[TNLURLSessionManager sharedInstance] cancelAllForQueue:self
                                                       source:source
                                              underlyingError:optionalUnderlyingError];
@@ -444,11 +438,10 @@ static void _cancelAllStagedRequestOperations(SELF_ARG,
 
 - (void)operationDidStart:(TNLRequestOperation *)op
 {
-    _executeOnNetworkObservers(self,
-                               @selector(tnl_requestOperationDidStart:),
-                               ^(id<TNLNetworkObserver> observer) {
+    [self _executeWithMatchingSelector:@selector(tnl_requestOperationDidStart:)
+                                 block:^(id<TNLNetworkObserver> observer) {
         [observer tnl_requestOperationDidStart:op];
-    });
+    }];
 }
 
 - (void)operation:(TNLRequestOperation *)op
@@ -456,61 +449,52 @@ static void _cancelAllStagedRequestOperations(SELF_ARG,
 {
     NSURLRequest *URLRequest = op.currentURLRequest;
 
-    _executeOnNetworkObservers(self,
-                               @selector(tnl_requestOperation:didStartAttemptRequest:metrics:),
-                               ^(id<TNLNetworkObserver> observer) {
+    [self _executeWithMatchingSelector:@selector(tnl_requestOperation:didStartAttemptRequest:metrics:)
+                                 block:^(id<TNLNetworkObserver> observer) {
         [observer tnl_requestOperation:op
                 didStartAttemptRequest:URLRequest
                                metrics:metrics];
-    });
+    }];
 }
 
 - (void)operation:(TNLRequestOperation *)op
         didCompleteAttempt:(TNLResponse *)response
         disposition:(TNLAttemptCompleteDisposition)disposition
 {
-    _executeOnNetworkObservers(self,
-                               @selector(tnl_requestOperation:didCompleteAttemptWithIntermediateResponse:disposition:),
-                               ^(id<TNLNetworkObserver> observer) {
+    [self _executeWithMatchingSelector:@selector(tnl_requestOperation:didCompleteAttemptWithIntermediateResponse:disposition:)
+                                 block:^(id<TNLNetworkObserver> observer) {
         [observer tnl_requestOperation:op
                   didCompleteAttemptWithIntermediateResponse:response
                   disposition:disposition];
-    });
+    }];
 }
 
 - (void)operation:(TNLRequestOperation *)op
         didCompleteWithResponse:(TNLResponse *)response
 {
-    _executeOnNetworkObservers(self,
-                               @selector(tnl_requestOperation:didCompleteWithResponse:),
-                               ^(id<TNLNetworkObserver> observer) {
+    [self _executeWithMatchingSelector:@selector(tnl_requestOperation:didCompleteWithResponse:)
+                                 block:^(id<TNLNetworkObserver> observer) {
         [observer tnl_requestOperation:op
                didCompleteWithResponse:response];
-    });
+    }];
 }
 
 - (void)taskOperation:(TNLURLSessionTaskOperation *)op
         didCompleteAttempt:(TNLResponse *)response
 {
     TNLRequestOperation *requestOp = [op synthesizeRequestOperation];
-    _executeOnNetworkObservers(self,
-                               @selector(tnl_requestOperation:didCompleteWithResponse:),
-                               ^(id<TNLNetworkObserver> observer) {
+    [self _executeWithMatchingSelector:@selector(tnl_requestOperation:didCompleteWithResponse:)
+                                 block:^(id<TNLNetworkObserver> observer) {
         [observer tnl_requestOperation:requestOp
                didCompleteWithResponse:response];
-    });
+    }];
 }
 
 #pragma mark Private
 
-static void _executeOnNetworkObservers(SELF_ARG,
-                                       SEL selector,
-                                       void(^matchingBlock)(id<TNLNetworkObserver> matchingObserver))
+- (void)_executeWithMatchingSelector:(SEL)selector
+                               block:(void(^)(id<TNLNetworkObserver> matchingObserver))matchingBlock TNL_OBJC_DIRECT
 {
-    if (!self) {
-        return;
-    }
-
     tnl_dispatch_async_autoreleasing(_GlobalOperationQueueQueue(), ^{
         NSSet<id<TNLNetworkObserver>> *observers = [sGlobalNetworkObservers copy];
         tnl_dispatch_async_autoreleasing(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -521,7 +505,7 @@ static void _executeOnNetworkObservers(SELF_ARG,
             }
         });
     });
-    tnl_dispatch_async_autoreleasing(self->_sessionStateQueue, ^{
+    tnl_dispatch_async_autoreleasing(_sessionStateQueue, ^{
         if ([self->_networkObserver respondsToSelector:selector]) {
             matchingBlock(self->_networkObserver);
         }

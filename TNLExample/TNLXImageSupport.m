@@ -110,7 +110,7 @@
 
 - (BOOL)isEqualToRequest:(id<TNLRequest>)request
 {
-    if (![TNLRequest isRequest:self equalTo:request]) {
+    if (!TNLRequestEqualToRequest(self, request, NO /*quickBodyCheck*/)) {
         return NO;
     }
 

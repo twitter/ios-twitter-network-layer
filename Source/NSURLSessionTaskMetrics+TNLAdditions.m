@@ -60,7 +60,7 @@ NS_ASSUME_NONNULL_BEGIN
     return [self _tnl_dictionaryValue:YES];
 }
 
-- (NSMutableDictionary<NSString *, id> *)_tnl_dictionaryValue:(BOOL)sanitizeForSerialization
+- (NSMutableDictionary<NSString *, id> *)_tnl_dictionaryValue:(BOOL)sanitizeForSerialization TNL_OBJC_DIRECT
 {
     NSMutableDictionary<NSString *, id> *d = [self _tnl_metadata:sanitizeForSerialization];
 
@@ -98,7 +98,7 @@ NS_ASSUME_NONNULL_BEGIN
     return [self _tnl_metadata:NO];
 }
 
-- (NSMutableDictionary<NSString *, id> *)_tnl_metadata:(BOOL)sanitizeForSerialization
+- (NSMutableDictionary<NSString *, id> *)_tnl_metadata:(BOOL)sanitizeForSerialization TNL_OBJC_DIRECT
 {
     NSMutableDictionary<NSString *, id> *d = [[NSMutableDictionary alloc] init];
 

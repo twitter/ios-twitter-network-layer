@@ -103,7 +103,7 @@ static NSData *HMAC_SHA1(NSString *data, NSString *key)
         }
         [self->_loginOperations addObject:op];
     });
-    [[NSOperationQueue mainQueue] tnl_safeAddOperation:op];
+    [[NSOperationQueue mainQueue] addOperation:op];
     return op;
 }
 
@@ -197,7 +197,7 @@ static NSData *HMAC_SHA1(NSString *data, NSString *key)
 
     TAPIRequest *request = (id)op.originalRequest;
     TAPIOperationContext *context = op.context;
-    NSString *method = [TNLRequest HTTPMethodForRequest:URLRequest];
+    NSString *method = TNLRequestGetHTTPMethod(URLRequest);
     NSString *baseURLString = [request baseURLString];
     TNLMutableParameterCollection *params = [[request parameters] mutableCopy] ?:  [[TNLMutableParameterCollection alloc] init];
 

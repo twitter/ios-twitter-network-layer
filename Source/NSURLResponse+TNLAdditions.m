@@ -128,7 +128,7 @@ static const char TNLContentEncodingAssociatedObjectKey[] = "tnl.content.encodin
 {
     NSString *contentEncoding = objc_getAssociatedObject(self, TNLContentEncodingAssociatedObjectKey);
     if (!contentEncoding) {
-        contentEncoding = [self.allHeaderFields tnl_objectsForCaseInsensitiveKey:@"Content-Encoding"].firstObject;
+        contentEncoding = [self.allHeaderFields tnl_objectForCaseInsensitiveKey:@"Content-Encoding"];
         objc_setAssociatedObject(self, TNLContentEncodingAssociatedObjectKey, contentEncoding ?: [NSNull null], OBJC_ASSOCIATION_RETAIN /*atomic*/);
     }
     if (contentEncoding == (id)[NSNull null]) {
@@ -139,7 +139,7 @@ static const char TNLContentEncodingAssociatedObjectKey[] = "tnl.content.encodin
 
 - (long long)tnl_expectedResponseBodySize
 {
-    NSString *contentLengthString = [self.allHeaderFields tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject;
+    NSString *contentLengthString = [self.allHeaderFields tnl_objectForCaseInsensitiveKey:@"Content-Length"];
     const long long headerContentLength = (contentLengthString) ? [contentLengthString longLongValue] : -1;
     if (headerContentLength >= 0) {
         return headerContentLength;
@@ -151,7 +151,7 @@ static const char TNLContentEncodingAssociatedObjectKey[] = "tnl.content.encodin
 {
     long long contentLength = self.expectedContentLength;
     if (contentLength <= 0) {
-        NSString *contentLengthString = [self.allHeaderFields tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject;
+        NSString *contentLengthString = [self.allHeaderFields tnl_objectForCaseInsensitiveKey:@"Content-Length"];
         if (contentLengthString) {
             contentLength = [contentLengthString longLongValue];
         } else {

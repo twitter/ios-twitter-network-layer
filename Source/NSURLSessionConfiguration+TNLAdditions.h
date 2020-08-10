@@ -16,18 +16,6 @@ NS_ASSUME_NONNULL_BEGIN
 @interface NSURLSessionConfiguration (TNLAdditions)
 
 /**
- Returns `NO` if the current OS has a critical bug where
- `URLSession:dataTask:didReceiveResponse:completionHandler:` being implemented in a delegate while
- using an `NSURLProtocol` will render the `NSURLSessionTask` completely unuseable. radar://19494690
-
- If this method returns `NO`, the use of KVO on the `NSURLSessionTask` instance's `response`
- property is the only viable alternative.
- This has the side effect of needing to be very careful with the KVO or there will be some crashing
- in Apple's networking code, but that is the lesser of the 2 issues.
- */
-+ (BOOL)tnl_URLSessionCanReceiveResponseViaDelegate;
-
-/**
  Returns `NO` if transaction metrics cannot be used.
  Task Metrics were introduced in iOS 10 / macOS 10.12.
  There was a crash in iOS 10 / macOS 10.12 for transaction metrics caused by timestamps in Apple's

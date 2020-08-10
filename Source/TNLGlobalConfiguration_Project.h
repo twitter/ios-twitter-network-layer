@@ -21,6 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 typedef NSUInteger TNLBackgroundTaskIdentifier;
 FOUNDATION_EXTERN const TNLBackgroundTaskIdentifier TNLBackgroundTaskInvalid;
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLGlobalConfiguration ();
 
 @property (nonatomic, readonly) dispatch_queue_t configurationQueue;

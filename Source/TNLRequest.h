@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
    - if there is a `TNLRequestHydrater`, that will be used for hydrating the request
    - if there is no `TNLRequestHydrater`, the original request will be used
    - See `[TNLRequestOperation hydratedRequest]`
- 3. The hydrated request is verified with `[TNLRequest validateRequest:againstConfiguration:error:]`
+ 3. The hydrated request is verified with `TNLRequestValidate(...)`
  4. The hydrated request is converted to an `NSURLRequest` for transmission (under the hood)
    - See `[TNLRequestOperation hydratedURLRequest]`
  5. The operation executes upon the request
@@ -208,7 +208,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                 [self.endpoint hasPrefix:@"/"] ? @"" : @"/",
                                                 self.endpoint];
         }
-        if (TNLHTTPMethodValuePOST != [TNLRequest HTTPMethodValueForRequest:self]) {
+        if (TNLHTTPMethodValuePOST != TNLRequestGetHTTPMethodValue(self)) {
             TNLParameterCollection *params = self.parameters;
             if (params.count > 0) {
                  URLStr = [URLStr stringByAppendingFormat:@"?%@",
@@ -220,7 +220,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     - (NSData *)HTTPBody
     {
-        if (TNLHTTPMethodValuePOST != [TNLRequest HTTPMethodValueForRequest:self]) {
+        if (TNLHTTPMethodValuePOST != TNLRequestGetHTTPMethodValue(self)) {
             return nil;
         }
 
@@ -237,7 +237,7 @@ NS_ASSUME_NONNULL_BEGIN
     - (NSDictionary *)allHTTPHeaderFields
     {
         NSMutableDictionary *headers = [[NSMutableDictionary alloc] init];
-        if (TNLHTTPMethodValuePOST == [TNLRequest HTTPMethodValueForRequest:self]) {
+        if (TNLHTTPMethodValuePOST == TNLRequestGetHTTPMethodValue(self)) {
              headers[@"content-type"] = TNLHTTPContentTypeJSON;
         }
         headers[@"timestamp"] = [NSString stringWithFormat:@"%ll", time()];
@@ -324,7 +324,7 @@ NS_ASSUME_NONNULL_BEGIN
  Method for checking equality between two objects conforming to `TNLRequest` (optional)
 
  When checking `TNLRequest` equivalency, if neither object implements `isEqualToRequest:`,
- `[TNLRequest isRequest:equalTo:]` is preferred
+ `TNLRequestEqualToRequest(...)` is preferred
  @param request The other request to compare with
  @return `YES` if equal, else `NO`
  */
@@ -414,6 +414,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma twitter endignorestylecheck
 
+#pragma mark - NSURLRequest <TNLRequest>
+
 /**
  `NSURLRequest` implicitly conforms to `TNLRequest`.  This category makes that conformance explicit.
 
@@ -428,19 +430,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface NSURLRequest (TNLExtensions) <TNLRequest>
 @end
 
-NS_ASSUME_NONNULL_END
-// Import the header necessary to make class methods on the TNLRequest protocol "possible"
-// It's a fake out, but works well for code completion and as a mental model for utility methods
-// on a protocol vs using having the same utilities live on a tangential class or be global functions.
-#import <TwitterNetworkLayer/TNLRequest+Utilities.h>
-NS_ASSUME_NONNULL_BEGIN
-
-/**
- # TNLRequest (Utilities)
-
- Utilities for `TNLRequest` protocol (not restricted to `TNLHTTPRequest` concrete class)
- */
-@interface TNLRequest (Utilities)
+#pragma mark - TNLRequest Utilities
 
 /**
  Convenience validation method for requests
@@ -451,11 +441,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return `YES` if valid, `NO` if invalid and _error_ (if provided) will be populated.
 */
-+ (BOOL)validateRequest:(nullable id<TNLRequest>)request
-   againstConfiguration:(nullable TNLRequestConfiguration *)config
-                  error:(out NSError * __nullable * __nullable)error;
-
-/** Convenience method for making a hydrated request from a simple requests */
+FOUNDATION_EXTERN BOOL TNLRequestValidate(id<TNLRequest> __nullable request,
+                                          TNLRequestConfiguration * __nullable validationConfig,
+                                          NSError * __nullable * __nullable errorOut);
 
 /**
  Convenience method for making an `NSURLRequest` from a `TNLRequest`.
@@ -468,13 +456,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return The new `NSURLRequest` or `nil`.  If `nil`, then _error_ (if provided) will be populated.
  */
-+ (nullable NSURLRequest *)URLRequestForRequest:(nullable id<TNLRequest>)request
-                                  configuration:(nullable TNLRequestConfiguration *)config
-                                          error:(out NSError * __nullable * __nullable)error;
-
-/** See `URLRequestForRequest:configuration:error:` */
-+ (nullable NSURLRequest *)URLRequestForRequest:(nullable id<TNLRequest>)request
-                                          error:(out NSError * __nullable * __nullable)error;
+FOUNDATION_EXTERN NSURLRequest * __nullable TNLRequestToNSURLRequest(id<TNLRequest> __nullable request,
+                                                                     TNLRequestConfiguration * __nullable config,
+                                                                     NSError * __nullable * __nullable errorOut);
 
 /**
  Convenience method for making an `NSMutableURLRequest` from a `TNLRequest`.
@@ -487,13 +471,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return The new `NSMutableURLRequest` or `nil`.  If `nil`, then _error_ (if provided) will be populated.
  */
-+ (nullable NSMutableURLRequest *)mutableURLRequestForRequest:(nullable id<TNLRequest>)request
-                                                configuration:(nullable TNLRequestConfiguration *)config
-                                                        error:(out NSError * __nullable * __nullable)error;
-
-/** See `mutableURLRequestForRequest:configuration:error:` */
-+ (nullable NSMutableURLRequest *)mutableURLRequestForRequest:(nullable id<TNLRequest>)request
-                                                        error:(out NSError * __nullable * __nullable)error;
+FOUNDATION_EXTERN NSMutableURLRequest * __nullable TNLRequestToNSMutableURLRequest(id<TNLRequest> __nullable request,
+                                                                                   TNLRequestConfiguration * __nullable config,
+                                                                                   NSError * __nullable * __nullable errorOut);
 
 /**
  Convenience method for extracting the `TNLHTTPMethod` from a `TNLRequest`
@@ -502,7 +482,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return The `TNLHTTPMethod` of the _request_.  Default if undefined is `TNLHTTPMethodGET`.
  */
-+ (TNLHTTPMethod)HTTPMethodValueForRequest:(nullable id<TNLRequest>)request;
+FOUNDATION_EXTERN TNLHTTPMethod TNLRequestGetHTTPMethodValue(id<TNLRequest> __nullable request);
 
 /**
  Convenience method for extracting the `NSString` HTTP Method from a `TNLRequest`
@@ -511,28 +491,18 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return The `NSString` HTTP Method of the _request_.  Default if undefined is `@"GET"`.
  */
-+ (NSString *)HTTPMethodForRequest:(nullable id<TNLRequest>)request;
+FOUNDATION_EXTERN NSString *TNLRequestGetHTTPMethod(id<TNLRequest> __nullable request);
 
 /**
  Convenience method to check if a given `TNLRequest` has an HTTP Body
  */
-+ (BOOL)requestHasBody:(nullable id<TNLRequest>)request;
+FOUNDATION_EXTERN BOOL TNLRequestHasBody(id<TNLRequest> __nullable request);
 
 /**
  Convenience method for comparing two `TNLRequest` conforming objects that doesn't use the
- `[TNLRequest isEqualToRequest:]` method
-
- @param request1 The first request
- @param request2 The second request
-
- @return `YES` if equal, `NO` otherwise.
- */
-+ (BOOL)isRequest:(nullable id<TNLRequest>)request1
-          equalTo:(nullable id<TNLRequest>)request2;
-
-/**
- Like `[TNLRequest isRequest:equalTo:]` method, but with a faster HTTP Body check.
- Instead of checking the full bytes of the body, just check if there body exists or not.
+ `[TNLRequest isEqualToRequest:]` method, without option for faster HTTP Body check.
+ Instead of checking the full bytes of the body, can just check if there body exists or not when
+ _quickBodyCheck_ is `YES`.
 
  @param request1 The first request
  @param request2 The second request
@@ -540,10 +510,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return `YES` if equal, `NO` otherwise.
  */
-  + (BOOL)isRequest:(nullable id<TNLRequest>)request1
-            equalTo:(nullable id<TNLRequest>)request2
-quickBodyComparison:(BOOL)quickBodyCheck;
-
-@end
+FOUNDATION_EXTERN BOOL TNLRequestEqualToRequest(id<TNLRequest> __nullable request1,
+                                                id<TNLRequest> __nullable request2,
+                                                BOOL quickBodyCheck);
 
 NS_ASSUME_NONNULL_END
+

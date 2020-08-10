@@ -55,7 +55,6 @@
 		8B3DB55C1A699C8D00FFF836 /* TNLAttemptMetaData.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B3DB5591A699C8D00FFF836 /* TNLAttemptMetaData.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B3DB55E1A699C8D00FFF836 /* TNLAttemptMetaData.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B3DB55A1A699C8D00FFF836 /* TNLAttemptMetaData.m */; };
 		8B427D551FB53DBF00C9E5CE /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B427D541FB53DBF00C9E5CE /* Security.framework */; };
-		8B472C4A1BC41CB900DEA3BF /* NSOperationQueue+TNLSafetyTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B472C491BC41CB900DEA3BF /* NSOperationQueue+TNLSafetyTest.m */; };
 		8B490DD722A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B490DD522A82B9D002D2296 /* NSCoder+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B490DD822A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B490DD522A82B9D002D2296 /* NSCoder+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B490DD922A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B490DD522A82B9D002D2296 /* NSCoder+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -155,7 +154,6 @@
 		8B9EBDD22135B4B100E6E466 /* TNLRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE403041946794300C7241E /* TNLRequest.m */; };
 		8B9EBDD32135B4B100E6E466 /* NSURL+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B87BA3E1E09DA20005A8926 /* NSURL+TNLAdditions.m */; };
 		8B9EBDD42135B4B100E6E466 /* NSNumber+TNLURLCoding.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B959C271BAB6BA3007858C0 /* NSNumber+TNLURLCoding.m */; };
-		8B9EBDD52135B4B100E6E466 /* NSOperationQueue+TNLSafety.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE68CFE1B7E421100A0F853 /* NSOperationQueue+TNLSafety.m */; };
 		8B9EBDD62135B4B100E6E466 /* TNLAttemptMetrics.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BF953DC1A67DD3F00E9C1AA /* TNLAttemptMetrics.m */; };
 		8B9EBDD72135B4B100E6E466 /* TNLCommunicationAgent.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B00D5AA1CFF512100D1728D /* TNLCommunicationAgent.m */; };
 		8B9EBDD82135B4B100E6E466 /* TNLTemporaryFile.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B9038DB19799D4A001A3DDD /* TNLTemporaryFile.m */; };
@@ -178,7 +176,6 @@
 		8B9EBDEE2135B4B100E6E466 /* TNLRequestConfiguration.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B79ACD51975E4BD00FA8D1E /* TNLRequestConfiguration.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B9EBDEF2135B4B100E6E466 /* TNLInternalKeys.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B5849E320D4454500FA8C84 /* TNLInternalKeys.h */; };
 		8B9EBDF02135B4B100E6E466 /* TNLParameterCollection.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B4E016F19FB0632004D3CED /* TNLParameterCollection.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8B9EBDF12135B4B100E6E466 /* TNLRequest+Utilities.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE30EF21AA270750061FE99 /* TNLRequest+Utilities.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B9EBDF22135B4B100E6E466 /* TNLResponse.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE403061946794300C7241E /* TNLResponse.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B9EBDF32135B4B100E6E466 /* TNLAttemptMetaData.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B3DB5591A699C8D00FFF836 /* TNLAttemptMetaData.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B9EBDF42135B4B100E6E466 /* NSURLCredentialStorage+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BA336D81A3271A0005D7B35 /* NSURLCredentialStorage+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -214,7 +211,6 @@
 		8B9EBE132135B4B100E6E466 /* TNLAttemptMetrics.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BF953DB1A67DD3F00E9C1AA /* TNLAttemptMetrics.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B9EBE142135B4B100E6E466 /* TNLPriority.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BDA9D311978822300678D90 /* TNLPriority.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B9EBE152135B4B100E6E466 /* NSURLRequest+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE857641DD396B100F79F3D /* NSURLRequest+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8B9EBE162135B4B100E6E466 /* NSOperationQueue+TNLSafety.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE68CFD1B7E421100A0F853 /* NSOperationQueue+TNLSafety.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B9EBE172135B4B100E6E466 /* NSCachedURLResponse+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B277E471C022B5C00279EA9 /* NSCachedURLResponse+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8B9EBE182135B4B100E6E466 /* NSData+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BB1190D1D83537C00E75CD9 /* NSData+TNLAdditions.h */; };
 		8B9EBE192135B4B100E6E466 /* TNLURLSessionTaskOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B82A5A91948D63100A16237 /* TNLURLSessionTaskOperation.h */; };
@@ -311,7 +307,6 @@
 		8BDFFC401981714800F7F670 /* libxml2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BD410EF19744944005FE24C /* libxml2.dylib */; };
 		8BE30EEF1AA266EC0061FE99 /* TNLHTTPRequest.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE30EEC1AA266EC0061FE99 /* TNLHTTPRequest.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BE30EF11AA266EC0061FE99 /* TNLHTTPRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE30EED1AA266EC0061FE99 /* TNLHTTPRequest.m */; };
-		8BE30EF41AA270750061FE99 /* TNLRequest+Utilities.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE30EF21AA270750061FE99 /* TNLRequest+Utilities.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BE3DB9A1CDB008C0081ACCE /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BE3DB991CDB008C0081ACCE /* libz.tbd */; };
 		8BE3DB9C1CDB009F0081ACCE /* libxml2.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BE3DB9B1CDB009F0081ACCE /* libxml2.tbd */; };
 		8BE3DB9D1CDB00B00081ACCE /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B4DEFF81986AA64008A31EB /* SystemConfiguration.framework */; };
@@ -334,8 +329,6 @@
 		8BE403221946794300C7241E /* TNLRequestOperationQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE4030E1946794300C7241E /* TNLRequestOperationQueue.m */; };
 		8BE4032519467A1400C7241E /* TNLHTTP.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE4032319467A1400C7241E /* TNLHTTP.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BE4032619467A1400C7241E /* TNLHTTP.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE4032419467A1400C7241E /* TNLHTTP.m */; };
-		8BE68D001B7E421100A0F853 /* NSOperationQueue+TNLSafety.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE68CFD1B7E421100A0F853 /* NSOperationQueue+TNLSafety.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8BE68D021B7E421100A0F853 /* NSOperationQueue+TNLSafety.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE68CFE1B7E421100A0F853 /* NSOperationQueue+TNLSafety.m */; };
 		8BE857661DD396B100F79F3D /* NSURLRequest+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE857641DD396B100F79F3D /* NSURLRequest+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BE857671DD396B100F79F3D /* NSURLRequest+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE857651DD396B100F79F3D /* NSURLRequest+TNLAdditions.m */; };
 		8BEB80B224216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BEB80B024216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -384,7 +377,6 @@
 		8BFDF9292135AB2C002F6A80 /* TNLRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE403041946794300C7241E /* TNLRequest.m */; };
 		8BFDF92A2135AB2C002F6A80 /* NSURL+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B87BA3E1E09DA20005A8926 /* NSURL+TNLAdditions.m */; };
 		8BFDF92B2135AB2C002F6A80 /* NSNumber+TNLURLCoding.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B959C271BAB6BA3007858C0 /* NSNumber+TNLURLCoding.m */; };
-		8BFDF92C2135AB2C002F6A80 /* NSOperationQueue+TNLSafety.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE68CFE1B7E421100A0F853 /* NSOperationQueue+TNLSafety.m */; };
 		8BFDF92D2135AB2C002F6A80 /* TNLAttemptMetrics.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BF953DC1A67DD3F00E9C1AA /* TNLAttemptMetrics.m */; };
 		8BFDF92E2135AB2C002F6A80 /* TNLCommunicationAgent.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B00D5AA1CFF512100D1728D /* TNLCommunicationAgent.m */; };
 		8BFDF92F2135AB2C002F6A80 /* TNLTemporaryFile.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B9038DB19799D4A001A3DDD /* TNLTemporaryFile.m */; };
@@ -408,7 +400,6 @@
 		8BFDF9452135AB2C002F6A80 /* TNLRequestConfiguration.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B79ACD51975E4BD00FA8D1E /* TNLRequestConfiguration.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF9462135AB2C002F6A80 /* TNLInternalKeys.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B5849E320D4454500FA8C84 /* TNLInternalKeys.h */; };
 		8BFDF9472135AB2C002F6A80 /* TNLParameterCollection.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B4E016F19FB0632004D3CED /* TNLParameterCollection.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8BFDF9482135AB2C002F6A80 /* TNLRequest+Utilities.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE30EF21AA270750061FE99 /* TNLRequest+Utilities.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF9492135AB2C002F6A80 /* TNLResponse.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE403061946794300C7241E /* TNLResponse.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF94A2135AB2C002F6A80 /* TNLAttemptMetaData.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B3DB5591A699C8D00FFF836 /* TNLAttemptMetaData.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF94B2135AB2C002F6A80 /* NSURLCredentialStorage+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BA336D81A3271A0005D7B35 /* NSURLCredentialStorage+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -446,7 +437,6 @@
 		8BFDF96A2135AB2C002F6A80 /* TNLAttemptMetrics.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BF953DB1A67DD3F00E9C1AA /* TNLAttemptMetrics.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF96B2135AB2C002F6A80 /* TNLPriority.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BDA9D311978822300678D90 /* TNLPriority.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF96C2135AB2C002F6A80 /* NSURLRequest+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE857641DD396B100F79F3D /* NSURLRequest+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8BFDF96D2135AB2C002F6A80 /* NSOperationQueue+TNLSafety.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE68CFD1B7E421100A0F853 /* NSOperationQueue+TNLSafety.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF96E2135AB2C002F6A80 /* NSCachedURLResponse+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B277E471C022B5C00279EA9 /* NSCachedURLResponse+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8BFDF96F2135AB2C002F6A80 /* NSData+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BB1190D1D83537C00E75CD9 /* NSData+TNLAdditions.h */; };
 		8BFDF9702135AB2C002F6A80 /* TNLURLSessionTaskOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B82A5A91948D63100A16237 /* TNLURLSessionTaskOperation.h */; };
@@ -492,7 +482,6 @@
 		8BFDF9A12135ACDB002F6A80 /* NSDictionary+TNLAdditionsTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BFF0A1C19FF32D1001F42B7 /* NSDictionary+TNLAdditionsTest.m */; };
 		8BFDF9A22135ACDB002F6A80 /* TNLURLCodingTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B84347B1A13B70C00D006DA /* TNLURLCodingTest.m */; };
 		8BFDF9A32135ACDB002F6A80 /* TNLRequestConfigurationTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B393D0F1A128173002976B4 /* TNLRequestConfigurationTest.m */; };
-		8BFDF9A42135ACDB002F6A80 /* NSOperationQueue+TNLSafetyTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B472C491BC41CB900DEA3BF /* NSOperationQueue+TNLSafetyTest.m */; };
 		8BFDF9A52135ACDB002F6A80 /* TNLAttemptMetaDataTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C7E65741B0298670037AD91 /* TNLAttemptMetaDataTest.m */; };
 		8BFDF9A62135ACDB002F6A80 /* TNLContentEncodingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B6E34261DE35F71004A35C7 /* TNLContentEncodingTests.m */; };
 		8BFDF9A72135ACDB002F6A80 /* TNLXContentEncoding.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B6E34291DE35FCD004A35C7 /* TNLXContentEncoding.m */; };
@@ -545,7 +534,6 @@
 		BF4AA0DD1EE61D46001647B5 /* TNLRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE403041946794300C7241E /* TNLRequest.m */; };
 		BF4AA0DE1EE61D46001647B5 /* NSURL+TNLAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B87BA3E1E09DA20005A8926 /* NSURL+TNLAdditions.m */; };
 		BF4AA0DF1EE61D46001647B5 /* NSNumber+TNLURLCoding.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B959C271BAB6BA3007858C0 /* NSNumber+TNLURLCoding.m */; };
-		BF4AA0E01EE61D46001647B5 /* NSOperationQueue+TNLSafety.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BE68CFE1B7E421100A0F853 /* NSOperationQueue+TNLSafety.m */; };
 		BF4AA0E11EE61D46001647B5 /* TNLAttemptMetrics.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BF953DC1A67DD3F00E9C1AA /* TNLAttemptMetrics.m */; };
 		BF4AA0E21EE61D46001647B5 /* TNLCommunicationAgent.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B00D5AA1CFF512100D1728D /* TNLCommunicationAgent.m */; };
 		BF4AA0E31EE61D46001647B5 /* TNLTemporaryFile.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B9038DB19799D4A001A3DDD /* TNLTemporaryFile.m */; };
@@ -565,7 +553,6 @@
 		BF4AA0F31EE61D46001647B5 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B4DEFF81986AA64008A31EB /* SystemConfiguration.framework */; };
 		BF4AA0F71EE61D46001647B5 /* TNLRequestConfiguration.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B79ACD51975E4BD00FA8D1E /* TNLRequestConfiguration.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4AA0F81EE61D46001647B5 /* TNLParameterCollection.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B4E016F19FB0632004D3CED /* TNLParameterCollection.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		BF4AA0F91EE61D46001647B5 /* TNLRequest+Utilities.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE30EF21AA270750061FE99 /* TNLRequest+Utilities.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4AA0FA1EE61D46001647B5 /* TNLResponse.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE403061946794300C7241E /* TNLResponse.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4AA0FB1EE61D46001647B5 /* TNLAttemptMetaData.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B3DB5591A699C8D00FFF836 /* TNLAttemptMetaData.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4AA0FC1EE61D46001647B5 /* NSURLCredentialStorage+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BA336D81A3271A0005D7B35 /* NSURLCredentialStorage+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -601,7 +588,6 @@
 		BF4AA11B1EE61D46001647B5 /* TNLAttemptMetrics.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BF953DB1A67DD3F00E9C1AA /* TNLAttemptMetrics.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4AA11C1EE61D46001647B5 /* TNLPriority.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BDA9D311978822300678D90 /* TNLPriority.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4AA11D1EE61D46001647B5 /* NSURLRequest+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE857641DD396B100F79F3D /* NSURLRequest+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		BF4AA11E1EE61D46001647B5 /* NSOperationQueue+TNLSafety.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BE68CFD1B7E421100A0F853 /* NSOperationQueue+TNLSafety.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4AA11F1EE61D46001647B5 /* NSCachedURLResponse+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B277E471C022B5C00279EA9 /* NSCachedURLResponse+TNLAdditions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		BF4AA1201EE61D46001647B5 /* NSData+TNLAdditions.h in Headers */ = {isa = PBXBuildFile; fileRef = 8BB1190D1D83537C00E75CD9 /* NSData+TNLAdditions.h */; };
 		BF4AA1211EE61D46001647B5 /* TNLURLSessionTaskOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = 8B82A5A91948D63100A16237 /* TNLURLSessionTaskOperation.h */; };
@@ -644,7 +630,6 @@
 		BF4AA1501EE626ED001647B5 /* NSDictionary+TNLAdditionsTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BFF0A1C19FF32D1001F42B7 /* NSDictionary+TNLAdditionsTest.m */; };
 		BF4AA1511EE626ED001647B5 /* TNLURLCodingTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B84347B1A13B70C00D006DA /* TNLURLCodingTest.m */; };
 		BF4AA1521EE626ED001647B5 /* TNLRequestConfigurationTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B393D0F1A128173002976B4 /* TNLRequestConfigurationTest.m */; };
-		BF4AA1531EE626ED001647B5 /* NSOperationQueue+TNLSafetyTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B472C491BC41CB900DEA3BF /* NSOperationQueue+TNLSafetyTest.m */; };
 		BF4AA1541EE626ED001647B5 /* TNLAttemptMetaDataTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C7E65741B0298670037AD91 /* TNLAttemptMetaDataTest.m */; };
 		BF4AA1551EE626ED001647B5 /* TNLContentEncodingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B6E34261DE35F71004A35C7 /* TNLContentEncodingTests.m */; };
 		BF4AA1561EE626ED001647B5 /* TNLXContentEncoding.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B6E34291DE35FCD004A35C7 /* TNLXContentEncoding.m */; };
@@ -771,7 +756,6 @@
 		8B3DB5591A699C8D00FFF836 /* TNLAttemptMetaData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLAttemptMetaData.h; sourceTree = "<group>"; };
 		8B3DB55A1A699C8D00FFF836 /* TNLAttemptMetaData.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLAttemptMetaData.m; sourceTree = "<group>"; };
 		8B427D541FB53DBF00C9E5CE /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		8B472C491BC41CB900DEA3BF /* NSOperationQueue+TNLSafetyTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSOperationQueue+TNLSafetyTest.m"; sourceTree = "<group>"; };
 		8B490DD522A82B9D002D2296 /* NSCoder+TNLAdditions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSCoder+TNLAdditions.h"; sourceTree = "<group>"; };
 		8B490DD622A82B9D002D2296 /* NSCoder+TNLAdditions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSCoder+TNLAdditions.m"; sourceTree = "<group>"; };
 		8B4AA75D1E1F28DF00BF7EA0 /* CoreTelephony.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreTelephony.framework; path = System/Library/Frameworks/CoreTelephony.framework; sourceTree = SDKROOT; };
@@ -905,7 +889,6 @@
 		8BDFFC1E19814D3100F7F670 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		8BE30EEC1AA266EC0061FE99 /* TNLHTTPRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLHTTPRequest.h; sourceTree = "<group>"; };
 		8BE30EED1AA266EC0061FE99 /* TNLHTTPRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLHTTPRequest.m; sourceTree = "<group>"; };
-		8BE30EF21AA270750061FE99 /* TNLRequest+Utilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "TNLRequest+Utilities.h"; sourceTree = "<group>"; };
 		8BE3DB991CDB008C0081ACCE /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		8BE3DB9B1CDB009F0081ACCE /* libxml2.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libxml2.tbd; path = usr/lib/libxml2.tbd; sourceTree = SDKROOT; };
 		8BE402C61946743D00C7241E /* TwitterNetworkLayer.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TwitterNetworkLayer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -930,8 +913,6 @@
 		8BE4030E1946794300C7241E /* TNLRequestOperationQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLRequestOperationQueue.m; sourceTree = "<group>"; };
 		8BE4032319467A1400C7241E /* TNLHTTP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TNLHTTP.h; sourceTree = "<group>"; };
 		8BE4032419467A1400C7241E /* TNLHTTP.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TNLHTTP.m; sourceTree = "<group>"; };
-		8BE68CFD1B7E421100A0F853 /* NSOperationQueue+TNLSafety.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSOperationQueue+TNLSafety.h"; sourceTree = "<group>"; };
-		8BE68CFE1B7E421100A0F853 /* NSOperationQueue+TNLSafety.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSOperationQueue+TNLSafety.m"; sourceTree = "<group>"; };
 		8BE857641DD396B100F79F3D /* NSURLRequest+TNLAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSURLRequest+TNLAdditions.h"; sourceTree = "<group>"; };
 		8BE857651DD396B100F79F3D /* NSURLRequest+TNLAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSURLRequest+TNLAdditions.m"; sourceTree = "<group>"; };
 		8BEB80B024216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSURLAuthenticationChallenge+TNLAdditions.h"; sourceTree = "<group>"; };
@@ -1279,8 +1260,6 @@
 				8B23BA3C1A89B69A0027EB80 /* NSHTTPCookieStorage+TNLAdditions.m */,
 				8B959C261BAB6BA3007858C0 /* NSNumber+TNLURLCoding.h */,
 				8B959C271BAB6BA3007858C0 /* NSNumber+TNLURLCoding.m */,
-				8BE68CFD1B7E421100A0F853 /* NSOperationQueue+TNLSafety.h */,
-				8BE68CFE1B7E421100A0F853 /* NSOperationQueue+TNLSafety.m */,
 				8B87BA3D1E09DA20005A8926 /* NSURL+TNLAdditions.h */,
 				8B87BA3E1E09DA20005A8926 /* NSURL+TNLAdditions.m */,
 				8BEB80B024216AF900FEF7BC /* NSURLAuthenticationChallenge+TNLAdditions.h */,
@@ -1335,7 +1314,6 @@
 				8B0AFAA71A018EBE00C8C81F /* TNLPseudoURLProtocol.m */,
 				8BE403031946794300C7241E /* TNLRequest.h */,
 				8BE403041946794300C7241E /* TNLRequest.m */,
-				8BE30EF21AA270750061FE99 /* TNLRequest+Utilities.h */,
 				8B2DF7D6199D7F9F00A064B3 /* TNLRequestAuthorizer.h */,
 				8B79ACD51975E4BD00FA8D1E /* TNLRequestConfiguration.h */,
 				8B79ACD61975E4BD00FA8D1E /* TNLRequestConfiguration.m */,
@@ -1377,7 +1355,6 @@
 			isa = PBXGroup;
 			children = (
 				8BFF0A1C19FF32D1001F42B7 /* NSDictionary+TNLAdditionsTest.m */,
-				8B472C491BC41CB900DEA3BF /* NSOperationQueue+TNLSafetyTest.m */,
 				8B84348D1A1509F500D006DA /* NSURLCache+TNLAdditionsTest.m */,
 				8BFF0A6219FFEFED001F42B7 /* NSURLSessionConfiguration+TNLAdditionsTest.m */,
 				8BE402E01946743E00C7241E /* Supporting Files */,
@@ -1426,7 +1403,6 @@
 				8B9EBDEE2135B4B100E6E466 /* TNLRequestConfiguration.h in Headers */,
 				8B9EBDEF2135B4B100E6E466 /* TNLInternalKeys.h in Headers */,
 				8B9EBDF02135B4B100E6E466 /* TNLParameterCollection.h in Headers */,
-				8B9EBDF12135B4B100E6E466 /* TNLRequest+Utilities.h in Headers */,
 				8B9EBDF22135B4B100E6E466 /* TNLResponse.h in Headers */,
 				8B9EBDF32135B4B100E6E466 /* TNLAttemptMetaData.h in Headers */,
 				8B9EBDF42135B4B100E6E466 /* NSURLCredentialStorage+TNLAdditions.h in Headers */,
@@ -1464,7 +1440,6 @@
 				8B9EBE132135B4B100E6E466 /* TNLAttemptMetrics.h in Headers */,
 				8B9EBE142135B4B100E6E466 /* TNLPriority.h in Headers */,
 				8B9EBE152135B4B100E6E466 /* NSURLRequest+TNLAdditions.h in Headers */,
-				8B9EBE162135B4B100E6E466 /* NSOperationQueue+TNLSafety.h in Headers */,
 				8B9EBE172135B4B100E6E466 /* NSCachedURLResponse+TNLAdditions.h in Headers */,
 				8B9EBE182135B4B100E6E466 /* NSData+TNLAdditions.h in Headers */,
 				8B9EBE192135B4B100E6E466 /* TNLURLSessionTaskOperation.h in Headers */,
@@ -1504,7 +1479,6 @@
 				8B79ACD71975E4BD00FA8D1E /* TNLRequestConfiguration.h in Headers */,
 				8B5849E520D4454500FA8C84 /* TNLInternalKeys.h in Headers */,
 				8B4E017119FB0632004D3CED /* TNLParameterCollection.h in Headers */,
-				8BE30EF41AA270750061FE99 /* TNLRequest+Utilities.h in Headers */,
 				8BE4031A1946794300C7241E /* TNLResponse.h in Headers */,
 				8B3DB55C1A699C8D00FFF836 /* TNLAttemptMetaData.h in Headers */,
 				8BA336DB1A3271A0005D7B35 /* NSURLCredentialStorage+TNLAdditions.h in Headers */,
@@ -1542,7 +1516,6 @@
 				8BF953DE1A67DD3F00E9C1AA /* TNLAttemptMetrics.h in Headers */,
 				8BDA9D331978822300678D90 /* TNLPriority.h in Headers */,
 				8BE857661DD396B100F79F3D /* NSURLRequest+TNLAdditions.h in Headers */,
-				8BE68D001B7E421100A0F853 /* NSOperationQueue+TNLSafety.h in Headers */,
 				8B277E4A1C022B5C00279EA9 /* NSCachedURLResponse+TNLAdditions.h in Headers */,
 				8BB1190F1D83537C00E75CD9 /* NSData+TNLAdditions.h in Headers */,
 				8B82A5AB1948D63100A16237 /* TNLURLSessionTaskOperation.h in Headers */,
@@ -1582,7 +1555,6 @@
 				8BFDF9452135AB2C002F6A80 /* TNLRequestConfiguration.h in Headers */,
 				8BFDF9462135AB2C002F6A80 /* TNLInternalKeys.h in Headers */,
 				8BFDF9472135AB2C002F6A80 /* TNLParameterCollection.h in Headers */,
-				8BFDF9482135AB2C002F6A80 /* TNLRequest+Utilities.h in Headers */,
 				8BFDF9492135AB2C002F6A80 /* TNLResponse.h in Headers */,
 				8BFDF94A2135AB2C002F6A80 /* TNLAttemptMetaData.h in Headers */,
 				8BFDF94B2135AB2C002F6A80 /* NSURLCredentialStorage+TNLAdditions.h in Headers */,
@@ -1620,7 +1592,6 @@
 				8BFDF96A2135AB2C002F6A80 /* TNLAttemptMetrics.h in Headers */,
 				8BFDF96B2135AB2C002F6A80 /* TNLPriority.h in Headers */,
 				8BFDF96C2135AB2C002F6A80 /* NSURLRequest+TNLAdditions.h in Headers */,
-				8BFDF96D2135AB2C002F6A80 /* NSOperationQueue+TNLSafety.h in Headers */,
 				8BFDF96E2135AB2C002F6A80 /* NSCachedURLResponse+TNLAdditions.h in Headers */,
 				8BFDF96F2135AB2C002F6A80 /* NSData+TNLAdditions.h in Headers */,
 				8BFDF9702135AB2C002F6A80 /* TNLURLSessionTaskOperation.h in Headers */,
@@ -1659,7 +1630,6 @@
 			files = (
 				BF4AA0F71EE61D46001647B5 /* TNLRequestConfiguration.h in Headers */,
 				BF4AA0F81EE61D46001647B5 /* TNLParameterCollection.h in Headers */,
-				BF4AA0F91EE61D46001647B5 /* TNLRequest+Utilities.h in Headers */,
 				BF4AA0FA1EE61D46001647B5 /* TNLResponse.h in Headers */,
 				BF4AA0FB1EE61D46001647B5 /* TNLAttemptMetaData.h in Headers */,
 				BF4AA0FC1EE61D46001647B5 /* NSURLCredentialStorage+TNLAdditions.h in Headers */,
@@ -1696,7 +1666,6 @@
 				BF4AA11C1EE61D46001647B5 /* TNLPriority.h in Headers */,
 				BF4AA11D1EE61D46001647B5 /* NSURLRequest+TNLAdditions.h in Headers */,
 				8B490DD822A82B9D002D2296 /* NSCoder+TNLAdditions.h in Headers */,
-				BF4AA11E1EE61D46001647B5 /* NSOperationQueue+TNLSafety.h in Headers */,
 				BF4AA11F1EE61D46001647B5 /* NSCachedURLResponse+TNLAdditions.h in Headers */,
 				BF4AA1201EE61D46001647B5 /* NSData+TNLAdditions.h in Headers */,
 				BF4AA1211EE61D46001647B5 /* TNLURLSessionTaskOperation.h in Headers */,
@@ -2038,7 +2007,6 @@
 				8B9EBDD32135B4B100E6E466 /* NSURL+TNLAdditions.m in Sources */,
 				8B490DDE22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */,
 				8B9EBDD42135B4B100E6E466 /* NSNumber+TNLURLCoding.m in Sources */,
-				8B9EBDD52135B4B100E6E466 /* NSOperationQueue+TNLSafety.m in Sources */,
 				8B9EBDD62135B4B100E6E466 /* TNLAttemptMetrics.m in Sources */,
 				8B9EBDD72135B4B100E6E466 /* TNLCommunicationAgent.m in Sources */,
 				8B9EBDD82135B4B100E6E466 /* TNLTemporaryFile.m in Sources */,
@@ -2132,7 +2100,6 @@
 				8B87BA401E09DA20005A8926 /* NSURL+TNLAdditions.m in Sources */,
 				8B490DDB22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */,
 				8B959C2B1BAB6BA3007858C0 /* NSNumber+TNLURLCoding.m in Sources */,
-				8BE68D021B7E421100A0F853 /* NSOperationQueue+TNLSafety.m in Sources */,
 				8BF953E01A67DD3F00E9C1AA /* TNLAttemptMetrics.m in Sources */,
 				8B00D5AC1CFF512100D1728D /* TNLCommunicationAgent.m in Sources */,
 				8B9038DE19799D4A001A3DDD /* TNLTemporaryFile.m in Sources */,
@@ -2173,7 +2140,6 @@
 				8BFF0A1D19FF32D1001F42B7 /* NSDictionary+TNLAdditionsTest.m in Sources */,
 				8B84347C1A13B70C00D006DA /* TNLURLCodingTest.m in Sources */,
 				8B393D101A128173002976B4 /* TNLRequestConfigurationTest.m in Sources */,
-				8B472C4A1BC41CB900DEA3BF /* NSOperationQueue+TNLSafetyTest.m in Sources */,
 				5C7E65751B0298670037AD91 /* TNLAttemptMetaDataTest.m in Sources */,
 				8B6E34271DE35F71004A35C7 /* TNLContentEncodingTests.m in Sources */,
 				8B6E342A1DE35FCD004A35C7 /* TNLXContentEncoding.m in Sources */,
@@ -2218,7 +2184,6 @@
 				8BFDF92A2135AB2C002F6A80 /* NSURL+TNLAdditions.m in Sources */,
 				8B490DDD22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */,
 				8BFDF92B2135AB2C002F6A80 /* NSNumber+TNLURLCoding.m in Sources */,
-				8BFDF92C2135AB2C002F6A80 /* NSOperationQueue+TNLSafety.m in Sources */,
 				8BFDF92D2135AB2C002F6A80 /* TNLAttemptMetrics.m in Sources */,
 				8BFDF92E2135AB2C002F6A80 /* TNLCommunicationAgent.m in Sources */,
 				8BFDF92F2135AB2C002F6A80 /* TNLTemporaryFile.m in Sources */,
@@ -2259,7 +2224,6 @@
 				8BFDF9A12135ACDB002F6A80 /* NSDictionary+TNLAdditionsTest.m in Sources */,
 				8BFDF9A22135ACDB002F6A80 /* TNLURLCodingTest.m in Sources */,
 				8BFDF9A32135ACDB002F6A80 /* TNLRequestConfigurationTest.m in Sources */,
-				8BFDF9A42135ACDB002F6A80 /* NSOperationQueue+TNLSafetyTest.m in Sources */,
 				8BFDF9A52135ACDB002F6A80 /* TNLAttemptMetaDataTest.m in Sources */,
 				8BFDF9A62135ACDB002F6A80 /* TNLContentEncodingTests.m in Sources */,
 				8BFDF9A72135ACDB002F6A80 /* TNLXContentEncoding.m in Sources */,
@@ -2304,7 +2268,6 @@
 				BF4AA0DE1EE61D46001647B5 /* NSURL+TNLAdditions.m in Sources */,
 				8B490DDC22A82B9D002D2296 /* NSCoder+TNLAdditions.m in Sources */,
 				BF4AA0DF1EE61D46001647B5 /* NSNumber+TNLURLCoding.m in Sources */,
-				BF4AA0E01EE61D46001647B5 /* NSOperationQueue+TNLSafety.m in Sources */,
 				BF4AA0E11EE61D46001647B5 /* TNLAttemptMetrics.m in Sources */,
 				BF4AA0E21EE61D46001647B5 /* TNLCommunicationAgent.m in Sources */,
 				BF4AA0E31EE61D46001647B5 /* TNLTemporaryFile.m in Sources */,
@@ -2345,7 +2308,6 @@
 				BF4AA1501EE626ED001647B5 /* NSDictionary+TNLAdditionsTest.m in Sources */,
 				BF4AA1511EE626ED001647B5 /* TNLURLCodingTest.m in Sources */,
 				BF4AA1521EE626ED001647B5 /* TNLRequestConfigurationTest.m in Sources */,
-				BF4AA1531EE626ED001647B5 /* NSOperationQueue+TNLSafetyTest.m in Sources */,
 				BF4AA1541EE626ED001647B5 /* TNLAttemptMetaDataTest.m in Sources */,
 				BF4AA1551EE626ED001647B5 /* TNLContentEncodingTests.m in Sources */,
 				BF4AA1561EE626ED001647B5 /* TNLXContentEncoding.m in Sources */,
@@ -2568,6 +2530,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_REPEATED_USE_OF_WEAK = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
@@ -2576,7 +2539,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2.14;
+				CURRENT_PROJECT_VERSION = 2.17;
 				DEAD_CODE_STRIPPING = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DYLIB_CURRENT_VERSION = "$(CURRENT_PROJECT_VERSION)";
@@ -2602,14 +2565,18 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-Werror=vla",
+				);
 				OTHER_LDFLAGS = "-ObjC";
 				SDKROOT = iphoneos;
 				STRIP_INSTALLED_PRODUCT = NO;
 				TVOS_DEPLOYMENT_TARGET = 9.0;
-				WATCHOS_DEPLOYMENT_TARGET = 2.0;
+				WATCHOS_DEPLOYMENT_TARGET = 3.0;
 			};
 			name = Debug;
 		};
@@ -2637,6 +2604,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_REPEATED_USE_OF_WEAK = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
@@ -2644,7 +2612,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 2.14;
+				CURRENT_PROJECT_VERSION = 2.17;
 				DEAD_CODE_STRIPPING = NO;
 				DYLIB_CURRENT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -2664,14 +2632,18 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-Werror=vla",
+				);
 				OTHER_LDFLAGS = "-ObjC";
 				SDKROOT = iphoneos;
 				STRIP_INSTALLED_PRODUCT = NO;
 				TVOS_DEPLOYMENT_TARGET = 9.0;
 				VALIDATE_PRODUCT = YES;
-				WATCHOS_DEPLOYMENT_TARGET = 2.0;
+				WATCHOS_DEPLOYMENT_TARGET = 3.0;
 			};
 			name = Release;
 		};

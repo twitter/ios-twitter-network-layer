@@ -126,7 +126,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)HTTPRequestWithRequest:(nullable id<TNLRequest>)request
 {
     return [[self alloc] initWithURL:[request respondsToSelector:@selector(URL)] ? request.URL : nil
-                     HTTPMethodValue:[TNLRequest HTTPMethodValueForRequest:request]
+                     HTTPMethodValue:TNLRequestGetHTTPMethodValue(request)
                     HTTPHeaderFields:[request respondsToSelector:@selector(allHTTPHeaderFields)] ? request.allHTTPHeaderFields : nil
                             HTTPBody:[request respondsToSelector:@selector(HTTPBody)] ? request.HTTPBody : nil
                       HTTPBodyStream:[request respondsToSelector:@selector(HTTPBodyStream)] ? request.HTTPBodyStream : nil
@@ -232,8 +232,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (nullable NSString *)valueForHTTPHeaderField:(NSString *)field
 {
-    NSDictionary *fields = self.allHTTPHeaderFields;
-    return [fields tnl_objectsForCaseInsensitiveKey:field].firstObject;
+    return [self.allHTTPHeaderFields tnl_objectForCaseInsensitiveKey:field];
 }
 
 - (nullable NSData *)HTTPBody
@@ -285,7 +284,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)isEqual:(id)object
 {
     if ([object isKindOfClass:[TNLHTTPRequest class]]) {
-        return [TNLRequest isRequest:self equalTo:object];
+        return TNLRequestEqualToRequest(self, object, NO /*quickBodyCheck*/);
     }
 
     return [super isEqual:object];

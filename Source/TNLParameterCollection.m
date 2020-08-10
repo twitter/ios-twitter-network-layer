@@ -16,6 +16,7 @@ NSString * const kParametersCodingKey = @"parameters";
 
 typedef NSString *(^TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock)(NSString *key, id obj);
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLParameterCollection ()
 
 @property (nonatomic, readonly) NSDictionary *parameters;
@@ -24,6 +25,7 @@ typedef NSString *(^TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock)(
 
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @implementation TNLParameterCollection
 {
     @protected
@@ -90,12 +92,14 @@ typedef NSString *(^TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock)(
     return self;
 }
 
-#pragma mark NSMutableCopying
+#pragma mark NSCopying
 
 - (id)copyWithZone:(nullable NSZone *)zone
 {
     return self;
 }
+
+#pragma mark NSMutableCopying
 
 - (id)mutableCopyWithZone:(nullable NSZone *)zone
 {
@@ -272,6 +276,7 @@ typedef NSString *(^TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock)(
 
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @implementation TNLMutableParameterCollection
 
 - (instancetype)init
@@ -299,7 +304,7 @@ typedef NSString *(^TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock)(
 - (instancetype)initWithDictionary:(nullable NSDictionary<NSString *, id> *)dictionary
 {
     if (self = [self initWithCapacity:dictionary.count]) {
-        _addParametersDirectly(self, dictionary, NO /*combineRepeatingKeys*/);
+        [self _addParametersDirectly:dictionary combineRepeatingKeys:NO];
     }
     return self;
 }
@@ -346,9 +351,8 @@ typedef NSString *(^TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock)(
                                   options:(TNLURLDecodingOptions)options
 {
     const BOOL combine = TNL_BITMASK_HAS_SUBSET_FLAGS(options, TNLURLDecodingOptionCombineRepeatingKeysIntoArray);
-    _addParametersDirectly(self,
-                           TNLURLDecodeDictionary(params, options),
-                           combine);
+    [self _addParametersDirectly:TNLURLDecodeDictionary(params, options)
+            combineRepeatingKeys:combine];
 }
 
 - (void)addParametersFromURL:(nullable NSURL *)URL parsingParameterTypes:(TNLParameterTypes)types
@@ -392,7 +396,7 @@ typedef NSString *(^TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock)(
 - (void)addParametersDirectlyFromDictionary:(nullable NSDictionary<NSString *,id> *)dictionary
                        combineRepeatingKeys:(BOOL)combine
 {
-    _addParametersDirectly(self, dictionary, combine);
+    [self _addParametersDirectly:dictionary combineRepeatingKeys:combine];
 }
 
 - (void)addParametersFromDictionary:(nullable NSDictionary<NSString *, id> *)dictionary
@@ -406,33 +410,26 @@ typedef NSString *(^TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock)(
 
     switch (mode) {
         case TNLParameterCollectionAddParametersFromDictionaryModeUseKeysDirectly:
-            _addParametersDirectly(self, dictionary, combine);
+            [self _addParametersDirectly:dictionary combineRepeatingKeys:combine];
             return;
         case TNLParameterCollectionAddParametersFromDictionaryModeURLEncoded:
-            _addParametersUsingURLEncoding(self, dictionary, combine, key);
+            [self _addParametersUsingURLEncoding:dictionary combineRepeatingKeys:combine dictionaryKey:key];
             return;
         case TNLParameterCollectionAddParametersFromDictionaryModeJSONEncoded:
-            _addParametersUsingJSONEncoding(self, dictionary, combine, key);
+            [self _addParametersUsingJSONEncoding:dictionary combineRepeatingKeys:combine dictionaryKey:key];
             return;
         case TNLParameterCollectionAddParametersFromDictionaryModeDotSyntaxOnProvidedKey:
-            _addParametersUsingDotSyntax(self, dictionary, combine, key);
+            [self _addParametersUsingDotSyntax:dictionary combineRepeatingKeys:combine dictionaryKey:key];
             return;
     }
 
     TNLAssertNever();
 }
 
-static void _setObject(PRIVATE_SELF(TNLMutableParameterCollection),
-                       id obj,
-                       NSString *key,
-                       BOOL combineRepeatingKeys)
+- (void)_setObject:(id)obj forKey:(NSString *)key combineRepeatingKeys:(BOOL)combine
 {
-    if (!self) {
-        return;
-    }
-
-    if (combineRepeatingKeys) {
-        id oldValue = self->_parameters[key];
+    if (combine) {
+        id oldValue = _parameters[key];
         if ([oldValue isKindOfClass:[NSString class]]) {
             obj = @[ oldValue, obj ];
         } else if ([oldValue isKindOfClass:[NSArray class]]) {
@@ -445,15 +442,10 @@ static void _setObject(PRIVATE_SELF(TNLMutableParameterCollection),
     self[key] = obj;
 }
 
-static void _updateWithDictionary(PRIVATE_SELF(TNLMutableParameterCollection),
-                                  NSDictionary<NSString *, id> * __nullable dictionary,
-                                  BOOL combineRepeatingKeys,
-                                  TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock iterativeKeyBlock)
+- (void)_updateWithDictionary:(nullable NSDictionary<NSString *, id> *)dictionary
+         combineRepeatingKeys:(BOOL)combine
+            iterativeKeyBlock:(TNLParameterCollectionUpdateKeysAndValuesIterativeKeyBlock)iterativeKeyBlock
 {
-    if (!self) {
-        return;
-    }
-
     [dictionary enumerateKeysAndObjectsUsingBlock:^(NSString *key, id obj, BOOL *stop) {
         if (![key isKindOfClass:[NSString class]]) {
             @throw [NSException exceptionWithName:NSInvalidArgumentException
@@ -468,49 +460,35 @@ static void _updateWithDictionary(PRIVATE_SELF(TNLMutableParameterCollection),
         NSString *newKey = iterativeKeyBlock(key, obj);
         TNLAssert(newKey != nil);
 
-        _setObject(self, obj, newKey, combineRepeatingKeys);
+        [self _setObject:obj
+                  forKey:newKey
+    combineRepeatingKeys:combine];
     }];
 }
 
-static void _addParametersDirectly(PRIVATE_SELF(TNLMutableParameterCollection),
-                                   NSDictionary<NSString *, id> * __nullable dictionary,
-                                   BOOL combineRepeatingKeys)
+- (void)_addParametersDirectly:(nullable NSDictionary<NSString *, id> *)dictionary
+          combineRepeatingKeys:(BOOL)combine
 {
-    if (!self) {
-        return;
-    }
-
-    _updateWithDictionary(self,
-                          dictionary,
-                          combineRepeatingKeys,
-                          ^NSString *(NSString *key, id obj) {
+    [self _updateWithDictionary:dictionary
+           combineRepeatingKeys:combine
+              iterativeKeyBlock:^NSString *(NSString *key, id obj) {
         return key;
-    });
+    }];
 }
 
-static void _addParametersUsingURLEncoding(PRIVATE_SELF(TNLMutableParameterCollection),
-                                           NSDictionary<NSString *, id> * __nullable dictionary,
-                                           BOOL combineRepeatingKeys,
-                                           NSString *key)
+- (void)_addParametersUsingURLEncoding:(nullable NSDictionary<NSString *, id> *)dictionary
+                  combineRepeatingKeys:(BOOL)combine
+                         dictionaryKey:(NSString *)key
 {
-    if (!self) {
-        return;
-    }
-
     dictionary = TNLURLEncodableDictionary(dictionary, TNLURLEncodableDictionaryOptionReplaceArraysWithArraysOfEncodableStrings | TNLURLEncodableDictionaryOptionReplaceDictionariesWithDictionariesOfEncodableStrings);
     NSString *obj = TNLURLEncodeDictionary(dictionary, TNLURLEncodingOptionStableOrder);
-    _setObject(self, obj, key, combineRepeatingKeys);
+    [self _setObject:obj forKey:key combineRepeatingKeys:combine];
 }
 
-static void _addParametersUsingJSONEncoding(PRIVATE_SELF(TNLMutableParameterCollection),
-                                            NSDictionary<NSString *, id> * __nullable dictionary,
-                                            BOOL combineRepeatingKeys,
-                                            NSString *key)
+- (void)_addParametersUsingJSONEncoding:(nullable NSDictionary<NSString *, id> *)dictionary
+                   combineRepeatingKeys:(BOOL)combine
+                          dictionaryKey:(NSString *)key
 {
-    if (!self) {
-        return;
-    }
-
     dictionary = TNLURLEncodableDictionary(dictionary, TNLURLEncodableDictionaryOptionReplaceArraysWithArraysOfEncodableStrings | TNLURLEncodableDictionaryOptionReplaceDictionariesWithDictionariesOfEncodableStrings);
     NSJSONWritingOptions options = 0;
     if (tnl_available_ios_11) {
@@ -521,30 +499,24 @@ static void _addParametersUsingJSONEncoding(PRIVATE_SELF(TNLMutableParameterColl
                                                      error:NULL];
     NSString *json = [[NSString alloc] initWithData:data
                                            encoding:NSUTF8StringEncoding];
-    _setObject(self, json, key, combineRepeatingKeys);
+    [self _setObject:json forKey:key combineRepeatingKeys:combine];
 }
 
-static void _addParametersUsingDotSyntax(PRIVATE_SELF(TNLMutableParameterCollection),
-                                         NSDictionary<NSString *, id> * __nullable dictionary,
-                                         BOOL combineRepeatingKeys,
-                                         NSString *dictionaryKey)
+- (void)_addParametersUsingDotSyntax:(nullable NSDictionary<NSString *, id> *)dictionary
+                combineRepeatingKeys:(BOOL)combine
+                       dictionaryKey:(NSString *)key
 {
-    if (!self) {
-        return;
-    }
-
-    _updateWithDictionary(self,
-                          dictionary,
-                          combineRepeatingKeys,
-                          ^NSString *(NSString * _Nonnull key, id  _Nonnull obj) {
-        return [NSString stringWithFormat:@"%@.%@", dictionaryKey, key];
-    });
+    [self _updateWithDictionary:dictionary
+           combineRepeatingKeys:combine
+              iterativeKeyBlock:^NSString *(NSString * _Nonnull iterKey, id  _Nonnull obj) {
+        return [NSString stringWithFormat:@"%@.%@", key, iterKey];
+    }];
 }
 
 - (void)addParametersFromParameterCollection:(nullable TNLParameterCollection *)params
                         combineRepeatingKeys:(BOOL)combine
 {
-    _addParametersDirectly(self, params.underlyingDictionaryValue, combine);
+    [self _addParametersDirectly:params.underlyingDictionaryValue combineRepeatingKeys:combine];
 }
 
 - (void)addParametersFromParameterCollection:(nullable TNLParameterCollection *)params
@@ -554,7 +526,7 @@ static void _addParametersUsingDotSyntax(PRIVATE_SELF(TNLMutableParameterCollect
 
 - (void)setObject:(nullable id)obj forKeyedSubscript:(NSString *)key
 {
-    [self setParameterValue:obj forKey:(NSString *)key];
+    [self setParameterValue:obj forKey:key];
 }
 
 - (void)setParameterValue:(nullable id)obj forKey:(NSString *)key

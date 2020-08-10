@@ -218,9 +218,7 @@
         _smartImageView.contentMode = UIViewContentModeScaleAspectFit;
 
         [self.contentView addSubview:_smartImageView];
-        if ([self respondsToSelector:@selector(setSeparatorInset:)]) {
-            self.separatorInset = UIEdgeInsetsZero;
-        }
+        self.separatorInset = UIEdgeInsetsZero;
     }
     return self;
 }

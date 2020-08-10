@@ -12,32 +12,23 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-FOUNDATION_EXTERN NSString * const TNLErrorDomain;
+FOUNDATION_EXTERN NSErrorDomain const TNLErrorDomain;
 
-FOUNDATION_EXTERN NSString * const TNLErrorTimeoutTagsKey;
-FOUNDATION_EXTERN NSString * const TNLErrorCancelSourceKey;
-FOUNDATION_EXTERN NSString * const TNLErrorCancelSourceDescriptionKey;
-FOUNDATION_EXTERN NSString * const TNLErrorCancelSourceLocalizedDescriptionKey;
-FOUNDATION_EXTERN NSString * const TNLErrorCodeStringKey;
-FOUNDATION_EXTERN NSString * const TNLErrorHostKey;
-FOUNDATION_EXTERN NSString * const TNLErrorRequestKey;
-FOUNDATION_EXTERN NSString * const TNLErrorResponseKey;
-FOUNDATION_EXTERN NSString * const TNLErrorProtectionSpaceHostKey;
-FOUNDATION_EXTERN NSString * const TNLErrorCertificateChainDescriptionsKey;
-FOUNDATION_EXTERN NSString * const TNLErrorAuthenticationChallengeMethodKey;
-FOUNDATION_EXTERN NSString * const TNLErrorAuthenticationChallengeRealmKey;
-FOUNDATION_EXTERN NSString * const TNLErrorAuthenticationChallengeCancelContextKey;
+typedef NSString * const TNLErrorInfoKey NS_STRING_ENUM;
 
-#define TNLErrorCodePageSize        (100)
-
-#define TNLErrorCodePageRequest             (1 * TNLErrorCodePageSize)
-#define TNLErrorCodePageRequestOperation    (2 * TNLErrorCodePageSize)
-#define TNLErrorCodePageGlobal              (3 * TNLErrorCodePageSize)
-#define TNLErrorCodePageOther               (99 * TNLErrorCodePageSize)
-
-#define TNLErrorCodeIsRequestError(code)            (((code) / TNLErrorCodePageSize) == (TNLErrorCodePageRequest / TNLErrorCodePageSize))
-#define TNLErrorCodeIsRequestOperationError(code)   (((code) / TNLErrorCodePageSize) == (TNLErrorCodePageRequestOperation / TNLErrorCodePageSize))
-#define TNLErrorCodeIsGlobalError(code)             (((code) / TNLErrorCodePageSize) == (TNLErrorCodePageGlobal / TNLErrorCodePageSize))
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorTimeoutTagsKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorCancelSourceKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorCancelSourceDescriptionKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorCancelSourceLocalizedDescriptionKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorCodeStringKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorHostKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorRequestKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorResponseKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorProtectionSpaceHostKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorCertificateChainDescriptionsKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorAuthenticationChallengeMethodKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorAuthenticationChallengeRealmKey;
+FOUNDATION_EXTERN TNLErrorInfoKey TNLErrorAuthenticationChallengeCancelContextKey;
 
 /**
  Twitter Network Layer error code
@@ -77,14 +68,14 @@ FOUNDATION_EXTERN NSString * const TNLErrorAuthenticationChallengeCancelContextK
  ## TNLErrorCode
 
  */
-typedef NS_ENUM(NSInteger, TNLErrorCode) {
+typedef NS_ERROR_ENUM(TNLErrorDomain, TNLErrorCode) {
     /** Unknown error */
     TNLErrorCodeUnknown = 0,
 
     // Request Error Codes
 
     /** Generic `TNLRequest` error */
-    TNLErrorCodeRequestGenericError = TNLErrorCodePageRequest, // 100
+    TNLErrorCodeRequestGenericError = 100,
 
     /** Invalid `TNLRequest` */
     TNLErrorCodeRequestInvalid = 101,
@@ -116,7 +107,7 @@ typedef NS_ENUM(NSInteger, TNLErrorCode) {
     // Request Operation Error Codes
 
     /** Generic `TNLRequestOperation` error */
-    TNLErrorCodeRequestOperationGenericError = TNLErrorCodePageRequestOperation, // 200
+    TNLErrorCodeRequestOperationGenericError = 200,
 
     /**
      The request operation was cancelled.
@@ -194,7 +185,7 @@ typedef NS_ENUM(NSInteger, TNLErrorCode) {
     // Global Error Codes
 
     /** Generic global error */
-    TNLErrorCodeGlobalGenericError = TNLErrorCodePageGlobal, // 300
+    TNLErrorCodeGlobalGenericError = 300,
 
     /**
      The URL host was blocked by the `TNLGlobalConfiguration`'s `TNLHostSanitizer`.
@@ -208,18 +199,80 @@ typedef NS_ENUM(NSInteger, TNLErrorCode) {
     // Other Error Codes
 
     /** Generic other error */
-    TNLErrorCodeOtherGenericError = TNLErrorCodePageOther, // 9900
+    TNLErrorCodeOtherGenericError = 9900,
 
     /** The URL host was empty */
     TNLErrorCodeOtherHostCannotBeEmpty = 9901,
 };
 
 //! Convert `TNLErrorCode` to an `NSString`
-FOUNDATION_EXTERN NSString * __nullable TNLErrorCodeToString(TNLErrorCode code);
+FOUNDATION_EXTERN NSString * __nullable TNLErrorCodeToString(TNLErrorCode code)
+NS_SWIFT_NAME(getter:TNLErrorCode.description(self:));
+
 //! Return `YES` if the `TNLErrorCode` is a terminal code and cannot be retried
-FOUNDATION_EXTERN BOOL TNLErrorCodeIsTerminal(TNLErrorCode code);
+FOUNDATION_EXTERN BOOL TNLErrorCodeIsTerminal(TNLErrorCode code)
+NS_SWIFT_NAME(getter:TNLErrorCode.isTerminal(self:));
+
+static NSInteger const TNLErrorCodePageSize NS_REFINED_FOR_SWIFT = 100;
+
+//! `TNLErrorCode` page size (100 errors per page)
+NS_SWIFT_NAME(TNLErrorCode.pageSize())
+NS_INLINE NSInteger TNLErrorCodeGetPageSize(void)
+{
+    return TNLErrorCodePageSize;
+}
+
+//! The pages of error codes (100 codes per page max)
+typedef NS_ENUM(NSInteger, TNLErrorCodePage) {
+    //! Request errors
+    TNLErrorCodePageRequest             = (1 * TNLErrorCodePageSize),
+    //! Request operation errors
+    TNLErrorCodePageRequestOperation    = (2 * TNLErrorCodePageSize),
+    //! Global __TNL__ errors
+    TNLErrorCodePageGlobal              = (3 * TNLErrorCodePageSize),
+    //! Other miscellaneous __TNL__ errors
+    TNLErrorCodePageOther               = (99 * TNLErrorCodePageSize)
+} NS_SWIFT_NAME(TNLErrorCode.Page);
+
+//! The error code is a request error
+NS_SWIFT_NAME(getter:TNLErrorCode.isRequestError(self:))
+NS_INLINE BOOL TNLErrorCodeIsRequestError(TNLErrorCode code)
+{
+    return (((code) / TNLErrorCodePageSize) == (TNLErrorCodePageRequest / TNLErrorCodePageSize));
+}
+
+//! The error code is a request operation error
+NS_SWIFT_NAME(getter:TNLErrorCode.isRequestOperationError(self:))
+NS_INLINE BOOL TNLErrorCodeIsRequestOperationError(TNLErrorCode code)
+{
+    return (((code) / TNLErrorCodePageSize) == (TNLErrorCodePageRequestOperation / TNLErrorCodePageSize));
+}
+
+//! The error code is a global __TNL__ error
+NS_SWIFT_NAME(getter:TNLErrorCode.isGlobalError(self:))
+NS_INLINE BOOL TNLErrorCodeIsGlobalError(TNLErrorCode code)
+{
+    return (((code) / TNLErrorCodePageSize) == (TNLErrorCodePageGlobal / TNLErrorCodePageSize));
+}
+
+/**
+ The error code is a request operation timeout error
+ @note Does not include `TNLErrorCodeRequestOperationCallbackTimedOut` because that reflects a client
+ implementation bug of not quickly calling the delegate callback quickly and not an actual networking
+ based timeout firing.
+ */
+NS_SWIFT_NAME(getter:TNLErrorCode.isRequestOperationTimeoutError(self:))
+NS_INLINE BOOL TNLErrorCodeIsRequestOperationTimeoutError(TNLErrorCode code)
+{
+    return TNLErrorCodeRequestOperationIdleTimedOut == code
+        || TNLErrorCodeRequestOperationAttemptTimedOut == code
+        || TNLErrorCodeRequestOperationOperationTimedOut == code;
+}
+
+
 //! Return `YES` if the `NSError` is a network security error, possibly due to Apple's _App Transport Security_
 FOUNDATION_EXTERN BOOL TNLErrorIsNetworkSecurityError(NSError * __nullable error);
+
 //! Create an `NSError` from a `TNLRequestOperationCancelSource`
 FOUNDATION_EXTERN NSError * __nonnull TNLErrorFromCancelSource(id<TNLRequestOperationCancelSource> __nullable cancelSource,
                                                                NSError * __nullable underlyingError);

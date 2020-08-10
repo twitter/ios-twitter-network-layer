@@ -24,14 +24,26 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 @interface TNLResponseEncodedRequest ()
-
 - (instancetype)initWithSourceRequest:(id<TNLRequest>)request;
-
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLResponseMetrics ()
 
 - (void)didEnqueue;
+
+- (void)updateCurrentRequest:(NSURLRequest *)request;
+
+- (void)setCompleteDate:(NSDate *)date machTime:(uint64_t)time;
+
+- (TNLResponseMetrics *)deepCopyAndTrimIncompleteAttemptMetrics:(BOOL)trimIncompleteAttemptMetrics;
+
+- (void)finalizeMetrics;
+
+@end
+
+// TODO: Find way to expose to tests without needing to be Non Direct
+@interface TNLResponseMetrics (NonDirect)
 
 - (void)addInitialStartWithDate:(NSDate *)date
                        machTime:(uint64_t)machTime
@@ -46,15 +58,8 @@ NS_ASSUME_NONNULL_BEGIN
           machTime:(uint64_t)time
           response:(nullable NSHTTPURLResponse *)response
     operationError:(nullable NSError *)error;
-- (void)addMetaData:(nullable TNLAttemptMetaData *)metaData taskMetrics:(nullable NSURLSessionTaskMetrics *)metrics;
-
-- (void)updateCurrentRequest:(NSURLRequest *)request;
-
-- (void)setCompleteDate:(NSDate *)date machTime:(uint64_t)time;
-
-- (TNLResponseMetrics *)deepCopyAndTrimIncompleteAttemptMetrics:(BOOL)trimIncompleteAttemptMetrics;
-
-- (void)finalizeMetrics;
+- (void)addMetaData:(nullable TNLAttemptMetaData *)metaData
+        taskMetrics:(nullable NSURLSessionTaskMetrics *)metrics;
 
 @end
 

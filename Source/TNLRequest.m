@@ -16,16 +16,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 static NSUInteger const kMaxBytesToCompare = 1024;
 
-@implementation TNLRequest
-@end
+#pragma mark - TNLRequest Utilities
 
-#pragma mark - TNLRequest (Utilities)
-
-@implementation TNLRequest (Utilities)
-
-+ (BOOL)validateRequest:(nullable id<TNLRequest>)request
-   againstConfiguration:(nullable TNLRequestConfiguration *)config
-                  error:(out NSError *__autoreleasing *)errorOut
+BOOL TNLRequestValidate(id<TNLRequest> __nullable request,
+                        TNLRequestConfiguration * __nullable config,
+                        NSError * __nullable * __nullable errorOut)
 {
     NSError *error = nil;
     NSURL *url = [request respondsToSelector:@selector(URL)] ? request.URL : nil;
@@ -34,7 +29,7 @@ static NSUInteger const kMaxBytesToCompare = 1024;
     } else if (!url.host || !url.scheme || url.isFileReferenceURL) {
         error = TNLErrorCreateWithCode(TNLErrorCodeRequestInvalidURL);
     } else {
-        TNLHTTPMethod method = [self HTTPMethodValueForRequest:request];
+        TNLHTTPMethod method = TNLRequestGetHTTPMethodValue(request);
         if (TNLHTTPMethodUnknown == method) {
             error = TNLErrorCreateWithCode(TNLErrorCodeRequestInvalidHTTPMethod);
         } else {
@@ -78,38 +73,26 @@ static NSUInteger const kMaxBytesToCompare = 1024;
     return !error;
 }
 
-+ (nullable NSURLRequest *)URLRequestForRequest:(nullable id<TNLRequest>)request
-                                          error:(out NSError **)error
-{
-    return [self URLRequestForRequest:request configuration:nil error:error];
-}
-
-+ (nullable NSURLRequest *)URLRequestForRequest:(nullable id<TNLRequest>)request
-                                  configuration:(nullable TNLRequestConfiguration *)config
-                                          error:(out NSError **)error
+NSURLRequest * __nullable TNLRequestToNSURLRequest(id<TNLRequest> __nullable request,
+                                                   TNLRequestConfiguration * __nullable config,
+                                                   NSError * __nullable * __nullable errorOut)
 {
     NSURLRequest *URLRequest;
     if ([request isKindOfClass:[NSURLRequest class]] && !config) {
         URLRequest = (NSURLRequest *)request;
     } else {
-        URLRequest = [self mutableURLRequestForRequest:request configuration:config error:error];
+        URLRequest = TNLRequestToNSMutableURLRequest(request, config, errorOut);
     }
     return [URLRequest copy];
 }
 
-+ (nullable NSMutableURLRequest *)mutableURLRequestForRequest:(nullable id<TNLRequest>)request
-                                                        error:(out NSError **)error
-{
-    return [self mutableURLRequestForRequest:request configuration:nil error:error];
-}
-
-+ (nullable NSMutableURLRequest *)mutableURLRequestForRequest:(nullable id<TNLRequest>)request
-                                                configuration:(nullable TNLRequestConfiguration *)config
-                                                        error:(out NSError **)error
+NSMutableURLRequest * __nullable TNLRequestToNSMutableURLRequest(id<TNLRequest> __nullable request,
+                                                                 TNLRequestConfiguration * __nullable config,
+                                                                 NSError * __nullable * __nullable errorOut)
 {
     if (![request respondsToSelector:@selector(URL)]) {
-        if (error) {
-            *error = TNLErrorCreateWithCode(TNLErrorCodeRequestInvalidURL);
+        if (errorOut) {
+            *errorOut = TNLErrorCreateWithCode(TNLErrorCodeRequestInvalidURL);
         }
         return nil;
     }
@@ -118,7 +101,7 @@ static NSUInteger const kMaxBytesToCompare = 1024;
 
     NSURL *URL = request.URL;
     urlRequest = (URL) ? [[NSMutableURLRequest alloc] initWithURL:URL] : [[NSMutableURLRequest alloc] init];
-    urlRequest.HTTPMethod = [self HTTPMethodForRequest:request];
+    urlRequest.HTTPMethod = TNLRequestGetHTTPMethod(request);
 
     if ([request respondsToSelector:@selector(HTTPBody)] && [request HTTPBody]) {
         urlRequest.HTTPBody = [request HTTPBody];
@@ -144,7 +127,7 @@ static NSUInteger const kMaxBytesToCompare = 1024;
     return urlRequest;
 }
 
-+ (NSString *)HTTPMethodForRequest:(nullable id<TNLRequest>)request
+NSString *TNLRequestGetHTTPMethod(id<TNLRequest> __nullable request)
 {
     NSString *method = nil;
     if ([request respondsToSelector:@selector(HTTPMethod)]) {
@@ -155,7 +138,7 @@ static NSUInteger const kMaxBytesToCompare = 1024;
     return method ?: TNLHTTPMethodToString(TNLHTTPMethodGET);
 }
 
-+ (TNLHTTPMethod)HTTPMethodValueForRequest:(nullable id<TNLRequest>)request
+TNLHTTPMethod TNLRequestGetHTTPMethodValue(id<TNLRequest> __nullable request)
 {
     TNLHTTPMethod method = TNLHTTPMethodGET;
     if ([request respondsToSelector:@selector(HTTPMethod)]) {
@@ -166,7 +149,7 @@ static NSUInteger const kMaxBytesToCompare = 1024;
     return method;
 }
 
-+ (BOOL)requestHasBody:(nullable id<TNLRequest>)request
+BOOL TNLRequestHasBody(id<TNLRequest> __nullable request)
 {
     if ([request respondsToSelector:@selector(HTTPBody)] && request.HTTPBody != nil) {
         return YES;
@@ -180,15 +163,9 @@ static NSUInteger const kMaxBytesToCompare = 1024;
     return NO;
 }
 
-+ (BOOL)isRequest:(nullable id<TNLRequest>)request1
-          equalTo:(nullable id<TNLRequest>)request2
-{
-    return [self isRequest:request1 equalTo:request2 quickBodyComparison:NO];
-}
-
-  + (BOOL)isRequest:(nullable id<TNLRequest>)request1
-            equalTo:(nullable id<TNLRequest>)request2
-quickBodyComparison:(BOOL)quickBodyCheck;
+BOOL TNLRequestEqualToRequest(id<TNLRequest> __nullable request1,
+                              id<TNLRequest> __nullable request2,
+                              BOOL quickBodyCheck)
 {
     if (request1 == request2) {
         return YES;
@@ -198,8 +175,8 @@ quickBodyComparison:(BOOL)quickBodyCheck;
         return NO;
     }
 
-    TNLHTTPMethod method = [TNLRequest HTTPMethodValueForRequest:request1];
-    if ([TNLRequest HTTPMethodValueForRequest:request2] != method) {
+    TNLHTTPMethod method = TNLRequestGetHTTPMethodValue(request1);
+    if (TNLRequestGetHTTPMethodValue(request2) != method) {
         return NO;
     }
 
@@ -222,7 +199,7 @@ quickBodyComparison:(BOOL)quickBodyCheck;
     }
 
     if (quickBodyCheck) {
-        return [TNLRequest requestHasBody:request1] == [TNLRequest requestHasBody:request2];
+        return TNLRequestHasBody(request1) == TNLRequestHasBody(request2);
     }
 
     NSData *data1 = [request1 respondsToSelector:@selector(HTTPBody)] ? [request1 HTTPBody] : nil;
@@ -267,7 +244,5 @@ quickBodyComparison:(BOOL)quickBodyCheck;
 
     return YES;
 }
-
-@end
 
 NS_ASSUME_NONNULL_END

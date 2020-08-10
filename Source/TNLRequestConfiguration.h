@@ -463,7 +463,6 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
  The identifier of the shared data container into which files in background sessions/requests should
  be downloaded. App extensions wishing to use background sessions/requests *must* set this property
  to a valid container identifier, or the session will be invalidated upon creation.
- Has no effect below iOS 8.
 
  See `[NSURLSessionConfiguration sharedContainerIdentifier]`
  */
@@ -518,7 +517,7 @@ FOUNDATION_EXTERN NSTimeInterval TNLDeferrableIntervalForPriority(TNLPriority pr
  (see https://developer.apple.com/library/ios/technotes/tn2277/_index.html)
  Default value is `NO`
 
- Introduced iOS 9.  Older version will ignore this setting.
+ Introduced iOS 9.
 
  See `[NSURLSessionConfiguration shouldUseExtendedBackgroundIdleMode]`
 

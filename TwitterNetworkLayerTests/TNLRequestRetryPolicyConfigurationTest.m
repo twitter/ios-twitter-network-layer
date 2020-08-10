@@ -120,7 +120,7 @@
 {
     // generate a fake response
     NSHTTPURLResponse *httpResponse = [[NSHTTPURLResponse alloc] initWithURL:self.hydratedRequest.URL statusCode:_overrideStatusCode HTTPVersion:@"HTTP/1.1" headerFields:@{}];
-    TNLResponseInfo *info = [[TNLResponseInfo alloc] initWithFinalURLRequest:[TNLRequest URLRequestForRequest:self.hydratedRequest error:NULL] URLResponse:httpResponse source:TNLResponseSourceNetworkRequest data:[NSData data] temporarySavedFile:nil];
+    TNLResponseInfo *info = [[TNLResponseInfo alloc] initWithFinalURLRequest:TNLRequestToNSURLRequest(self.hydratedRequest, nil /*config*/, NULL /*error*/) URLResponse:httpResponse source:TNLResponseSourceNetworkRequest data:[NSData data] temporarySavedFile:nil];
     TNLResponse *response = [self.responseClass responseWithRequest:self.hydratedRequest operationError:nil info:info metrics:[[TNLResponseMetrics alloc] init]];
     return response;
 }

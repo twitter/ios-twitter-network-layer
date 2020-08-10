@@ -11,8 +11,6 @@
 #import "TNL_Project.h"
 #import "TNLPseudoURLProtocol.h"
 
-#define SELF_ARG PRIVATE_SELF(TNLPseudoURLProtocol)
-
 NS_ASSUME_NONNULL_BEGIN
 
 #define ABORT_IF_NECESSARY() \
@@ -37,6 +35,7 @@ static NSRange _RangeForRequest(NSURLRequest *request,
 
 typedef void(^TNLPseudoURLClientBlock)(id<NSURLProtocolClient> client);
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLPseudoURLProtocol ()
 
 @property (atomic) BOOL stopped;
@@ -44,8 +43,14 @@ typedef void(^TNLPseudoURLClientBlock)(id<NSURLProtocolClient> client);
 @property (nonatomic, nullable) dispatch_queue_t protocolQueue;
 @property (nonatomic, nullable) CFRunLoopRef protocolRunLoop;
 
-static void _executeClientBlock(SELF_ARG,
-                                TNLPseudoURLClientBlock block);
+- (void)_executeClientBlock:(TNLPseudoURLClientBlock)block;
+- (BOOL)_handleRedirectForRequest:(NSURLRequest *)request
+                         response:(NSHTTPURLResponse *)httpResponse
+                         behavior:(const TNLPseudoURLProtocolRedirectBehavior)behavior;
+- (void)_chunkData:(NSData *)data
+               bps:(NSUInteger)bps
+         bytesSent:(NSUInteger)bytesSent
+           latency:(NSTimeInterval)latency;
 @end
 
 @implementation TNLPseudoURLProtocol
@@ -158,15 +163,15 @@ static void _executeClientBlock(SELF_ARG,
             if (self.cachedResponse) {
                 tnl_dispatch_async_autoreleasing(self->_protocolQueue, ^{
                     ABORT_IF_NECESSARY();
-                    _executeClientBlock(self, ^(id<NSURLProtocolClient> client){
+                    [self _executeClientBlock:^(id<NSURLProtocolClient> client){
                         [client URLProtocol:self cachedResponseIsValid:self.cachedResponse];
-                    });
+                    }];
                     tnl_dispatch_async_autoreleasing(self->_protocolQueue, ^{
                         ABORT_IF_NECESSARY();
                         self.stopped = YES;
-                        _executeClientBlock(self, ^(id<NSURLProtocolClient> client){
+                        [self _executeClientBlock:^(id<NSURLProtocolClient> client){
                             [client URLProtocolDidFinishLoading:self];
-                        });
+                        }];
                     });
                 });
             } else {
@@ -191,9 +196,9 @@ static void _executeClientBlock(SELF_ARG,
 
                         if (config.failureError) {
                             self.stopped = YES;
-                            _executeClientBlock(self, ^(id<NSURLProtocolClient> client){
+                            [self _executeClientBlock:^(id<NSURLProtocolClient> client){
                                 [client URLProtocol:self didFailWithError:config.failureError];
-                            });
+                            }];
                             return;
                         }
 
@@ -216,7 +221,7 @@ static void _executeClientBlock(SELF_ARG,
                         // On 3xx (when `Location` is provided), execute redirection based on config behavior.
                         if (statusCode >= 300 && statusCode < 400) {
                             const TNLPseudoURLProtocolRedirectBehavior behavior = (config) ? config.redirectBehavior : TNLPseudoURLProtocolRedirectBehaviorFollowLocation;
-                            if (_handleRedirect(self, request, httpResponse, behavior)) {
+                            if ([self _handleRedirectForRequest:request response:httpResponse behavior:behavior]) {
                                 // was handled, return
                                 return;
                             }
@@ -226,11 +231,11 @@ static void _executeClientBlock(SELF_ARG,
 
                         tnl_dispatch_async_autoreleasing(self->_protocolQueue, ^{
                             ABORT_IF_NECESSARY();
-                            _executeClientBlock(self, ^(id<NSURLProtocolClient> client){
+                            [self _executeClientBlock:^(id<NSURLProtocolClient> client){
                                 [client URLProtocol:self
                                  didReceiveResponse:httpResponse
                                  cacheStoragePolicy:response.storagePolicy];
-                            });
+                            }];
 
                             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(latency * NSEC_PER_SEC)), self->_protocolQueue, ^{
                                 @autoreleasepool {
@@ -241,11 +246,10 @@ static void _executeClientBlock(SELF_ARG,
                                         bps = (NSUInteger)MIN(config.bps / 8ULL, (uint64_t)NSUIntegerMax);
                                     }
 
-                                    _chunkData(self,
-                                               data,
-                                               bps,
-                                               0 /*bytesSent*/,
-                                               MAX(latency, 0.25) /*latency*/);
+                                    [self _chunkData:data
+                                                 bps:bps
+                                           bytesSent:0
+                                             latency:MAX(latency, 0.25)];
                                 }
                             });
                         });
@@ -256,26 +260,21 @@ static void _executeClientBlock(SELF_ARG,
             tnl_dispatch_async_autoreleasing(self->_protocolQueue, ^{
                 ABORT_IF_NECESSARY();
                 self.stopped = YES;
-                _executeClientBlock(self, ^(id<NSURLProtocolClient> client){
+                [self _executeClientBlock:^(id<NSURLProtocolClient> client){
                     [client URLProtocol:self
                        didFailWithError:[NSError errorWithDomain:TNLPseudoURLProtocolErrorDomain
                                                             code:ENOENT
                                                         userInfo:nil]];
-                });
+                }];
             });
         }
     });
 }
 
-static BOOL _handleRedirect(SELF_ARG,
-                            NSURLRequest *request,
-                            NSHTTPURLResponse *httpResponse,
-                            const TNLPseudoURLProtocolRedirectBehavior behavior)
+- (BOOL)_handleRedirectForRequest:(NSURLRequest *)request
+                         response:(NSHTTPURLResponse *)httpResponse
+                         behavior:(const TNLPseudoURLProtocolRedirectBehavior)behavior
 {
-    if (!self) {
-        return NO;
-    }
-
     TNLAssert(httpResponse.statusCode >= 300);
     TNLAssert(httpResponse.statusCode < 400);
 
@@ -324,27 +323,22 @@ static BOOL _handleRedirect(SELF_ARG,
          Radar has been filed against Apple.
          */
         NSHTTPURLResponse * __nonnull redirectResponse = (NSHTTPURLResponse * __nonnull)redirectCachedResponse.response;
-        _executeClientBlock(self, ^(id<NSURLProtocolClient> client) {
+        [self _executeClientBlock:^(id<NSURLProtocolClient> client) {
             [client URLProtocol:self
          wasRedirectedToRequest:[mRedirectRequest copy]
                redirectResponse:redirectResponse];
-        });
+        }];
         return YES;
     }
 
     return NO;
 }
 
-static void _chunkData(SELF_ARG,
-                       NSData *data,
-                       NSUInteger bps,
-                       NSUInteger bytesSent,
-                       NSTimeInterval latency)
+- (void)_chunkData:(NSData *)data
+               bps:(NSUInteger)bps
+         bytesSent:(NSUInteger)bytesSent
+           latency:(NSTimeInterval)latency
 {
-    if (!self) {
-        return;
-    }
-
     const NSUInteger bytesPerLatencyGap = (NSUInteger)MAX(bps * latency, 1UL);
     NSUInteger bytesToSend = 0;
     if (bytesSent < data.length) {
@@ -353,25 +347,28 @@ static void _chunkData(SELF_ARG,
 
     if (bytesToSend > 0) {
         NSData *chunk = [data tnl_safeSubdataNoCopyWithRange:NSMakeRange(bytesSent, bytesToSend)];
-        _executeClientBlock(self, ^(id<NSURLProtocolClient> client){
+        [self _executeClientBlock:^(id<NSURLProtocolClient> client){
             [client URLProtocol:self didLoadData:chunk];
-        });
+        }];
         bytesSent += bytesToSend;
     }
 
     if (bytesSent >= data.length) {
-        tnl_dispatch_async_autoreleasing(self->_protocolQueue, ^{
+        tnl_dispatch_async_autoreleasing(_protocolQueue, ^{
             ABORT_IF_NECESSARY();
             self.stopped = YES;
-            _executeClientBlock(self, ^(id<NSURLProtocolClient> client){
+            [self _executeClientBlock:^(id<NSURLProtocolClient> client){
                 [client URLProtocolDidFinishLoading:self];
-            });
+            }];
         });
     } else {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(latency * NSEC_PER_SEC)), self->_protocolQueue, ^{
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(latency * NSEC_PER_SEC)), _protocolQueue, ^{
             @autoreleasepool {
                 ABORT_IF_NECESSARY();
-                _chunkData(self, data, bps, bytesSent, latency);
+                [self _chunkData:data
+                             bps:bps
+                       bytesSent:bytesSent
+                         latency:latency];
             }
         });
     }
@@ -395,19 +392,14 @@ static void _chunkData(SELF_ARG,
     return self;
 }
 
-static void _executeClientBlock(SELF_ARG,
-                                TNLPseudoURLClientBlock block)
+- (void)_executeClientBlock:(TNLPseudoURLClientBlock)block
 {
-    if (!self) {
-        return;
-    }
-
-    CFRunLoopPerformBlock(self->_protocolRunLoop, kCFRunLoopDefaultMode, ^{
+    CFRunLoopPerformBlock(_protocolRunLoop, kCFRunLoopDefaultMode, ^{
         @autoreleasepool {
             block(self.client);
         }
     });
-    CFRunLoopWakeUp(self->_protocolRunLoop);
+    CFRunLoopWakeUp(_protocolRunLoop);
 }
 
 @end
@@ -460,8 +452,8 @@ static NSHTTPURLResponse *_UpdateResponse(NSHTTPURLResponse *response, NSUIntege
 
 static NSRange _RangeForRequest(NSURLRequest *request, NSUInteger dataLength, NSString *stringForIfRange)
 {
-    NSString *range = [request.allHTTPHeaderFields tnl_objectsForCaseInsensitiveKey:@"Range"].firstObject;
-    NSString *ifRange = [request.allHTTPHeaderFields tnl_objectsForCaseInsensitiveKey:@"If-Range"].firstObject;
+    NSString *range = [request.allHTTPHeaderFields tnl_objectForCaseInsensitiveKey:@"Range"];
+    NSString *ifRange = [request.allHTTPHeaderFields tnl_objectForCaseInsensitiveKey:@"If-Range"];
     if ((!ifRange || !stringForIfRange || [ifRange isEqualToString:stringForIfRange]) && [range hasPrefix:@"bytes="]) {
         range = [range substringFromIndex:[@"bytes=" length]];
         NSArray<NSString *> *ranges = [range componentsSeparatedByString:@","];
