@@ -213,7 +213,7 @@
 
     // base
     XCTAssertEqualObjects(TNLErrorToSecureCodingError(response.operationError), decodedResponse.operationError);
-    XCTAssertTrue([TNLRequest isRequest:response.originalRequest equalTo:decodedResponse.originalRequest quickBodyComparison:YES], @"%@ must be equal to %@", response.originalRequest, decodedResponse.originalRequest);
+    XCTAssertTrue(TNLRequestEqualToRequest(response.originalRequest, decodedResponse.originalRequest, YES /*quickBodyCheck*/), @"%@ must be equal to %@", response.originalRequest, decodedResponse.originalRequest);
     XCTAssertEqualObjects(response, decodedResponse);
 
     /// Try decoding with a mapping
@@ -253,7 +253,7 @@
         return;
     }
 
-    XCTAssertTrue([TNLRequest isRequest:response.originalRequest equalTo:decodedResponse.originalRequest quickBodyComparison:YES]);
+    XCTAssertTrue(TNLRequestEqualToRequest(response.originalRequest, decodedResponse.originalRequest, YES /*quickBodyCheck*/));
 }
 
 - (void)testRetryAfterMethods

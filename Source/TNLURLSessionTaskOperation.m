@@ -39,8 +39,6 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-#define SELF_ARG PRIVATE_SELF(TNLURLSessionTaskOperation)
-
 #define EXTRA_DOWNLOAD_BYTES_BUFFER (16)
 
 #define kTaskMetricsNotSeenOnCompletionDelayCompletionDuration (0.300)
@@ -52,6 +50,7 @@ static BOOL TNLURLRequestHasBody(NSURLRequest *request, id<TNLRequest> requestPr
 static NSArray<NSString *> *TNLSecTrustGetCertificateChainDescriptions(SecTrustRef trust);
 static NSString *TNLSecCertificateDescription(SecCertificateRef cert);
 
+TNL_OBJC_FINAL TNL_OBJC_DIRECT_MEMBERS
 @interface TNLFakeRequestOperation : TNLRequestOperation
 - (instancetype)initWithURLSessionTaskOperation:(TNLURLSessionTaskOperation *)op NS_DESIGNATED_INITIALIZER;
 - (instancetype)initWithRequest:(nullable id<TNLRequest>)request
@@ -59,6 +58,7 @@ static NSString *TNLSecCertificateDescription(SecCertificateRef cert);
                        delegate:(nullable id<TNLRequestDelegate>)delegate NS_UNAVAILABLE;
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLURLSessionTaskOperation () <TNLContentDecoderClient>
 
 @property (nonatomic, readonly) TNLRequestOperationState state;
@@ -71,116 +71,112 @@ static NSString *TNLSecCertificateDescription(SecCertificateRef cert);
 @property (nonatomic, readonly, nullable) NSMutableData *contentDecoderRecentData;
 @property (nonatomic) id<TNLRequest> originalRequest;
 
-static BOOL _currentRequestHasBody(SELF_ARG);
+- (BOOL)_currentRequestHasBody;
 
-static void _decodeData(SELF_ARG,
-                        NSData *data,
-                        void(^completion)(NSData * __nullable, NSError * __nullable)); // completion called on bg queue
+#pragma mark Decoding
+
+- (void)_decodeData:(NSData *)data
+         completion:(void(^)(NSData * __nullable decodedData, NSError * __nullable decodeError))blockName; // completion called on bg queue
+- (void)_finishDecodingWithURLSession:(NSURLSession *)completedURLSession
+                             dataTask:(NSURLSessionDataTask *)dataTask;
+- (void)_network_flushDecoding:(nullable NSError *)error
+                    completion:(void(^)(NSData * __nullable decodedData, NSError * __nullable decodeError))completion;
+- (void)_network_didDecodeData:(nullable NSData *)decodedData
+                    URLSession:(NSURLSession *)session
+                      dataTask:(NSURLSessionDataTask *)dataTask
+                         error:(nullable NSError *)decodeError;
+
+#pragma mark Network
+
+// TODO: move these all to (Network) category
+
+- (void)_network_finalizeDidCompleteTask:(NSURLSessionTask *)task
+                              URLSession:(NSURLSession *)session
+                                   error:(nullable NSError *)error;
+
+// NSURLSession Events
+- (void)_network_willPerformHTTPRedirectionFromRequest:(NSURLRequest *)fromRequest
+                                              response:(NSHTTPURLResponse *)response
+                                       originalRequest:(NSURLRequest *)originalRequest
+                                      suggestedRequest:(NSURLRequest *)suggestedRequest
+                                         chosenRequest:(nullable id<TNLRequest>)chosenRequest
+                                            completion:(void(^)(NSURLRequest * __nullable))completionHandler;
+- (void)_network_handleRedirectFromRequest:(NSURLRequest *)fromRequest
+                                  response:(NSHTTPURLResponse *)response
+                                 toRequest:(nullable NSURLRequest *)toRequest
+                                completion:(void(^)(NSURLRequest * __nullable))completionHandler;
 
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLURLSessionTaskOperation (Network)
 
 // Methods that can only be called from the tnl_network_queue()
 
 #pragma mark Properties
 
-static float _network_getUploadProgress(SELF_ARG);
-static float _network_downloadProgress(SELF_ARG);
-static void _network_setObservingURLSessionTask(SELF_ARG,
-                                                BOOL observing);
+- (float)_network_uploadProgress;
+- (float)_network_downloadProgress;
 
 #pragma mark NSOperation
 
-static BOOL _network_shouldCancel(SELF_ARG);
+- (BOOL)_network_shouldCancel;
 
 #pragma mark Update State
 
-static void _network_updatePriorities(SELF_ARG);
-static void _network_updateUploadProgress(SELF_ARG,
-                                          float progress);
-static void _network_updateDownloadProgress(SELF_ARG,
-                                            float progress);
-static void _network_transitionState(SELF_ARG,
-                                     TNLRequestOperationState state);
-static void _network_updateTimestamps(SELF_ARG,
-                                      TNLRequestOperationState state);
-static void _network_buildResponseInfo(SELF_ARG);
-static void _network_buildInternalResponse(SELF_ARG);
-static void _network_finalize(SELF_ARG,
-                              TNLRequestOperationState state);
-static void _network_finalizeWithResponseCompletion(SELF_ARG,
-                                                    TNLRequestMakeFinalResponseCompletionBlock completion);
+- (void)_network_updatePriorities;
+- (void)_network_updateUploadProgress:(float)progress;
+- (void)_network_updateDownloadProgress:(float)progress;
+- (void)_network_transitionToState:(TNLRequestOperationState)state;
+- (void)_network_updateTimestampsWithState:(TNLRequestOperationState)state;
+- (void)_network_buildResponseInfo;
+- (void)_network_buildInternalResponse;
+- (void)_network_finalizeWithState:(TNLRequestOperationState)state;
+- (void)_network_finalizeWithResponseCompletion:(TNLRequestMakeFinalResponseCompletionBlock)completion;
 
 #pragma mark Completion/Failure/Cancel
 
-static void _network_fail(SELF_ARG,
-                          NSError *error);
-static void _network_cancel(SELF_ARG);
-static void _network_complete(SELF_ARG);
-static void _network_completeCachedCompletionIfPossible(SELF_ARG);
+- (void)_network_fail:(NSError *)error;
+- (void)_network_cancel;
+- (void)_network_complete;
+- (void)_network_completeCachedCompletionIfPossible;
 
 #pragma mark NSURLSession Events
 
-static void _network_willPerformHTTPRedirection(SELF_ARG,
-                                                NSURLRequest *fromRequest,
-                                                NSHTTPURLResponse *response,
-                                                NSURLRequest *originalRequest,
-                                                NSURLRequest *suggestedRequest,
-                                                id<TNLRequest> __nullable chosenRequest,
-                                                void (^completionHandler)(NSURLRequest * __nullable));
-static void _network_handleRedirect(SELF_ARG,
-                                    NSURLRequest *fromRequest,
-                                    NSHTTPURLResponse *response,
-                                    NSURLRequest * __nullable toRequest,
-                                    void (^completionHandler)(NSURLRequest * __nullable));
-static void _network_didUpdateTotalBytesReceived(SELF_ARG,
-                                                 NSURLSession *session,
-                                                 NSURLSessionDownloadTask *downloadTask,
-                                                 int64_t bytesReceived,
-                                                 int64_t totalBytesExpectedToReceive);
-static void _network_captureResponseFromTaskIfNeeded(SELF_ARG,
-                                                     NSURLSession *session,
-                                                     NSURLSessionTask *task);
-static void _network_didReceiveResponse(SELF_ARG,
-                                        NSURLSession *session,
-                                        NSURLSessionTask *task,
-                                        NSURLResponse *response);
-static void _network_finalizeDidCompleteTask(SELF_ARG,
-                                             NSURLSession *session,
-                                             NSURLSessionTask *task,
-                                             NSError * __nullable error);
+- (void)_network_didUpdateTotalBytesReceived:(int64_t)bytesReceived
+                               expectedBytes:(int64_t)totalBytesExpectedToReceive
+                                  URLSession:(NSURLSession *)session
+                                downloadTask:(NSURLSessionDownloadTask *)downloadTask;
+- (void)_network_captureResponseFromTaskIfNeeded:(NSURLSessionTask *)task
+                                      URLSession:(NSURLSession *)session;
+- (void)_network_didReceiveResponse:(NSURLResponse *)response
+                         URLSession:(NSURLSession *)session
+                               task:(NSURLSessionTask *)task;
 
 #pragma mark NSURLSessionTask Methods
 
-static void _network_willResumeSessionTask(SELF_ARG,
-                                           NSURLRequest *resumeRequest);
-static void _network_resumeSessionTask(SELF_ARG,
-                                       NSURLSessionTask *task);
-static void _network_createTask(SELF_ARG,
-                                NSURLRequest *request,
-                                id<TNLRequest> requestPrototype,
-                                void(^complete)(NSURLSessionTask *createdTask, NSError *error));
-static NSURLSessionTask *_network_populateURLSessionTask(SELF_ARG,
-                                                         NSURLRequest *request,
-                                                         id<TNLRequest> requestPrototype,
-                                                         NSError **errorOut);
+- (void)_network_willResumeSessionTaskWithRequest:(NSURLRequest *)resumeRequest;
+- (void)_network_resumeSessionTask:(NSURLSessionTask *)task;
+- (void)_network_createTaskWithRequest:(NSURLRequest *)request
+                             prototype:(id<TNLRequest>)requestPrototype
+                            completion:(void(^)(NSURLSessionTask *createdTask, NSError *error))complete;
+- (nullable NSURLSessionTask *)_network_populateURLSessionTaskWithRequest:(NSURLRequest *)request
+                                                                prototype:(id<TNLRequest>)requestPrototype
+                                                                    error:(out NSError * __nullable * __nonnull)errorOut;
 
 #pragma mark Other Methods
 
-static NSError * __nullable _network_appendDecodedData(SELF_ARG,
-                                                       NSData * __nullable data);
-static void _network_didStartTask(SELF_ARG, BOOL isBackgroundRequest);
-static void _network_updateHash(SELF_ARG, NSData *data);
-static void _network_finishHash(SELF_ARG, BOOL success);
+- (nullable NSError *)_network_appendDecodedData:(nullable NSData *)data;
+- (void)_network_didStartTask:(BOOL)isBackgroundRequest;
+- (void)_network_updateHashWithData:(NSData *)data;
+- (void)_network_finishHashWithSuccess:(BOOL)success;
 
 #pragma mark Idle Timeout
 
-static void _network_startIdleTimer(SELF_ARG,
-                                    NSTimeInterval deferral);
-static void _network_stopIdleTimer(SELF_ARG);
-static void _network_restartIdleTimer(SELF_ARG);
-static void _network_idleTimerFired(SELF_ARG);
+- (void)_network_startIdleTimerWithDeferralDuration:(NSTimeInterval)deferral;
+- (void)_network_stopIdleTimer;
+- (void)_network_restartIdleTimer;
+- (void)_network_idleTimerFired;
 
 @end
 
@@ -321,7 +317,7 @@ static void _network_idleTimerFired(SELF_ARG);
         TNLAssert(op.URLSessionTaskOperation == nil);
         TNLAssert(![_requestConfiguration respondsToSelector:@selector(setExecutionMode:)] && "MUST be immutable");
 
-        _network_updatePriorities(self);
+        [self _network_updatePriorities];
     }
     return self;
 }
@@ -330,11 +326,10 @@ static void _network_idleTimerFired(SELF_ARG);
 {
     TNLAssert(!_hashContextRef);
 
-    _network_stopIdleTimer(self);
+    [self _network_stopIdleTimer];
     if (!self.isComplete) {
         [self.URLSessionTask cancel];
     }
-    _network_setObservingURLSessionTask(self, NO /*observing*/); // task must be finished/cancelled BEFORE removing the KVO
 
     TNLDecrementObjectCount([self class]);
 }
@@ -346,18 +341,14 @@ static void _network_idleTimerFired(SELF_ARG);
     return atomic_load(&_internalState);
 }
 
-static BOOL _currentRequestHasBody(SELF_ARG)
+- (BOOL)_currentRequestHasBody
 {
-    if (!self) {
-        return NO;
-    }
-
     NSURLSessionTask *task = self.URLSessionTask;
     if ([task isKindOfClass:[NSURLSessionUploadTask class]]) {
         return YES;
     }
 
-    return TNLURLRequestHasBody(task.currentRequest, self->_hydratedRequest);
+    return TNLURLRequestHasBody(task.currentRequest, _hydratedRequest);
 }
 
 - (nullable NSURLSessionTask *)URLSessionTask
@@ -484,10 +475,10 @@ static BOOL _currentRequestHasBody(SELF_ARG)
                 self->_finalResponse = response;
             }
 
-            if (_network_shouldCancel(self)) {
-                _network_cancel(self);
+            if ([self _network_shouldCancel]) {
+                [self _network_cancel];
             } else {
-                _network_updatePriorities(self);
+                [self _network_updatePriorities];
             }
         }
     });
@@ -504,7 +495,7 @@ static BOOL _currentRequestHasBody(SELF_ARG)
 {
     TNLRequestOperation *requestOperation = _requestOperation;
     if (requestOperation == op) {
-        _network_updatePriorities(self);
+        [self _network_updatePriorities];
     }
 }
 
@@ -559,19 +550,19 @@ static BOOL _currentRequestHasBody(SELF_ARG)
 
         if (self->_cachedFailure) {
             // Already failed
-            _network_fail(self, self->_cachedFailure);
+            [self _network_fail:self->_cachedFailure];
             return;
         }
 
-        if (_network_shouldCancel(self)) {
+        if ([self _network_shouldCancel]) {
             // Should cancel
-            _network_cancel(self);
+            [self _network_cancel];
             return;
         }
 
         // Starting
 
-        _network_transitionState(self, TNLRequestOperationStateStarting);
+        [self _network_transitionToState:TNLRequestOperationStateStarting];
 
         TNLAssert(self->_URLSession != nil);
         NSURLRequest *taskRequest = self.hydratedURLRequest;
@@ -590,14 +581,13 @@ static BOOL _currentRequestHasBody(SELF_ARG)
 
         // Create task and start
 
-        _network_createTask(self,
-                            taskRequest,
-                            self.originalRequest /*requestPrototype*/,
-                            ^(NSURLSessionTask *createdTask, NSError *error) {
+        [self _network_createTaskWithRequest:taskRequest
+                                   prototype:self.originalRequest
+                                  completion:^(NSURLSessionTask *createdTask, NSError *error) {
             TNLAssert(createdTask == self.URLSessionTask);
             if (error) {
                 TNLAssert(!createdTask);
-                _network_fail(self, error);
+                [self _network_fail:error];
             } else {
                 NSURLRequest *currentURLRequest = self.currentURLRequest;
                 TNLAssert(createdTask);
@@ -611,9 +601,9 @@ static BOOL _currentRequestHasBody(SELF_ARG)
                         self->_flags.useIdleTimeoutForInitialConnection = (mode == TNLGlobalConfigurationIdleTimeoutModeEnabledIncludingInitialConnection);
                     }
                 }
-                _network_willResumeSessionTask(self, currentURLRequest);
-                _network_resumeSessionTask(self, createdTask);
-                _network_didStartTask(self, (TNLRequestExecutionModeBackground == self->_executionMode));
+                [self _network_willResumeSessionTaskWithRequest:currentURLRequest];
+                [self _network_resumeSessionTask:createdTask];
+                [self _network_didStartTask:(TNLRequestExecutionModeBackground == self->_executionMode) /*isBackgroundRequest*/];
 
                 if (self->_flags.shouldDeleteUploadFile) {
                     [[NSFileManager defaultManager] removeItemAtPath:self->_uploadFilePath error:NULL];
@@ -621,49 +611,10 @@ static BOOL _currentRequestHasBody(SELF_ARG)
                 }
 
                 if (self->_flags.useIdleTimeoutForInitialConnection) {
-                    _network_restartIdleTimer(self);
+                    [self _network_restartIdleTimer];
                 }
             }
-        });
-    });
-}
-
-#pragma mark KVO
-
-- (void)observeValueForKeyPath:(nullable NSString *)keyPath
-                      ofObject:(nullable id)object
-                        change:(nullable NSDictionary *)change
-                       context:(nullable void *)context
-{
-    if ([keyPath isEqualToString:@"response"]) {
-        NSHTTPURLResponse *response = change[NSKeyValueChangeNewKey];
-        if (!response || response == (id)[NSNull null] || ![response isKindOfClass:[NSHTTPURLResponse class]]) {
-            return;
-        }
-
-        // Follow Apple's recommendation:
-        // make a copy of our response since
-        // it is unsafe to share ownership between
-        // the KVO callback and our GCD queue
-
-        NSDictionary *allHeaderFields = [NSDictionary dictionaryWithDictionary:response.allHeaderFields];
-        NSHTTPURLResponse *dupeResponse = [[NSHTTPURLResponse alloc] initWithURL:response.URL
-                                                                      statusCode:response.statusCode
-                                                                     HTTPVersion:@"HTTP/1.1"
-                                                                    headerFields:allHeaderFields];
-
-        _handleTaskResponseObservation(self, dupeResponse, object);
-    }
-}
-
-static void _handleTaskResponseObservation(SELF_ARG,
-                                           NSHTTPURLResponse *response,
-                                           NSURLSessionTask *task)
-{
-    tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-        if (self->_flags.shouldCaptureResponse && self.URLSessionTask == task) {
-            _network_didReceiveResponse(self, self.URLSession, task, response);
-        }
+        }];
     });
 }
 
@@ -679,7 +630,7 @@ static void _handleTaskResponseObservation(SELF_ARG,
 
         // If error is nil, the session was explicitely invalidated
         TNLLogError(@"%@ %@", NSStringFromSelector(_cmd), error);
-        _network_fail(self, TNLErrorCreateWithCodeAndUnderlyingError(TNLErrorCodeRequestOperationURLSessionInvalidated, error));
+        [self _network_fail:TNLErrorCreateWithCodeAndUnderlyingError(TNLErrorCodeRequestOperationURLSessionInvalidated, error)];
     });
 }
 
@@ -733,7 +684,7 @@ static void _handleTaskResponseObservation(SELF_ARG,
         taskIsWaitingForConnectivity:(NSURLSessionTask *)task
 {
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-        _network_restartIdleTimer(self);
+        [self _network_restartIdleTimer];
 
         const TNLRequestConnectivityOptions options = self->_requestConfiguration.connectivityOptions;
         if (TNL_BITMASK_INTERSECTS_FLAGS(options, TNLRequestConnectivityOptionWaitForConnectivity)) {
@@ -743,9 +694,9 @@ static void _handleTaskResponseObservation(SELF_ARG,
         } else {
             // force failure - not waiting for connectivity
             // this is the same error that would trigger if we didn't have waitsForConnectivity set
-            _network_fail(self, [NSError errorWithDomain:NSURLErrorDomain
+            [self _network_fail:[NSError errorWithDomain:NSURLErrorDomain
                                                     code:NSURLErrorNotConnectedToInternet
-                                                userInfo:nil]);
+                                                userInfo:nil]];
             return;
         }
 
@@ -769,7 +720,7 @@ static void _handleTaskResponseObservation(SELF_ARG,
 
         // redirects yield either a completion or a new attempt,
         // stop our idle timer (if we have one running)
-        _network_stopIdleTimer(self);
+        [self _network_stopIdleTimer];
 
         TNLRequestOperation *requestOperation = self->_requestOperation;
         if (requestOperation) {
@@ -779,69 +730,57 @@ static void _handleTaskResponseObservation(SELF_ARG,
                                                     toRequest:toRequest
                                                    completion:^(id<TNLRequest> __nullable callbackRequest) {
                 TNLAssertIsNetworkQueue();
-                _network_willPerformHTTPRedirection(self,
-                                                    fromRequest,
-                                                    response,
-                                                    originalRequest,
-                                                    toRequest,
-                                                    callbackRequest,
-                                                    completionHandler);
+                [self _network_willPerformHTTPRedirectionFromRequest:fromRequest
+                                                            response:response
+                                                     originalRequest:originalRequest
+                                                    suggestedRequest:toRequest
+                                                       chosenRequest:callbackRequest
+                                                          completion:completionHandler];
             }];
         } else {
-            _network_willPerformHTTPRedirection(self,
-                                                fromRequest,
-                                                response,
-                                                originalRequest,
-                                                toRequest,
-                                                toRequest /*chosenRequest*/,
-                                                completionHandler);
+            [self _network_willPerformHTTPRedirectionFromRequest:fromRequest
+                                                        response:response
+                                                 originalRequest:originalRequest
+                                                suggestedRequest:toRequest
+                                                   chosenRequest:toRequest
+                                                      completion:completionHandler];
         }
     });
 }
 
-static void _network_willPerformHTTPRedirection(SELF_ARG,
-                                                NSURLRequest *fromRequest,
-                                                NSHTTPURLResponse *response,
-                                                NSURLRequest *originalRequest,
-                                                NSURLRequest *suggestedRequest,
-                                                id<TNLRequest> __nullable chosenRequest,
-                                                void (^completionHandler)(NSURLRequest * __nullable))
+- (void)_network_willPerformHTTPRedirectionFromRequest:(NSURLRequest *)fromRequest
+                                              response:(NSHTTPURLResponse *)response
+                                       originalRequest:(NSURLRequest *)originalRequest
+                                      suggestedRequest:(NSURLRequest *)suggestedRequest
+                                         chosenRequest:(nullable id<TNLRequest>)chosenRequest
+                                            completion:(void(^)(NSURLRequest * __nullable))completionHandler
 {
-    if (!self) {
-        return;
-    }
-
     NSURLRequest *toRequest = nil;
     if (chosenRequest) {
         if (chosenRequest == suggestedRequest) {
             toRequest = suggestedRequest;
         } else {
             NSError *error = nil;
-            toRequest = [TNLRequest URLRequestForRequest:chosenRequest error:&error];
+            toRequest = TNLRequestToNSURLRequest(chosenRequest, nil /*config*/, &error);
             if (!toRequest) {
                 TNLLogError(@"Provided TNLHTTPRequest (%@) for redirect cannot be converted into an NSURLRequest! %@", chosenRequest, error);
             }
         }
     }
 
-    _network_handleRedirect(self,
-                            fromRequest,
-                            response,
-                            toRequest,
-                            completionHandler);
+    [self _network_handleRedirectFromRequest:fromRequest
+                                    response:response
+                                   toRequest:toRequest
+                                  completion:completionHandler];
 }
 
-static void _network_handleRedirect(SELF_ARG,
-                                    NSURLRequest *fromRequest,
-                                    NSHTTPURLResponse *response,
-                                    NSURLRequest * __nullable toRequest,
-                                    void (^completionHandler)(NSURLRequest * __nullable))
+- (void)_network_handleRedirectFromRequest:(NSURLRequest *)fromRequest
+                                  response:(NSHTTPURLResponse *)response
+                                 toRequest:(nullable NSURLRequest *)toRequest
+                                completion:(void(^)(NSURLRequest * __nullable))completionHandler
 {
-    if (!self) {
-        return;
-    }
 
-    TNLRequestOperation *requestOperation = self->_requestOperation;
+    TNLRequestOperation *requestOperation = _requestOperation;
     void (^block)(NSURLRequest * __nullable, NSError * __nullable);
     block = ^void(NSURLRequest * __nullable sanitizedRequest, NSError * __nullable sanitiziationError) {
 
@@ -875,21 +814,21 @@ static void _network_handleRedirect(SELF_ARG,
         completionHandler(finalToRequest);
 
         if (sanitiziationError) {
-            _network_fail(self, sanitiziationError);
+            [self _network_fail:sanitiziationError];
             return;
         } else if (self.isComplete || self.finalizing) {
             return;
-        } else if (_network_shouldCancel(self)) {
-            _network_cancel(self);
+        } else if ([self _network_shouldCancel]) {
+            [self _network_cancel];
             return;
         }
 
         if (self->_flags.useIdleTimeoutForInitialConnection) {
             // only restart if we want the idle timer to also be for connection time
-            _network_restartIdleTimer(self);
+            [self _network_restartIdleTimer];
         }
 
-        _network_transitionState(self, TNLRequestOperationStateRunning);
+        [self _network_transitionToState:TNLRequestOperationStateRunning];
         TNLAttemptMetaData *metadata = [self network_metaDataWithLowerCaseHeaderFields:[response.allHeaderFields tnl_copyWithLowercaseKeys]];
         [requestOperation network_URLSessionTaskOperation:self
                                            redirectedFrom:fromRequest
@@ -925,9 +864,9 @@ static void _network_handleRedirect(SELF_ARG,
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
 
         if (self->_flags.useIdleTimeoutForInitialConnection) {
-            _network_restartIdleTimer(self);
+            [self _network_restartIdleTimer];
         } else {
-            _network_stopIdleTimer(self);
+            [self _network_stopIdleTimer];
         }
 
         id<TNLRequest> request = self->_hydratedRequest;
@@ -948,15 +887,15 @@ static void _network_handleRedirect(SELF_ARG,
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
         if (self.isComplete || self.finalizing) {
             return;
-        } else if (_network_shouldCancel(self)) {
-            _network_cancel(self);
+        } else if ([self _network_shouldCancel]) {
+            [self _network_cancel];
             return;
         }
 
-        _network_transitionState(self, TNLRequestOperationStateRunning);
-        const float progress = _network_getUploadProgress(self);
-        _network_updateUploadProgress(self, progress);
-        _network_restartIdleTimer(self);
+        [self _network_transitionToState:TNLRequestOperationStateRunning];
+        const float progress = [self _network_uploadProgress];
+        [self _network_updateUploadProgress:progress];
+        [self _network_restartIdleTimer];
     });
 }
 
@@ -1000,7 +939,7 @@ static void _network_handleRedirect(SELF_ARG,
 
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kTaskMetricsNotSeenOnCompletionDelayCompletionDuration * NSEC_PER_SEC)), tnl_network_queue(), ^{
                 @autoreleasepool {
-                    _network_completeCachedCompletionIfPossible(self);
+                    [self _network_completeCachedCompletionIfPossible];
                 }
             });
 
@@ -1010,36 +949,31 @@ static void _network_handleRedirect(SELF_ARG,
         NSError *error = theError;
         if (self.isComplete || self.finalizing) {
             return;
-        } else if (_network_shouldCancel(self)) {
-            _network_cancel(self);
+        } else if ([self _network_shouldCancel]) {
+            [self _network_cancel];
             return;
         }
 
-        _network_transitionState(self, TNLRequestOperationStateRunning);
+        [self _network_transitionToState:TNLRequestOperationStateRunning];
 
-        _network_captureResponseFromTaskIfNeeded(self, session, task);
+        [self _network_captureResponseFromTaskIfNeeded:task URLSession:session];
 
         TNLAssertMessage(task == self.URLSessionTask, @"task[%tu]:%@ != task[%tu]:%@", task.taskIdentifier, task, self.URLSessionTask.taskIdentifier, self.URLSessionTask);
         TNLAssertMessage(error != nil || task.response != nil, @"task: %@\n%@", task, task.currentRequest);
 
         if (!error && self->_contentDecoderContext) {
-            _network_stopIdleTimer(self);
-            _finishDecoding(self, session, (NSURLSessionDataTask *)task);
+            [self _network_stopIdleTimer];
+            [self _finishDecodingWithURLSession:session dataTask:(NSURLSessionDataTask *)task];
             return;
         }
 
-        _network_finalizeDidCompleteTask(self, session, task, error);
+        [self _network_finalizeDidCompleteTask:task URLSession:session error:error];
     });
 }
 
-static void _finishDecoding(SELF_ARG,
-                            NSURLSession *completedURLSession,
-                            NSURLSessionDataTask *dataTask)
+- (void)_finishDecodingWithURLSession:(NSURLSession *)completedURLSession
+                             dataTask:(NSURLSessionDataTask *)dataTask
 {
-    if (!self) {
-        return;
-    }
-
     tnl_dispatch_async_autoreleasing(tnl_coding_queue(), ^{
         NSError *decodingError = nil;
         if (![self->_contentDecoder tnl_finalizeDecoding:self->_contentDecoderContext error:&decodingError]) {
@@ -1049,44 +983,36 @@ static void _finishDecoding(SELF_ARG,
             const BOOL hasRecentData = self->_contentDecoderRecentData.length > 0;
             if (hasRecentData) {
                 // flush is synchronous
-                _network_flushDecoding(self,
-                                       decodingError,
-                                       ^(NSData * __nullable decodedData, NSError * __nullable flushDecodingError) {
-                    _network_didDecodeData(self,
-                                           completedURLSession,
-                                           dataTask,
-                                           decodedData,
-                                           flushDecodingError);
-                });
+                [self _network_flushDecoding:decodingError
+                                  completion:^(NSData * __nullable decodedData, NSError * __nullable flushDecodingError) {
+                    [self _network_didDecodeData:decodedData
+                                      URLSession:completedURLSession
+                                        dataTask:dataTask
+                                           error:flushDecodingError];
+                }];
             }
             // error would be triggered in the flush which would yield the op to fail before this point
-            _network_finalizeDidCompleteTask(self,
-                                             completedURLSession,
-                                             dataTask,
-                                             nil /*error*/);
+            [self _network_finalizeDidCompleteTask:dataTask
+                                        URLSession:completedURLSession
+                                             error:nil];
         });
     });
 }
 
-static void _network_finalizeDidCompleteTask(SELF_ARG,
-                                             NSURLSession *session,
-                                             NSURLSessionTask *task,
-                                             NSError * __nullable error)
+- (void)_network_finalizeDidCompleteTask:(NSURLSessionTask *)task
+                              URLSession:(NSURLSession *)session
+                                   error:(nullable NSError *)error
 {
-    if (!self) {
-        return;
-    }
-
     if (self.isComplete || self.finalizing) {
         return;
-    } else if (_network_shouldCancel(self)) {
-        _network_cancel(self);
+    } else if ([self _network_shouldCancel]) {
+        [self _network_cancel];
         return;
     }
 
-    self->_contentDecoderContext = nil;
-    self->_contentDecoderRecentData = nil;
-    _network_stopIdleTimer(self);
+    _contentDecoderContext = nil;
+    _contentDecoderRecentData = nil;
+    [self _network_stopIdleTimer];
 
     BOOL success = YES;
     if (error) {
@@ -1095,10 +1021,10 @@ static void _network_finalizeDidCompleteTask(SELF_ARG,
             switch (error.code) {
                 case NSURLErrorCancelled:
                 {
-                    if (self->_flags.didCancel) {
+                    if (_flags.didCancel) {
                         // cancel, not an error
                         error = nil;
-                        if (self->_cancelledRedirectResponse) {
+                        if (_cancelledRedirectResponse) {
                             success = YES;
                         }
                     } else {
@@ -1106,7 +1032,7 @@ static void _network_finalizeDidCompleteTask(SELF_ARG,
                         // other cancellation
 
                         NSMutableDictionary *userInfo = [[NSMutableDictionary alloc] init];
-                        if (self->_authChallengeCancelledUserInfo) {
+                        if (_authChallengeCancelledUserInfo) {
                             // definitely auth challenge
                             [userInfo addEntriesFromDictionary:self->_authChallengeCancelledUserInfo];
                         } else {
@@ -1138,12 +1064,12 @@ static void _network_finalizeDidCompleteTask(SELF_ARG,
     }
 
     if (success) {
-        _network_complete(self);
+        [self _network_complete];
     } else {
         if (error) {
-            _network_fail(self, error);
+            [self _network_fail:error];
         } else {
-            _network_cancel(self);
+            [self _network_cancel];
         }
     }
 }
@@ -1174,7 +1100,7 @@ static void _network_finalizeDidCompleteTask(SELF_ARG,
             completion even if the task metrics don't come through.
          */
 
-        _network_completeCachedCompletionIfPossible(self);
+        [self _network_completeCachedCompletionIfPossible];
     });
 }
 
@@ -1186,7 +1112,7 @@ didReceiveResponse:(NSURLResponse *)response
  completionHandler:(void (^)(NSURLSessionResponseDisposition disposition))completionHandler
 {
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-        _network_didReceiveResponse(self, session, dataTask, response);
+        [self _network_didReceiveResponse:response URLSession:session task:dataTask];
         completionHandler(NSURLSessionResponseAllow);
     });
 }
@@ -1203,35 +1129,34 @@ didReceiveResponse:(NSURLResponse *)response
     didReceiveData:(NSData *)data
 {
     // callback called on bg queue
-    _decodeData(self, data, ^(NSData * __nullable decodedData, NSError * __nullable decodeError) {
-        _network_didDecodeData(self, session, dataTask, decodedData, decodeError);
-    });
+    [self _decodeData:data
+           completion:^(NSData * __nullable decodedData, NSError * __nullable decodeError) {
+        [self _network_didDecodeData:decodedData
+                          URLSession:session
+                            dataTask:dataTask
+                               error:decodeError];
+    }];
 }
 
-static void _network_didDecodeData(SELF_ARG,
-                                   NSURLSession *session,
-                                   NSURLSessionDataTask *dataTask,
-                                   NSData * __nullable decodedData,
-                                   NSError * __nullable decodeError)
+- (void)_network_didDecodeData:(nullable NSData *)decodedData
+                    URLSession:(NSURLSession *)session
+                      dataTask:(NSURLSessionDataTask *)dataTask
+                         error:(nullable NSError *)decodeError
 {
-    if (!self) {
-        return;
-    }
-
     if (self.isComplete || self.isFinalizing) {
         return;
-    } else if (_network_shouldCancel(self)) {
-        _network_cancel(self);
+    } else if ([self _network_shouldCancel]) {
+        [self _network_cancel];
         return;
     }
 
-    _network_captureResponseFromTaskIfNeeded(self, session, dataTask);
-    NSError *error = decodeError ?: _network_appendDecodedData(self, decodedData);
+    [self _network_captureResponseFromTaskIfNeeded:dataTask URLSession:session];
+    NSError *error = decodeError ?: [self _network_appendDecodedData:decodedData];
     if (error) {
-        _network_fail(self, error);
+        [self _network_fail:error];
     } else {
-        _network_updateDownloadProgress(self, _network_downloadProgress(self));
-        _network_restartIdleTimer(self);
+        [self _network_updateDownloadProgress:[self _network_downloadProgress]];
+        [self _network_restartIdleTimer];
     }
 }
 
@@ -1242,7 +1167,7 @@ static void _network_didDecodeData(SELF_ARG,
 {
     // TODO:[nobrien] - expose this via one of the request delegates or configuration (NSURLCacheStoragePolicy)
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-        _network_restartIdleTimer(self);
+        [self _network_restartIdleTimer];
         completionHandler(proposedResponse);
     });
 }
@@ -1262,10 +1187,10 @@ static void _network_didDecodeData(SELF_ARG,
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
         self->_tempFile = tempFile;
         if (!self->_tempFile) {
-            _network_fail(self, error);
+            [self _network_fail:error];
         } else {
-            _network_captureResponseFromTaskIfNeeded(self, session, downloadTask);
-            _network_restartIdleTimer(self);
+            [self _network_captureResponseFromTaskIfNeeded:downloadTask URLSession:session];
+            [self _network_restartIdleTimer];
         }
     });
 }
@@ -1277,11 +1202,10 @@ static void _network_didDecodeData(SELF_ARG,
         totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite
 {
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-        _network_didUpdateTotalBytesReceived(self,
-                                             session,
-                                             downloadTask,
-                                             totalBytesWritten,
-                                             totalBytesExpectedToWrite);
+        [self _network_didUpdateTotalBytesReceived:totalBytesWritten
+                                     expectedBytes:totalBytesExpectedToWrite
+                                        URLSession:session
+                                      downloadTask:downloadTask];
     });
 }
 
@@ -1291,25 +1215,19 @@ static void _network_didDecodeData(SELF_ARG,
 expectedTotalBytes:(int64_t)expectedTotalBytes
 {
     tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
-        _network_didUpdateTotalBytesReceived(self,
-                                             session,
-                                             downloadTask,
-                                             fileOffset,
-                                             expectedTotalBytes);
+        [self _network_didUpdateTotalBytesReceived:fileOffset
+                                     expectedBytes:expectedTotalBytes
+                                        URLSession:session
+                                      downloadTask:downloadTask];
     });
 }
 
 #pragma mark - Decoding
 
-static void _decodeData(SELF_ARG,
-                        NSData *data,
-                        void(^completion)(NSData * __nullable, NSError * __nullable))
+- (void)_decodeData:(NSData *)data
+         completion:(void(^)(NSData * __nullable decodedData, NSError * __nullable decodeError))completion
 {
-    if (!self) {
-        return;
-    }
-
-    if (!self->_contentDecoderContext) {
+    if (!_contentDecoderContext) {
         tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
             completion(data, nil);
         });
@@ -1328,27 +1246,22 @@ static void _decodeData(SELF_ARG,
         tnl_dispatch_async_autoreleasing(tnl_network_queue(), ^{
             const NSTimeInterval decodeLatency = TNLComputeDuration(decodeStartMachTime, mach_absolute_time());
             self->_responseDecodeLatency += decodeLatency;
-            _network_flushDecoding(self, error, completion);
+            [self _network_flushDecoding:error completion:completion];
         });
     });
 }
 
-static void _network_flushDecoding(SELF_ARG,
-                                   NSError * __nullable error,
-                                   void(^completion)(NSData * __nullable, NSError * __nullable))
+- (void)_network_flushDecoding:(nullable NSError *)error
+                    completion:(void(^)(NSData * __nullable decodedData, NSError * __nullable decodeError))completion
 {
-    if (!self) {
-        return;
-    }
-
     if (error) {
-        self->_contentDecoderContext = nil;
-        self->_contentDecoderRecentData = nil;
+        _contentDecoderContext = nil;
+        _contentDecoderRecentData = nil;
         completion(nil, error);
     } else {
         // flush the recent data
-        NSData *recentData = self->_contentDecoderRecentData;
-        self->_contentDecoderRecentData = nil;
+        NSData *recentData = _contentDecoderRecentData;
+        _contentDecoderRecentData = nil;
         completion(recentData, nil);
     }
 }
@@ -1375,27 +1288,6 @@ static void _network_flushDecoding(SELF_ARG,
 @implementation TNLURLSessionTaskOperation (Network)
 
 #pragma mark Properties
-
-static void _network_setObservingURLSessionTask(SELF_ARG,
-                                                BOOL observing)
-{
-    if (!self) {
-        return;
-    }
-
-    NSURLSessionTask *task = self.URLSessionTask;
-    if (observing != self->_isObservingURLSessionTask && task) {
-        if (observing) {
-            [task addObserver:self
-                   forKeyPath:@"response"
-                      options:NSKeyValueObservingOptionNew
-                      context:NULL];
-        } else {
-            [task removeObserver:self forKeyPath:@"response"];
-        }
-        self->_isObservingURLSessionTask = observing;
-    }
-}
 
 - (TNLAttemptMetaData *)network_metaDataWithLowerCaseHeaderFields:(nullable NSDictionary *)lowerCaseHeaderFields
 {
@@ -1490,17 +1382,13 @@ static void _network_setObservingURLSessionTask(SELF_ARG,
     return _taskMetrics;
 }
 
-static float _network_getUploadProgress(SELF_ARG)
+- (float)_network_uploadProgress
 {
-    if (!self) {
-        return 0;
-    }
-
     const int64_t bytesToSend = self.URLSessionTask.countOfBytesExpectedToSend;
     const int64_t bytesSent = self.URLSessionTask.countOfBytesSent;
     NSURLResponse *response = self.URLResponse;
 
-    if (TNLRequestOperationStateSucceeded == atomic_load(&self->_internalState) || response != nil) {
+    if (TNLRequestOperationStateSucceeded == atomic_load(&_internalState) || response != nil) {
         return 1.0f;
     } else if (bytesToSend <= 0) {
         // Non-deterministic
@@ -1512,12 +1400,8 @@ static float _network_getUploadProgress(SELF_ARG)
     return (float)doubleProgress;
 }
 
-static float _network_downloadProgress(SELF_ARG)
+- (float)_network_downloadProgress
 {
-    if (!self) {
-        return 0;
-    }
-
     const int64_t bytesToReceive = self.URLSessionTask.countOfBytesExpectedToReceive;
     const int64_t bytesReceived = self.URLSessionTask.countOfBytesReceived;
     NSHTTPURLResponse *response = self.URLResponse;
@@ -1526,7 +1410,7 @@ static float _network_downloadProgress(SELF_ARG)
         return 0.0f;
     }
 
-    if (TNLRequestOperationStateSucceeded == atomic_load(&self->_internalState)) {
+    if (TNLRequestOperationStateSucceeded == atomic_load(&_internalState)) {
         return 1.0f;
     } else if (bytesToReceive <= 0) {
         // Non-deterministic
@@ -1540,35 +1424,31 @@ static float _network_downloadProgress(SELF_ARG)
 
 #pragma mark NSOperation
 
-static BOOL _network_shouldCancel(SELF_ARG)
+- (BOOL)_network_shouldCancel
 {
-    if (!self) {
+    if (TNLRequestOperationStateIsFinal(atomic_load(&_internalState))) {
         return NO;
     }
 
-    if (TNLRequestOperationStateIsFinal(atomic_load(&self->_internalState))) {
-        return NO;
-    }
-
-    TNLRequestOperation *requestOperation = self->_requestOperation;
+    TNLRequestOperation *requestOperation = _requestOperation;
     if (requestOperation != nil) {
         return NO;
     }
 
-    if ([self->_error.domain isEqualToString:TNLErrorDomain] && self->_error.code == TNLErrorCodeRequestOperationCancelled) {
+    if ([_error.domain isEqualToString:TNLErrorDomain] && _error.code == TNLErrorCodeRequestOperationCancelled) {
         // Already cancelling
         return NO;
     }
 
-    if (self->_requestConfiguration.URLCache != nil) {
+    if (_requestConfiguration.URLCache != nil) {
         // Has a cache, should we permit it to finish?
 
         // TODO:[nobrien] - use better heuristics here
 
-        if (_currentRequestHasBody(self)) {
-            return _network_getUploadProgress(self) < 0.9;
+        if ([self _currentRequestHasBody]) {
+            return [self _network_uploadProgress] < 0.9;
         } else {
-            return _network_downloadProgress(self) < 0.9;
+            return [self _network_downloadProgress] < 0.9;
         }
     }
 
@@ -1577,24 +1457,14 @@ static BOOL _network_shouldCancel(SELF_ARG)
 
 #pragma mark Methods
 
-static void _network_willResumeSessionTask(SELF_ARG,
-                                           NSURLRequest *resumeRequest)
+- (void)_network_willResumeSessionTaskWithRequest:(NSURLRequest *)resumeRequest
 {
-    if (!self) {
-        return;
-    }
-
-    [self->_requestOperation network_URLSessionTaskOperation:self
-                              didStartSessionTaskWithRequest:resumeRequest];
+    [_requestOperation network_URLSessionTaskOperation:self
+                        didStartSessionTaskWithRequest:resumeRequest];
 }
 
-static void _network_resumeSessionTask(SELF_ARG,
-                                       NSURLSessionTask *task)
+- (void)_network_resumeSessionTask:(NSURLSessionTask *)task
 {
-    if (!self) {
-        return;
-    }
-
     // NSURLSessionTask's `resume` will capture the QOS of the calling queue for
     // reusing the same QOS for the execution of the task
 
@@ -1606,226 +1476,179 @@ static void _network_resumeSessionTask(SELF_ARG,
     });
 }
 
-static void _network_didStartTask(SELF_ARG, BOOL isBackgroundRequest)
+- (void)_network_didStartTask:(BOOL)isBackgroundRequest
 {
-    if (!self) {
-        return;
-    }
-
     NSUInteger taskId = self.URLSessionTask.taskIdentifier;
-    NSString *configId = self.URLSession.configuration.identifier;
-    NSString *sharedContainerIdentifier = self->_URLSession.configuration.sharedContainerIdentifier;
+    NSString *configId = _URLSession.configuration.identifier;
+    NSString *sharedContainerIdentifier = _URLSession.configuration.sharedContainerIdentifier;
 
-    [self->_requestOperation network_URLSessionTaskOperation:self
-                              didStartTaskWithTaskIdentifier:taskId
-                                            configIdentifier:configId
-                                   sharedContainerIdentifier:sharedContainerIdentifier
-                                         isBackgroundRequest:isBackgroundRequest];
+    [_requestOperation network_URLSessionTaskOperation:self
+                        didStartTaskWithTaskIdentifier:taskId
+                                      configIdentifier:configId
+                             sharedContainerIdentifier:sharedContainerIdentifier
+                                   isBackgroundRequest:isBackgroundRequest];
 }
 
-static void _network_updatePriorities(SELF_ARG)
+- (void)_network_updatePriorities
 {
-    if (!self) {
-        return;
-    }
-
     TNLPriority pri = TNLPriorityVeryLow;
-    TNLRequestOperation *strongRequestOp = self->_requestOperation;
+    TNLRequestOperation *strongRequestOp = _requestOperation;
     if (strongRequestOp) {
         TNLPriority opPri = strongRequestOp.priority;
         if (opPri > pri) {
             pri = opPri;
         }
     }
-    self->_requestPriority = pri;
-    if ([self.URLSessionTask respondsToSelector:@selector(setPriority:)]) {
-        self.URLSessionTask.priority = TNLConvertTNLPriorityToURLSessionTaskPriority(self->_requestPriority);
-    }
+    _requestPriority = pri;
+    self.URLSessionTask.priority = TNLConvertTNLPriorityToURLSessionTaskPriority(self->_requestPriority);
 
     // Apple discourages modifying NSOperation properties once an operation has been added to an
     // NSOperationQueue. Crashing has been reproduced when modifying the queuePriority while an
     // NSOperation is executing so we will prevent mutating these priorities if that request has
     // started.
-    if (!self->_requestOperationQueue && !self.isReady) {
+    if (!_requestOperationQueue && !self.isReady) {
         self.queuePriority = TNLConvertTNLPriorityToQueuePriority(self->_requestPriority);
-        if ([self respondsToSelector:@selector(setQualityOfService:)]) {
-            self.qualityOfService = TNLConvertTNLPriorityToQualityOfService(self->_requestPriority);
-        }
+        self.qualityOfService = TNLConvertTNLPriorityToQualityOfService(self->_requestPriority);
     }
 }
 
-static void _network_buildResponseInfo(SELF_ARG)
+- (void)_network_buildResponseInfo
 {
-    if (!self) {
-        return;
-    }
-
-    if (!self->_responseInfo) {
-        self->_responseInfo = [[TNLResponseInfo alloc] initWithFinalURLRequest:self.currentURLRequest
-                                                                   URLResponse:self.URLResponse
-                                                                        source:self.responseSource
-                                                                          data:self->_storedData
-                                                            temporarySavedFile:self->_tempFile];
+    if (!_responseInfo) {
+        _responseInfo = [[TNLResponseInfo alloc] initWithFinalURLRequest:self.currentURLRequest
+                                                             URLResponse:self.URLResponse
+                                                                  source:self.responseSource
+                                                                    data:_storedData
+                                                      temporarySavedFile:_tempFile];
     }
 }
 
-static void _network_buildInternalResponse(SELF_ARG)
+- (void)_network_buildInternalResponse
 {
-    if (!self) {
-        return;
-    }
-
-    TNLAttemptMetaData *metadata = [self network_metaDataWithLowerCaseHeaderFields:self->_responseInfo.allHTTPHeaderFieldsWithLowerCaseKeys];
+    TNLAttemptMetaData *metadata = [self network_metaDataWithLowerCaseHeaderFields:_responseInfo.allHTTPHeaderFieldsWithLowerCaseKeys];
     TNLAttemptMetrics *attemptMetrics = [[TNLAttemptMetrics alloc] initWithType:TNLAttemptTypeInitial
-                                                                      startDate:self->_startDate
-                                                                  startMachTime:self->_startMachTime
-                                                                        endDate:self->_endDate
-                                                                    endMachTime:self->_endMachTime
+                                                                      startDate:_startDate
+                                                                  startMachTime:_startMachTime
+                                                                        endDate:_endDate
+                                                                    endMachTime:_endMachTime
                                                                        metaData:metadata
                                                                      URLRequest:self.currentURLRequest
                                                                     URLResponse:self.URLResponse
                                                                  operationError:self.error];
-    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueDate:self->_startDate
-                                                                      enqueueTime:self->_startMachTime
-                                                                     completeDate:self->_completeDate
-                                                                     completeTime:self->_completeMachTime
+    TNLResponseMetrics *metrics = [[TNLResponseMetrics alloc] initWithEnqueueDate:_startDate
+                                                                      enqueueTime:_startMachTime
+                                                                     completeDate:_completeDate
+                                                                     completeTime:_completeMachTime
                                                                    attemptMetrics:@[attemptMetrics]];
-    TNLResponse *response = [self->_responseClass responseWithRequest:self.originalRequest
-                                                       operationError:self->_error
-                                                                 info:self->_responseInfo
-                                                              metrics:metrics];
-    self->_finalResponse = response;
+    TNLResponse *response = [_responseClass responseWithRequest:self.originalRequest
+                                                 operationError:_error
+                                                           info:_responseInfo
+                                                        metrics:metrics];
+    _finalResponse = response;
 }
 
-static void _network_fail(SELF_ARG,
-                          NSError *error)
+- (void)_network_fail:(NSError *)error
 {
-    if (!self) {
-        return;
-    }
-
     if (self.isComplete || self.isFinalizing) {
         return;
     }
 
     TNLAssert(error != nil);
-    self->_flags.shouldCaptureResponse = 0; // don't handle responses anymore
+    _flags.shouldCaptureResponse = 0; // don't handle responses anymore
 
-    self->_contentDecoderContext = nil; // don't decode anymore
-    self->_contentDecoderRecentData = nil;
+    _contentDecoderContext = nil; // don't decode anymore
+    _contentDecoderRecentData = nil;
 
-    if (!self->_flags.didStart) {
-        self->_cachedFailure = error;
+    if (!_flags.didStart) {
+        _cachedFailure = error;
         return;
     }
 
     const BOOL didCancel = [error.domain isEqualToString:TNLErrorDomain] && (error.code == TNLErrorCodeRequestOperationCancelled);
-    self->_flags.didCancel = didCancel;
+    _flags.didCancel = didCancel;
 
     // don't use network_cancel
     [self.URLSessionTask cancel];
-    _network_stopIdleTimer(self);
+    [self _network_stopIdleTimer];
 
-    self->_error = error;
-    TNLLogDebug(@"%@ error: %@", self, self->_error);
+    _error = error;
+    TNLLogDebug(@"%@ error: %@", self, _error);
 
-    _network_finishHash(self, NO /*success*/);
-    _network_buildResponseInfo(self);
-    TNLAssert(self->_responseInfo);
-    _network_finalize(self, (didCancel) ? TNLRequestOperationStateCancelled : TNLRequestOperationStateFailed);
+    [self _network_finishHashWithSuccess:NO];
+    [self _network_buildResponseInfo];
+    TNLAssert(_responseInfo);
+    [self _network_finalizeWithState:(didCancel) ? TNLRequestOperationStateCancelled : TNLRequestOperationStateFailed];
 
     // discard temporary file at the end (if needed)
-    if (self->_flags.shouldDeleteUploadFile) {
-        [[NSFileManager defaultManager] removeItemAtPath:self->_uploadFilePath error:NULL];
-        self->_flags.shouldDeleteUploadFile = NO;
+    if (_flags.shouldDeleteUploadFile) {
+        [[NSFileManager defaultManager] removeItemAtPath:_uploadFilePath error:NULL];
+        _flags.shouldDeleteUploadFile = NO;
     }
 }
 
-static void _network_cancel(SELF_ARG)
+- (void)_network_cancel
 {
-    if (!self) {
-        return;
-    }
-
-    TNLAssert(!self->_flags.didCancel);
-    _network_fail(self, TNLErrorCreateWithCode(TNLErrorCodeRequestOperationCancelled));
+    TNLAssert(!_flags.didCancel);
+    [self _network_fail:TNLErrorCreateWithCode(TNLErrorCodeRequestOperationCancelled)];
 }
 
-static void _network_complete(SELF_ARG)
+- (void)_network_complete
 {
-    if (!self) {
-        return;
-    }
-
     if (self.isComplete || self.isFinalizing) {
         return;
     }
 
-    self->_flags.shouldCaptureResponse = 0; // don't handle responses anymore
-    self->_contentDecoderContext = nil; // don't decode anymore
-    self->_contentDecoderRecentData = nil;
-    self->_responseBodyEndDate = [NSDate date];
+    _flags.shouldCaptureResponse = 0; // don't handle responses anymore
+    _contentDecoderContext = nil; // don't decode anymore
+    _contentDecoderRecentData = nil;
+    _responseBodyEndDate = [NSDate date];
 
-    _network_finishHash(self, YES /*success*/);
-    _network_buildResponseInfo(self);
-    TNLAssert(self->_responseInfo);
-    _network_finalize(self, TNLRequestOperationStateSucceeded);
+    [self _network_finishHashWithSuccess:YES];
+    [self _network_buildResponseInfo];
+    TNLAssert(_responseInfo);
+    [self _network_finalizeWithState:TNLRequestOperationStateSucceeded];
 }
 
-static void _network_completeCachedCompletionIfPossible(SELF_ARG)
+- (void)_network_completeCachedCompletionIfPossible
 {
-    if (!self) {
-        return;
-    }
-
-    if (self->_flags.encounteredCompletionBeforeTaskMetrics) {
-        NSURLSession *session = self->_cachedCompletionSession;
+    if (_flags.encounteredCompletionBeforeTaskMetrics) {
+        NSURLSession *session = _cachedCompletionSession;
         if (session) {
-            NSURLSessionTask *task = self->_cachedCompletionTask;
-            NSError *error = self->_cachedCompletionError;
+            NSURLSessionTask *task = _cachedCompletionTask;
+            NSError *error = _cachedCompletionError;
 
-            self->_cachedCompletionSession = nil;
-            self->_cachedCompletionTask = nil;
-            self->_cachedCompletionError = nil;
+            _cachedCompletionSession = nil;
+            _cachedCompletionTask = nil;
+            _cachedCompletionError = nil;
 
             [self URLSession:session task:task didCompleteWithError:error];
         } // else, already completed
     }
 }
 
-static void _network_captureResponseFromTaskIfNeeded(SELF_ARG,
-                                                     NSURLSession *session,
-                                                     NSURLSessionTask *task)
+- (void)_network_captureResponseFromTaskIfNeeded:(NSURLSessionTask *)task
+                                      URLSession:(NSURLSession *)session
 {
-    if (!self) {
-        return;
-    }
-
-    if (self->_flags.shouldCaptureResponse && task) {
+    if (_flags.shouldCaptureResponse && task) {
         NSURLResponse *response = task.response;
         if (response) {
-            _network_didReceiveResponse(self, session, task, response);
+            [self _network_didReceiveResponse:response URLSession:session task:task];
         }
     }
 }
 
-static void _network_didReceiveResponse(SELF_ARG,
-                                        NSURLSession *session,
-                                        NSURLSessionTask *task,
-                                        NSURLResponse *response)
+- (void)_network_didReceiveResponse:(NSURLResponse *)response
+                         URLSession:(NSURLSession *)session
+                               task:(NSURLSessionTask *)task
 {
-    if (!self) {
-        return;
-    }
-
     if (self.isComplete || self.isFinalizing) {
         return;
-    } else if (_network_shouldCancel(self)) {
-        _network_cancel(self);
+    } else if ([self _network_shouldCancel]) {
+        [self _network_cancel];
         return;
     }
 
-    _network_transitionState(self, TNLRequestOperationStateRunning);
+    [self _network_transitionToState:TNLRequestOperationStateRunning];
 
     TNLAssertMessage([response isKindOfClass:[NSHTTPURLResponse class]], @"%@ is not an 'NSHTTPURLResponse'", response);
     TNLAssert(task.response == self.URLResponse);
@@ -1838,124 +1661,104 @@ static void _network_didReceiveResponse(SELF_ARG,
     }
 
     NSError *decodingError = nil;
-    NSString *acceptEncoding = [[(NSHTTPURLResponse *)response allHeaderFields] tnl_objectsForCaseInsensitiveKey:@"Content-Encoding"].firstObject;
+    NSString *acceptEncoding = [[(NSHTTPURLResponse *)response allHeaderFields] tnl_objectForCaseInsensitiveKey:@"Content-Encoding"];
     if (acceptEncoding) {
         acceptEncoding = [acceptEncoding lowercaseString];
-        self->_contentDecoder = self->_additionalDecoders[acceptEncoding];
-        if (self->_contentDecoder) {
-            self->_contentDecoderContext = [self->_contentDecoder tnl_initializeDecodingWithContentEncoding:acceptEncoding
-                                                                                                     client:self
-                                                                                                      error:&decodingError];
+        _contentDecoder = self->_additionalDecoders[acceptEncoding];
+        if (_contentDecoder) {
+            _contentDecoderContext = [_contentDecoder tnl_initializeDecodingWithContentEncoding:acceptEncoding
+                                                                                         client:self
+                                                                                          error:&decodingError];
         }
     }
 
-    self->_flags.shouldCaptureResponse = 0;
+    _flags.shouldCaptureResponse = 0;
 
-    self->_responseBodyStartDate = [NSDate date];
-    _network_updateUploadProgress(self, _network_getUploadProgress(self));
-    _network_updateDownloadProgress(self, _network_downloadProgress(self));
-    [self->_requestOperation network_URLSessionTaskOperation:self
-                                       didReceiveURLResponse:response];
+    _responseBodyStartDate = [NSDate date];
+    [self _network_updateUploadProgress:[self _network_uploadProgress]];
+    [self _network_updateDownloadProgress:[self _network_downloadProgress]];
+    [_requestOperation network_URLSessionTaskOperation:self
+                                 didReceiveURLResponse:response];
 
     if (decodingError) {
-        _network_fail(self, TNLErrorCreateWithCodeAndUnderlyingError(TNLErrorCodeRequestOperationRequestContentDecodingFailed, decodingError));
+        [self _network_fail:TNLErrorCreateWithCodeAndUnderlyingError(TNLErrorCodeRequestOperationRequestContentDecodingFailed, decodingError)];
         return;
     }
-    _network_restartIdleTimer(self);
+    [self _network_restartIdleTimer];
 }
 
-static void _network_didUpdateTotalBytesReceived(SELF_ARG,
-                                                 NSURLSession *session,
-                                                 NSURLSessionDownloadTask *downloadTask,
-                                                 int64_t bytesReceived,
-                                                 int64_t totalBytesExpectedToReceive)
+- (void)_network_didUpdateTotalBytesReceived:(int64_t)bytesReceived
+                               expectedBytes:(int64_t)totalBytesExpectedToReceive
+                                  URLSession:(NSURLSession *)session
+                                downloadTask:(NSURLSessionDownloadTask *)downloadTask
 {
-    if (!self) {
-        return;
-    }
-
     if (self.isComplete || self.isFinalizing) {
         return;
-    } else if (_network_shouldCancel(self)) {
-        _network_cancel(self);
+    } else if ([self _network_shouldCancel]) {
+        [self _network_cancel];
         return;
     }
 
-    _network_transitionState(self, TNLRequestOperationStateRunning);
+    [self _network_transitionToState:TNLRequestOperationStateRunning];
 
     TNLAssert([[downloadTask response] isKindOfClass:[NSHTTPURLResponse class]]);
     TNLAssert(downloadTask.response != nil);
 
-    _network_captureResponseFromTaskIfNeeded(self, session, downloadTask);
-    _network_updateDownloadProgress(self, _network_downloadProgress(self));
-    _network_restartIdleTimer(self);
+    [self _network_captureResponseFromTaskIfNeeded:downloadTask URLSession:session];
+    [self _network_updateDownloadProgress:[self _network_downloadProgress]];
+    [self _network_restartIdleTimer];
 }
 
-static void _network_updateUploadProgress(SELF_ARG,
-                                          float progress)
+- (void)_network_updateUploadProgress:(float)progress
 {
-    if (!self) {
-        return;
-    }
-
     if (self.isComplete) {
         return;
-    } else if (_network_shouldCancel(self)) {
-        _network_cancel(self);
+    } else if ([self _network_shouldCancel]) {
+        [self _network_cancel];
         return;
     }
 
-    [self->_requestOperation network_URLSessionTaskOperation:self
-                                     didUpdateUploadProgress:progress];
+    [_requestOperation network_URLSessionTaskOperation:self
+                               didUpdateUploadProgress:progress];
 }
 
-static void _network_updateDownloadProgress(SELF_ARG,
-                                            float progress)
+- (void)_network_updateDownloadProgress:(float)progress
 {
-    if (!self) {
-        return;
-    }
-
     if (self.isComplete) {
         return;
-    } else if (_network_shouldCancel(self)) {
-        _network_cancel(self);
+    } else if ([self _network_shouldCancel]) {
+        [self _network_cancel];
         return;
     }
 
-    [self->_requestOperation network_URLSessionTaskOperation:self
-                                   didUpdateDownloadProgress:progress];
+    [_requestOperation network_URLSessionTaskOperation:self
+                             didUpdateDownloadProgress:progress];
 }
 
-static NSError * __nullable _network_appendDecodedData(SELF_ARG,
-                                                       NSData * __nullable data)
+- (nullable NSError *)_network_appendDecodedData:(nullable NSData *)data
 {
-    if (!self) {
-        return nil;
-    }
-
     if (self.isComplete || self.isFinalizing) {
         return nil;
-    } else if (_network_shouldCancel(self)) {
-        _network_cancel(self);
+    } else if ([self _network_shouldCancel]) {
+        [self _network_cancel];
         return nil;
     }
 
     NSError *error = nil;
-    _network_transitionState(self, TNLRequestOperationStateRunning);
-    _network_updateHash(self, data);
+    [self _network_transitionToState:TNLRequestOperationStateRunning];
+    [self _network_updateHashWithData:data];
 
     NSHTTPURLResponse *URLResponse = self.URLResponse;
 
-    self->_layer8BodyBytesReceived += data.length;
+    _layer8BodyBytesReceived += data.length;
 
-    switch (self->_requestConfiguration.responseDataConsumptionMode) {
+    switch (_requestConfiguration.responseDataConsumptionMode) {
         case TNLResponseDataConsumptionModeNone:
             break;
         case TNLResponseDataConsumptionModeStoreInMemory:
 
             @try {
-                if (!self->_storedData) {
+                if (!_storedData) {
                     // We want the buffer of the mutable data to be the best guess we can offer to
                     // prevent continuous reallocs.
                     NSUInteger capacity = 0;
@@ -1973,16 +1776,16 @@ static NSError * __nullable _network_appendDecodedData(SELF_ARG,
                     } else if (expectedDataSize > 0) {
                         capacity = (NSUInteger)expectedDataSize + EXTRA_DOWNLOAD_BYTES_BUFFER;
                     }
-                    self->_storedData = (capacity > 0) ? [NSMutableData dataWithCapacity:capacity] : [NSMutableData data];
+                    _storedData = (capacity > 0) ? [NSMutableData dataWithCapacity:capacity] : [NSMutableData data];
                 }
                 if (data) {
-                    [self->_storedData appendData:data];
+                    [_storedData appendData:data];
                 }
             } @catch (NSException *exception) {
                 TNLLogError(@"Append Data Exception: %@", exception);
                 error = TNLErrorCreateWithCodeAndUserInfo(TNLErrorCodeRequestOperationAppendResponseDataError,
                                                           @{ @"exception" : exception });
-                self->_storedData = nil;
+                _storedData = nil;
             }
             break;
         case TNLResponseDataConsumptionModeSaveToDisk:
@@ -1990,7 +1793,7 @@ static NSError * __nullable _network_appendDecodedData(SELF_ARG,
             break;
         case TNLResponseDataConsumptionModeChunkToDelegateCallback:
             if (data) {
-                [self->_requestOperation network_URLSessionTaskOperation:self appendReceivedData:data];
+                [_requestOperation network_URLSessionTaskOperation:self appendReceivedData:data];
             }
             break;
     }
@@ -1998,54 +1801,44 @@ static NSError * __nullable _network_appendDecodedData(SELF_ARG,
     return error;
 }
 
-static void _network_finalize(SELF_ARG,
-                              TNLRequestOperationState state)
+- (void)_network_finalizeWithState:(TNLRequestOperationState)state
 {
-    if (!self) {
-        return;
-    }
-
-    _network_finalizeWithResponseCompletion(self, ^(TNLResponse * __nullable finalResponse) {
+    [self _network_finalizeWithResponseCompletion:^(TNLResponse * __nullable finalResponse) {
         TNLAssertIsNetworkQueue();
         if (finalResponse) {
             self->_finalResponse = finalResponse;
         }
         if (!self->_finalResponse) {
-            _network_buildInternalResponse(self);
+            [self _network_buildInternalResponse];
         }
         TNLAssert(self->_finalResponse);
         self->_responseInfo = self->_finalResponse.info;
-        _network_transitionState(self, state);
+        [self _network_transitionToState:state];
         self->_flags.isFinalizing = NO;
-    });
+    }];
 }
 
-static void _network_finalizeWithResponseCompletion(SELF_ARG,
-                                                    TNLRequestMakeFinalResponseCompletionBlock completion)
+- (void)_network_finalizeWithResponseCompletion:(TNLRequestMakeFinalResponseCompletionBlock)completion
 {
-    if (!self) {
-        return;
-    }
-
     if (self.isComplete || self.isFinalizing) {
         return;
-    } else if (_network_shouldCancel(self)) {
-        _network_cancel(self);
+    } else if ([self _network_shouldCancel]) {
+        [self _network_cancel];
         return;
     }
 
-    self->_flags.isFinalizing = YES;
-    self->_endMachTime = mach_absolute_time();
-    self->_endDate = [NSDate date];
+    _flags.isFinalizing = YES;
+    _endMachTime = mach_absolute_time();
+    _endDate = [NSDate date];
 
-    TNLRequestOperation *strongRequestOp = self->_requestOperation;
+    TNLRequestOperation *strongRequestOp = _requestOperation;
     if (strongRequestOp) {
-        NSURLSessionTaskMetrics *taskMetrics = self->_taskMetrics;
+        NSURLSessionTaskMetrics *taskMetrics = _taskMetrics;
 
-        TNLAttemptMetaData *metaData = [self network_metaDataWithLowerCaseHeaderFields:self->_responseInfo.allHTTPHeaderFieldsWithLowerCaseKeys];
+        TNLAttemptMetaData *metaData = [self network_metaDataWithLowerCaseHeaderFields:_responseInfo.allHTTPHeaderFieldsWithLowerCaseKeys];
         [strongRequestOp network_URLSessionTaskOperation:self
-                                finalizeWithResponseInfo:self->_responseInfo
-                                           responseError:self->_error
+                                finalizeWithResponseInfo:_responseInfo
+                                           responseError:_error
                                                 metaData:metaData
                                              taskMetrics:taskMetrics
                                               completion:completion];
@@ -2054,26 +1847,21 @@ static void _network_finalizeWithResponseCompletion(SELF_ARG,
     }
 }
 
-static void _network_transitionState(SELF_ARG,
-                                     TNLRequestOperationState state)
+- (void)_network_transitionToState:(TNLRequestOperationState)state
 {
-    if (!self) {
-        return;
-    }
-
     if (self.isComplete) {
         return;
     } else if (self.isFinalizing) {
         TNLAssert(TNLRequestOperationStateIsFinal(state));
-    } else if (_network_shouldCancel(self)) {
+    } else if ([self _network_shouldCancel]) {
         // If we are finalizing or moving to be completed, no need to pre-emtively cancel
         if (!TNLRequestOperationStateIsFinal(state)) {
-            _network_cancel(self);
+            [self _network_cancel];
             return;
         }
     }
 
-    TNLRequestOperationState oldState = atomic_load(&self->_internalState);
+    TNLRequestOperationState oldState = atomic_load(&_internalState);
     if (oldState != state) {
         if (TNLRequestOperationStateRunning == state && TNLRequestOperationStateStarting != oldState) {
             return;
@@ -2094,14 +1882,14 @@ static void _network_transitionState(SELF_ARG,
                 case TNLRequestOperationStateFailed:
                 case TNLRequestOperationStateSucceeded:
                     TNLAssert(!TNLRequestOperationStateIsFinal(oldState));
-                    TNLAssert(self->_finalResponse != nil);
+                    TNLAssert(_finalResponse != nil);
                     break;
             }
         }
 
         // KVO - Prep
 
-        TNLRequestOperation *strongRequestOp = self->_requestOperation;
+        TNLRequestOperation *strongRequestOp = _requestOperation;
 
         BOOL cancelDidChange = NO;
         BOOL finishedDidChange = NO;
@@ -2121,22 +1909,22 @@ static void _network_transitionState(SELF_ARG,
             // will transition to isFinished
 
             // validate "didStart" flag
-            if (!self->_flags.didStart) {
+            if (!_flags.didStart) {
                 TNLLogError(@"%@ changed stated to be final before being started!\n%@", NSStringFromClass([self class]), self.originalURLRequest);
             }
-            TNLAssert(self->_flags.didStart);
+            TNLAssert(_flags.didStart);
 
             // stop handling responses
-            self->_flags.shouldCaptureResponse = 0;
+            _flags.shouldCaptureResponse = 0;
 
             // check for backoff signal
-            TNLResponseInfo *info = self->_finalResponse.info;
+            TNLResponseInfo *info = _finalResponse.info;
             const TNLHTTPStatusCode statusCode = info.statusCode;
             NSDictionary *headers = info.allHTTPHeaderFieldsWithLowerCaseKeys;
             NSString *host = nil;
-            NSURL *URL = self->_hydratedURLRequest.URL;
+            NSURL *URL = _hydratedURLRequest.URL;
             if ([TNLGlobalConfiguration sharedInstance].shouldBackoffUseOriginalRequestHost) {
-                host = [self->_originalRequest URL].host;
+                host = [_originalRequest URL].host;
             }
             const BOOL shouldSignal = [[TNLGlobalConfiguration sharedInstance].backoffSignaler tnl_shouldSignalBackoffForURL:URL
                                                                                                                         host:host
@@ -2154,8 +1942,8 @@ static void _network_transitionState(SELF_ARG,
 
                 // will transition to isExecuting
 
-                if (!self->_flags.didIncrementExecutionCount && self->_requestConfiguration.contributeToExecutingNetworkConnectionsCount) {
-                    self->_flags.didIncrementExecutionCount = YES;
+                if (!_flags.didIncrementExecutionCount && _requestConfiguration.contributeToExecutingNetworkConnectionsCount) {
+                    _flags.didIncrementExecutionCount = YES;
                     [TNLNetwork incrementExecutingNetworkConnections];
                 }
 
@@ -2164,7 +1952,7 @@ static void _network_transitionState(SELF_ARG,
 
         // Timestamps
 
-        _network_updateTimestamps(self, state);
+        [self _network_updateTimestampsWithState:state];
 
         // KVO - transition
 
@@ -2178,17 +1966,17 @@ static void _network_transitionState(SELF_ARG,
             [self willChangeValueForKey:@"isExecuting"];
         }
 
-        atomic_store(&self->_internalState, state);
+        atomic_store(&_internalState, state);
         if (finishedDidChange) {
             // Last chance to update progress
             [strongRequestOp network_URLSessionTaskOperation:self
-                                     didUpdateUploadProgress:_network_getUploadProgress(self)];
+                                     didUpdateUploadProgress:[self _network_uploadProgress]];
             [strongRequestOp network_URLSessionTaskOperation:self
-                                   didUpdateDownloadProgress:_network_downloadProgress(self)];
+                                   didUpdateDownloadProgress:[self _network_downloadProgress]];
         }
         [strongRequestOp network_URLSessionTaskOperation:self
                                     didTransitionToState:state
-                                            withResponse:self->_finalResponse];
+                                            withResponse:_finalResponse];
 
         if (executingDidChange) {
             [self didChangeValueForKey:@"isExecuting"];
@@ -2211,94 +1999,77 @@ static void _network_transitionState(SELF_ARG,
             // Did transition to isFinished
 
             // Decrement execution count
-            if (self->_flags.didIncrementExecutionCount) {
+            if (_flags.didIncrementExecutionCount) {
                 [TNLNetwork decrementExecutingNetworkConnections];
-                self->_flags.didIncrementExecutionCount = NO;
+                _flags.didIncrementExecutionCount = NO;
             }
 
             // Anonymous completion
             if (!strongRequestOp) {
                 [self.requestOperationQueue taskOperation:self
-                                       didCompleteAttempt:self->_finalResponse];
+                                       didCompleteAttempt:_finalResponse];
             }
 
         }
 
         // Background Completion
 
-        if (finishedDidChange && self->_executionMode == TNLRequestExecutionModeBackground && (self->_downloadTask != nil || self->_uploadTask != nil)) {
-            NSString *sharedContainerIdentifier = self->_URLSession.configuration.sharedContainerIdentifier;
-            TNLAssert(self->_finalResponse);
-            [self->_sessionManager URLSessionDidCompleteBackgroundTask:self.URLSessionTask.taskIdentifier
-                                               sessionConfigIdentifier:self->_URLSession.configuration.identifier
-                                             sharedContainerIdentifier:sharedContainerIdentifier
-                                                               request:self.originalURLRequest
-                                                              response:self->_finalResponse];
+        if (finishedDidChange && _executionMode == TNLRequestExecutionModeBackground && (_downloadTask != nil || _uploadTask != nil)) {
+            NSString *sharedContainerIdentifier = _URLSession.configuration.sharedContainerIdentifier;
+            TNLAssert(_finalResponse);
+            [_sessionManager URLSessionDidCompleteBackgroundTask:self.URLSessionTask.taskIdentifier
+                                         sessionConfigIdentifier:_URLSession.configuration.identifier
+                                       sharedContainerIdentifier:sharedContainerIdentifier
+                                                         request:self.originalURLRequest
+                                                        response:_finalResponse];
         }
     }
 }
 
-static void _network_updateTimestamps(SELF_ARG,
-                                      TNLRequestOperationState state)
+- (void)_network_updateTimestampsWithState:(TNLRequestOperationState)state
 {
-    if (!self) {
-        return;
-    }
-
-    if (!self->_startMachTime) {
-        self->_startDate = [NSDate date];
-        self->_startMachTime = mach_absolute_time();
+    if (!_startMachTime) {
+        _startDate = [NSDate date];
+        _startMachTime = mach_absolute_time();
     }
 
     if (TNLRequestOperationStateIsFinal(state)) {
         NSDate *dateNow = [NSDate date];
         const uint64_t machTime = mach_absolute_time();
-        self->_completeMachTime = machTime;
-        self->_completeDate = dateNow;
-        if (!self->_endMachTime) {
-            self->_endDate = dateNow;
-            self->_endMachTime = machTime;
+        _completeMachTime = machTime;
+        _completeDate = dateNow;
+        if (!_endMachTime) {
+            _endDate = dateNow;
+            _endMachTime = machTime;
         }
-        TNLAssert(self->_finalResponse);
-        TNLAssert(self->_completeMachTime > 0);
-        if (!self->_finalResponse.metrics.completeDate) {
-            [self->_finalResponse.metrics setCompleteDate:self->_completeDate machTime:self->_completeMachTime];
+        TNLAssert(_finalResponse);
+        TNLAssert(_completeMachTime > 0);
+        if (!_finalResponse.metrics.completeDate) {
+            [_finalResponse.metrics setCompleteDate:_completeDate machTime:_completeMachTime];
         }
     }
 }
 
-static void _network_createTask(SELF_ARG,
-                                NSURLRequest *request,
-                                id<TNLRequest> requestPrototype,
-                                void(^complete)(NSURLSessionTask *createdTask, NSError *error))
+- (void)_network_createTaskWithRequest:(NSURLRequest *)request
+                             prototype:(id<TNLRequest>)requestPrototype
+                            completion:(void(^)(NSURLSessionTask *createdTask, NSError *error))complete
 {
-    if (!self) {
-        return;
-    }
-
     TNLAssert(!self.URLSessionTask);
     TNLAssert(request);
     TNLAssert(!self.originalURLRequest);
-    TNLAssert(self->_requestConfiguration);
+    TNLAssert(_requestConfiguration);
 
     NSError *error = nil;
     NSURLSessionTask *task = nil;
 
-    task = _network_populateURLSessionTask(self,
-                                           request,
-                                           requestPrototype,
-                                           &error);
+    task = [self _network_populateURLSessionTaskWithRequest:request
+                                                  prototype:requestPrototype
+                                                      error:&error];
     if (!error) {
-        self->_resumeData = nil;
-        self->_taskRequest = request;
+        _resumeData = nil;
+        _taskRequest = request;
 
-        if (![NSURLSessionConfiguration tnl_URLSessionCanReceiveResponseViaDelegate]) {
-            _network_setObservingURLSessionTask(self, YES /*observing*/);
-        }
-
-        if ([task respondsToSelector:@selector(setPriority:)]) {
-            task.priority = TNLConvertTNLPriorityToURLSessionTaskPriority(self->_requestPriority);
-        }
+        task.priority = TNLConvertTNLPriorityToURLSessionTaskPriority(self->_requestPriority);
 
         TNLRequestConfigurationAssociateWithRequest(self.requestConfiguration, task.originalRequest ?: self->_taskRequest);
     }
@@ -2307,41 +2078,35 @@ static void _network_createTask(SELF_ARG,
     complete(task, error);
 }
 
-static NSURLSessionTask *_network_populateURLSessionTask(SELF_ARG,
-                                                         NSURLRequest *request,
-                                                         id<TNLRequest> requestPrototype,
-                                                         NSError **errorOut)
+- (nullable NSURLSessionTask *)_network_populateURLSessionTaskWithRequest:(NSURLRequest *)request
+                                                                prototype:(id<TNLRequest>)requestPrototype
+                                                                    error:(out NSError * __nullable * __nonnull)errorOut
 {
-    TNLAssert(self);
-    if (!self) {
-        return nil;
-    }
-
     TNLAssert(errorOut != NULL);
     NSError *error = nil;
 
     const BOOL hasBody = TNLURLRequestHasBody(request, requestPrototype);
-    const BOOL isDownload = TNLResponseDataConsumptionModeSaveToDisk == self->_requestConfiguration.responseDataConsumptionMode;
-    const BOOL isBackground = TNLRequestExecutionModeBackground == self->_requestConfiguration.executionMode;
+    const BOOL isDownload = TNLResponseDataConsumptionModeSaveToDisk == _requestConfiguration.responseDataConsumptionMode;
+    const BOOL isBackground = TNLRequestExecutionModeBackground == _requestConfiguration.executionMode;
 
     @try {
         if (isDownload) {
             if (hasBody) {
-                TNLAssertNever(); // should have been caught by [TNLRequest validateRequest:withConfiguration:error:]
+                TNLAssertNever(); // should have been caught by TNLRequestValidate(...)
                 error = TNLErrorCreateWithCode(TNLErrorCodeRequestHTTPBodyCannotBeSetForDownload);
             } else {
                 // GET can support resume data
-                if (self->_resumeData && TNLHTTPMethodGET == [TNLRequest HTTPMethodValueForRequest:request]) {
+                if (_resumeData && TNLHTTPMethodGET == TNLRequestGetHTTPMethodValue(request)) {
                     // resume data is easily invalidated, wrap our task creation in a try/catch so we can fallback to just a normal download task
                     @try {
-                        self->_downloadTask = [self->_URLSession downloadTaskWithResumeData:self->_resumeData];
+                        _downloadTask = [_URLSession downloadTaskWithResumeData:_resumeData];
                     } @catch (NSException *exception) {
                         TNLLogWarning(@"%@", exception);
                     }
                 }
 
-                if (!self->_downloadTask) {
-                    self->_downloadTask = [self->_URLSession downloadTaskWithRequest:request];
+                if (!_downloadTask) {
+                    _downloadTask = [_URLSession downloadTaskWithRequest:request];
                 }
             }
         } else {
@@ -2351,7 +2116,7 @@ static NSURLSessionTask *_network_populateURLSessionTask(SELF_ARG,
                 } else if ([request respondsToSelector:@selector(HTTPBody)] && request.HTTPBody) {
                     // OK
                 } else {
-                    TNLAssertNever(); // should have been caught by [TNLRequest validateRequest:withConfiguration:error:]
+                    TNLAssertNever(); // should have been caught by TNLRequestValidate(...)
                     error = TNLErrorCreateWithCode(TNLErrorCodeRequestInvalidBackgroundRequest);
                 }
             }
@@ -2359,38 +2124,38 @@ static NSURLSessionTask *_network_populateURLSessionTask(SELF_ARG,
             if (hasBody && !error) {
                 if (request.HTTPBody) {
                     if (!isBackground) {
-                        self->_uploadData = request.HTTPBody;
-                        self->_uploadTask = [self->_URLSession uploadTaskWithRequest:request
-                                                                            fromData:self->_uploadData];
+                        _uploadData = request.HTTPBody;
+                        _uploadTask = [_URLSession uploadTaskWithRequest:request
+                                                                fromData:_uploadData];
                     } else {
                         // NSURLSessionUploadTask cannot upload anything other than a file in the background.
                         // Let's help plug that hole by automatically writing the data to a file so
                         // NSURLSessionUploadTask won't fail
-                        self->_uploadFilePath = TNLWriteDataToTemporaryFile(request.HTTPBody);
-                        NSURL *uploadFileURL = [NSURL fileURLWithPath:self->_uploadFilePath isDirectory:NO];
-                        self->_uploadTask = [self->_URLSession uploadTaskWithRequest:request
-                                                                            fromFile:uploadFileURL];
-                        self->_flags.shouldDeleteUploadFile = YES;
+                        _uploadFilePath = TNLWriteDataToTemporaryFile(request.HTTPBody);
+                        NSURL *uploadFileURL = [NSURL fileURLWithPath:_uploadFilePath isDirectory:NO];
+                        _uploadTask = [_URLSession uploadTaskWithRequest:request
+                                                                fromFile:uploadFileURL];
+                        _flags.shouldDeleteUploadFile = YES;
                     }
                 } else if ([requestPrototype respondsToSelector:@selector(HTTPBodyFilePath)] && requestPrototype.HTTPBodyFilePath) {
-                    self->_uploadFilePath = requestPrototype.HTTPBodyFilePath;
-                    NSURL *uploadFileURL = [NSURL fileURLWithPath:self->_uploadFilePath isDirectory:NO];
-                    self->_uploadTask = [self->_URLSession uploadTaskWithRequest:request
-                                                                        fromFile:uploadFileURL];
+                    _uploadFilePath = requestPrototype.HTTPBodyFilePath;
+                    NSURL *uploadFileURL = [NSURL fileURLWithPath:_uploadFilePath isDirectory:NO];
+                    _uploadTask = [_URLSession uploadTaskWithRequest:request
+                                                            fromFile:uploadFileURL];
                 } else if ([requestPrototype respondsToSelector:@selector(HTTPBodyStream)] && requestPrototype.HTTPBodyStream) {
-                    self->_uploadTask = [self->_URLSession uploadTaskWithStreamedRequest:request];
+                    _uploadTask = [_URLSession uploadTaskWithStreamedRequest:request];
                 } else {
                     TNLAssertNever(); // where's the body?
                 }
             }
 
             // Not an upload task?
-            if (!self->_uploadTask && !error) {
+            if (!_uploadTask && !error) {
                 if (isBackground) {
-                    TNLAssertNever(); // should have been caught by [TNLRequest validateRequest:withConfiguration:error:]
+                    TNLAssertNever(); // should have been caught by TNLRequestValidate(...)
                     error = TNLErrorCreateWithCode(TNLErrorCodeRequestInvalidBackgroundRequest);
                 } else {
-                    self->_dataTask = [self->_URLSession dataTaskWithRequest:request];
+                    _dataTask = [_URLSession dataTaskWithRequest:request];
                 }
             }
         }
@@ -2432,55 +2197,38 @@ static NSURLSessionTask *_network_populateURLSessionTask(SELF_ARG,
 
 #pragma mark Timer
 
-static void _network_startIdleTimer(SELF_ARG,
-                                    NSTimeInterval deferral)
+- (void)_network_startIdleTimerWithDeferralDuration:(NSTimeInterval)deferral
 {
-    if (!self) {
-        return;
-    }
-
-    TNLAssert(!self->_idleTimer);
-    if (self->_flags.useIdleTimeout && self->_requestConfiguration.executionMode != TNLRequestExecutionModeBackground) {
-        const NSTimeInterval idleTimeout = self->_requestConfiguration.idleTimeout;
+    TNLAssert(!_idleTimer);
+    if (_flags.useIdleTimeout && _requestConfiguration.executionMode != TNLRequestExecutionModeBackground) {
+        const NSTimeInterval idleTimeout = _requestConfiguration.idleTimeout;
         if (idleTimeout >= MIN_TIMER_INTERVAL) {
             __weak typeof(self) weakSelf = self;
-            self->_idleTimer = tnl_dispatch_timer_create_and_start(tnl_network_queue(), idleTimeout, TIMER_LEEWAY_WITH_FIRE_INTERVAL(MAX(deferral, 0.0) + idleTimeout), NO, ^{
-                _network_idleTimerFired(weakSelf);
+            _idleTimer = tnl_dispatch_timer_create_and_start(tnl_network_queue(), idleTimeout, TIMER_LEEWAY_WITH_FIRE_INTERVAL(MAX(deferral, 0.0) + idleTimeout), NO, ^{
+                [weakSelf _network_idleTimerFired];
             });
         }
     }
 }
 
-static void _network_stopIdleTimer(SELF_ARG)
+- (void)_network_stopIdleTimer
 {
-    if (!self) {
-        return;
-    }
-
-    tnl_dispatch_timer_invalidate(self->_idleTimer);
-    self->_idleTimer = NULL;
+    tnl_dispatch_timer_invalidate(_idleTimer);
+    _idleTimer = NULL;
 }
 
-static void _network_restartIdleTimer(SELF_ARG)
+- (void)_network_restartIdleTimer
 {
-    if (!self) {
-        return;
-    }
-
-    _network_stopIdleTimer(self);
-    _network_startIdleTimer(self, 0.0);
+    [self _network_stopIdleTimer];
+    [self _network_startIdleTimerWithDeferralDuration:0.0];
 }
 
-static void _network_idleTimerFired(SELF_ARG)
+- (void)_network_idleTimerFired
 {
-    if (!self) {
-        return;
-    }
-
-    if (self->_idleTimer) {
-        _network_stopIdleTimer(self);
+    if (_idleTimer) {
+        [self _network_stopIdleTimer];
         if (!self.isComplete && !self.isFinalizing) {
-            _network_fail(self, TNLErrorCreateWithCode(TNLErrorCodeRequestOperationIdleTimedOut));
+            [self _network_fail:TNLErrorCreateWithCode(TNLErrorCodeRequestOperationIdleTimedOut)];
         }
     }
 }
@@ -2633,39 +2381,29 @@ NS_INLINE NSData * __nullable _finalizeHash(TNLResponseHashComputeAlgorithm algo
     return (success) ? hashData : nil;
 }
 
-static void _network_updateHash(SELF_ARG,
-                                NSData *data)
+- (void)_network_updateHashWithData:(NSData *)data
 {
-    if (!self) {
-        return;
+    if (!_flags.isComputingHash && _flags.shouldComputeHash) {
+        _hashContextRef = _mallocAndInitHashContext(_hashAlgo);
+        _flags.isComputingHash = YES;
     }
 
-    if (!self->_flags.isComputingHash && self->_flags.shouldComputeHash) {
-        self->_hashContextRef = _mallocAndInitHashContext(self->_hashAlgo);
-        self->_flags.isComputingHash = YES;
-    }
-
-    if (self->_flags.isComputingHash) {
+    if (_flags.isComputingHash) {
         [data enumerateByteRangesUsingBlock:^(const void * _Nonnull bytes, NSRange byteRange, BOOL * _Nonnull stop) {
             _updateHash(self->_hashAlgo, self->_hashContextRef, bytes, (CC_LONG)byteRange.length);
         }];
     }
 }
 
-static void _network_finishHash(SELF_ARG,
-                                BOOL success)
+- (void)_network_finishHashWithSuccess:(BOOL)success
 {
-    if (!self) {
-        return;
-    }
-
-    if (self->_flags.isComputingHash) {
-        if (self->_hashContextRef) {
-            self->_hashData = _finalizeHash(self->_hashAlgo, self->_hashContextRef, success);
-            free(self->_hashContextRef);
-            self->_hashContextRef = NULL;
+    if (_flags.isComputingHash) {
+        if (_hashContextRef) {
+            _hashData = _finalizeHash(_hashAlgo, _hashContextRef, success);
+            free(_hashContextRef);
+            _hashContextRef = NULL;
         }
-        self->_flags.isComputingHash = NO;
+        _flags.isComputingHash = NO;
     }
 }
 
@@ -2761,12 +2499,12 @@ static void _network_finishHash(SELF_ARG,
 
 - (float)downloadProgress
 {
-    return _network_downloadProgress(_ownedURLSessionTaskOperation);
+    return [_ownedURLSessionTaskOperation _network_downloadProgress];
 }
 
 - (float)uploadProgress
 {
-    return _network_getUploadProgress(_ownedURLSessionTaskOperation);
+    return [_ownedURLSessionTaskOperation _network_uploadProgress];
 }
 
 - (nullable id)context

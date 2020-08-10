@@ -59,6 +59,11 @@ NS_INLINE void TNLLRUCacheAssertHeadAndTail(TNLLRUCache *cache)
     return self;
 }
 
+- (void)dealloc
+{
+    [self nullifyEntryLinks];
+}
+
 - (void)internalSetDelegate:(nullable id<TNLLRUCacheDelegate>)delegate
 {
     _flags.delegateSupportsDidEvictSelector = (NO != [delegate respondsToSelector:@selector(tnl_cache:didEvictEntry:)]);
@@ -211,18 +216,7 @@ NS_INLINE void TNLLRUCacheAssertHeadAndTail(TNLLRUCache *cache)
 
 - (void)clearAllEntries
 {
-    // removing all entries via weak dealloc chaining
-    // can yield a stack overflow!
-    // use iterative removal instead
-
-    id<TNLLRUEntry> entryToRemove = _headEntry;
-    while (entryToRemove) {
-        id<TNLLRUEntry> nextEntry = entryToRemove.nextLRUEntry;
-        entryToRemove.nextLRUEntry = nil;
-        entryToRemove.previousLRUEntry = nil;
-        entryToRemove = nextEntry;
-    }
-
+    [self nullifyEntryLinks];
     _tailEntry = nil;
     _headEntry = nil;
     [_cache removeAllObjects];
@@ -322,6 +316,20 @@ NS_INLINE void TNLLRUCacheAssertHeadAndTail(TNLLRUCache *cache)
 
     _mutationCheckInteger++;
     TNLAssert(!_headEntry == !_tailEntry);
+}
+
+- (void)nullifyEntryLinks
+{
+    // removing all entries via weak dealloc chaining
+    // can yield a stack overflow!
+    // use iterative removal instead
+    id<TNLLRUEntry> entryToRemove = _headEntry;
+    while (entryToRemove) {
+        id<TNLLRUEntry> nextEntry = entryToRemove.nextLRUEntry;
+        entryToRemove.nextLRUEntry = nil;
+        entryToRemove.previousLRUEntry = nil;
+        entryToRemove = nextEntry;
+    }
 }
 
 @end

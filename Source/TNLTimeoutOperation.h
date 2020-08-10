@@ -14,6 +14,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLTimeoutOperation : TNLSafeOperation
 
 @property (nonatomic, readonly) NSTimeInterval timeoutDuration;

@@ -28,6 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol TNLURLSessionTaskOperationDelegate;
 @protocol TNLAuthenticationChallengeHandler;
 
+TNL_OBJC_FINAL TNL_OBJC_DIRECT_MEMBERS
 @interface TNLURLSessionTaskOperation : TNLSafeOperation <NSURLSessionDataDelegate, NSURLSessionDownloadDelegate>
 
 - (nullable NSURLSession *)URLSession;
@@ -50,9 +51,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, readonly, nullable) NSError *error;
 
-@end
+- (instancetype)initWithRequestOperation:(TNLRequestOperation *)op
+                          sessionManager:(id<TNLURLSessionManager>)sessionManager;
+- (instancetype)init NS_UNAVAILABLE;
++ (instancetype)new NS_UNAVAILABLE;
 
-@interface TNLURLSessionTaskOperation (TNLRequestOperationQueueMethods)
+// Methods for TNLRequestOperationQueue
 
 - (void)setURLSession:(NSURLSession *)URLSession supportsTaskMetrics:(BOOL)taskMetrics; // set by TNLRequestOperationQueue ONLY
 
@@ -62,24 +66,24 @@ NS_ASSUME_NONNULL_BEGIN
          underlyingError:(nullable NSError *)optionalUnderlyingError;
 - (TNLRequestOperation *)synthesizeRequestOperation;
 
-- (instancetype)initWithRequestOperation:(TNLRequestOperation *)op
-                          sessionManager:(id<TNLURLSessionManager>)sessionManager;
-- (instancetype)init NS_UNAVAILABLE;
-+ (instancetype)new NS_UNAVAILABLE;
+// Methods for TNLURLSessionManager
 
-@end
-
-@interface TNLURLSessionTaskOperation (TNLURLSessionManagerMethods)
 - (void)handler:(nullable id<TNLAuthenticationChallengeHandler>)handler
         didCancelAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
         forURLSession:(NSURLSession *)session
         context:(nullable id)cancelContext;
+
+// Methods for TNLRequestOperation - call these from tnl_network_queue()
+
+- (void)network_priorityDidChangeForRequestOperation:(TNLRequestOperation *)op;
+
 @end
 
-@interface TNLURLSessionTaskOperation (TNLRequestOperationMethods)
+// TODO: clean these up to be correctly located so they can be direct
+@interface TNLURLSessionTaskOperation (NonDirect)
 
-// call these from tnl_network_queue()
-- (void)network_priorityDidChangeForRequestOperation:(TNLRequestOperation *)op;
+// Methods for TNLRequestOperation - call these from tnl_network_queue()
+
 - (TNLAttemptMetaData *)network_metaDataWithLowerCaseHeaderFields:(nullable NSDictionary *)lowerCaseHeaderFields;
 - (nullable NSURLSessionTaskMetrics *)network_taskMetrics;
 

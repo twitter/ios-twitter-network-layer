@@ -14,14 +14,13 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-#define SELF_ARG PRIVATE_SELF(TNLGlobalConfiguration)
-
 NSTimeInterval const TNLGlobalConfigurationURLSessionInactivityThresholdDefault = 60.0 * 4.0; // four minutes
 const TNLBackgroundTaskIdentifier TNLBackgroundTaskInvalid = 0;
 static const TNLBackgroundTaskIdentifier TNLBackgroundTaskInitial = 1;
 
 const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefault = 10.0;
 
+TNL_OBJC_FINAL TNL_OBJC_DIRECT_MEMBERS
 @interface TNLBackgroundTaskHandleInternal : NSObject
 @property (nonatomic, nullable, copy, readonly) void (^expirationHandler)(void);
 @property (nonatomic, nullable, copy, readonly) NSString *name;
@@ -373,7 +372,7 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
     });
 
     dispatch_block_t block = ^{
-        _main_ensureSharedBackgroundTask(self);
+        [self _main_ensureSharedBackgroundTask];
 
         TNLBackgroundTaskHandleInternal *handle = [[TNLBackgroundTaskHandleInternal alloc] initWithTaskIdentifier:identifier
                                                                                                              name:name
@@ -406,40 +405,32 @@ const NSTimeInterval TNLGlobalConfigurationRequestOperationCallbackTimeoutDefaul
         }
 
         [self->_runningBackgroundTasks removeObjectForKey:@(identifier)];
-        _main_cleanUpSharedBackgroundTaskIfNecessary(self);
+        [self _main_cleanUpSharedBackgroundTaskIfNecessary];
     });
 }
 
-static void _main_ensureSharedBackgroundTask(SELF_ARG)
+- (void)_main_ensureSharedBackgroundTask TNL_OBJC_DIRECT
 {
 #if TARGET_OS_IOS || TARGET_OS_TV
-    if (!self) {
-        return;
-    }
-
     UIApplication *sharedUIApplication = TNLDynamicUIApplicationSharedApplication();
     if (sharedUIApplication) {
-        if (UIBackgroundTaskInvalid == self->_sharedUIApplicationBackgroundTaskIdentifier) {
-            self->_sharedUIApplicationBackgroundTaskIdentifier = [sharedUIApplication beginBackgroundTaskWithName:@"tnl.global.shared.bg.task" expirationHandler:^{
-                _handleExpiration(self);
+        if (UIBackgroundTaskInvalid == _sharedUIApplicationBackgroundTaskIdentifier) {
+            _sharedUIApplicationBackgroundTaskIdentifier = [sharedUIApplication beginBackgroundTaskWithName:@"tnl.global.shared.bg.task" expirationHandler:^{
+                [self _handleExpiration];
             }];
         }
     }
 #endif // IOS + TV
 }
 
-static void _main_cleanUpSharedBackgroundTaskIfNecessary(SELF_ARG)
+- (void)_main_cleanUpSharedBackgroundTaskIfNecessary TNL_OBJC_DIRECT
 {
 #if TARGET_OS_IOS || TARGET_OS_TV
-    if (!self) {
-        return;
-    }
-
     UIApplication *sharedUIApplication = TNLDynamicUIApplicationSharedApplication();
     if (sharedUIApplication) {
-        if (self->_sharedUIApplicationBackgroundTaskIdentifier != UIBackgroundTaskInvalid && self->_runningBackgroundTasks.count == 0) {
-            UIBackgroundTaskIdentifier identifier = self->_sharedUIApplicationBackgroundTaskIdentifier;
-            self->_sharedUIApplicationBackgroundTaskIdentifier = UIBackgroundTaskInvalid;
+        if (_sharedUIApplicationBackgroundTaskIdentifier != UIBackgroundTaskInvalid && _runningBackgroundTasks.count == 0) {
+            UIBackgroundTaskIdentifier identifier = _sharedUIApplicationBackgroundTaskIdentifier;
+            _sharedUIApplicationBackgroundTaskIdentifier = UIBackgroundTaskInvalid;
             [sharedUIApplication endBackgroundTask:identifier];
         }
     }
@@ -447,12 +438,8 @@ static void _main_cleanUpSharedBackgroundTaskIfNecessary(SELF_ARG)
 }
 
 #if TARGET_OS_IOS || TARGET_OS_TV
-static void _handleExpiration(SELF_ARG)
+- (void)_handleExpiration TNL_OBJC_DIRECT
 {
-    if (!self) {
-        return;
-    }
-
     UIApplication *sharedUIApplication = TNLDynamicUIApplicationSharedApplication();
     if (sharedUIApplication) {
         dispatch_block_t block = ^{
@@ -463,7 +450,7 @@ static void _handleExpiration(SELF_ARG)
                 }
             }
             [self->_runningBackgroundTasks removeAllObjects];
-            _main_cleanUpSharedBackgroundTaskIfNecessary(self);
+            [self _main_cleanUpSharedBackgroundTaskIfNecessary];
         };
 
         if ([NSThread isMainThread]) {

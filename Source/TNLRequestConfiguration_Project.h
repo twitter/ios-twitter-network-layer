@@ -6,6 +6,7 @@
 //  Copyright © 2020 Twitter. All rights reserved.
 //
 
+#import "TNL_Project.h"
 #import "TNLParameterCollection.h"
 #import "TNLRequestConfiguration.h"
 
@@ -51,11 +52,11 @@ FOUNDATION_EXTERN NSHTTPCookieStorage *TNLGetHTTPCookieStorageDemuxProxy(void);
 
 @interface TNLRequestConfiguration (Project)
 
-+ (nullable instancetype)parseConfigurationFromIdentifier:(nullable NSString *)identifier;
++ (nullable instancetype)parseConfigurationFromIdentifier:(nullable NSString *)identifier TNL_OBJC_DIRECT;
 + (instancetype)configurationFromParameters:(nullable TNLParameterCollection *)params
                               executionMode:(TNLRequestExecutionMode)mode
                                     version:(nullable NSString *)tnlVersion;
-- (void)applyDefaultTimeouts;
+- (void)applyDefaultTimeouts TNL_OBJC_DIRECT;
 
 @end
 

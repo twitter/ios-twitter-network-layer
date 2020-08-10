@@ -78,7 +78,7 @@
     XCTAssertEqualObjects(query, @"ok=not-empty");
 }
 
-- (void)testNumberCoding
+- (void)_runNumberCoding:(BOOL)testTiming
 {
     NSArray<NSNumber *> *numbers = @[
         @((BOOL)YES),
@@ -172,7 +172,19 @@
         NSLog(@"-[NSNumber tnl_quickStringValue] = %fs", tnlDuration);
     }
 
-    XCTAssertLessThan(tnlDuration, nsDuration, @"-[NSNumber tnl_quickStringValue] ought to be faster than -[NSNumber stringValue]!");
+    if (testTiming) {
+        XCTAssertLessThan(tnlDuration, nsDuration, @"-[NSNumber tnl_quickStringValue] ought to be faster than -[NSNumber stringValue]!");
+    }
+}
+
+- (void)testNumberCoding
+{
+    [self _runNumberCoding:NO];
+}
+
+- (void)testNumberCodingSpeed
+{
+    [self _runNumberCoding:YES];
 }
 
 @end

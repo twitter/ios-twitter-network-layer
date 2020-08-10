@@ -12,22 +12,22 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-NSString * const TNLErrorDomain = @"com.twitter.tnl.error.domain";
-NSString * const TNLContentEncodingErrorDomain = @"com.twitter.tnl.content.encoding.error.domain";
+NSErrorDomain const TNLErrorDomain = @"com.twitter.tnl.error.domain";
+NSErrorDomain const TNLContentEncodingErrorDomain = @"com.twitter.tnl.content.encoding.error.domain";
 
-NSString * const TNLErrorTimeoutTagsKey = @"timeoutTags";
-NSString * const TNLErrorCancelSourceKey = @"cancelSource";
-NSString * const TNLErrorCancelSourceDescriptionKey = @"cancelSourceDescription";
-NSString * const TNLErrorCancelSourceLocalizedDescriptionKey = @"localizedCancelSourceDescription";
-NSString * const TNLErrorCodeStringKey = @"TNLError.string";
-NSString * const TNLErrorHostKey = @"host";
-NSString * const TNLErrorRequestKey = @"request";
-NSString * const TNLErrorResponseKey = @"response";
-NSString * const TNLErrorProtectionSpaceHostKey = @"protectionSpaceHost";
-NSString * const TNLErrorCertificateChainDescriptionsKey = @"certificateChainDescriptions";
-NSString * const TNLErrorAuthenticationChallengeMethodKey = @"authChallengeMethod";
-NSString * const TNLErrorAuthenticationChallengeRealmKey = @"authChallengeRealm";
-NSString * const TNLErrorAuthenticationChallengeCancelContextKey = @"authChallengeCancelContext";
+TNLErrorInfoKey TNLErrorTimeoutTagsKey = @"timeoutTags";
+TNLErrorInfoKey TNLErrorCancelSourceKey = @"cancelSource";
+TNLErrorInfoKey TNLErrorCancelSourceDescriptionKey = @"cancelSourceDescription";
+TNLErrorInfoKey TNLErrorCancelSourceLocalizedDescriptionKey = @"localizedCancelSourceDescription";
+TNLErrorInfoKey TNLErrorCodeStringKey = @"TNLError.string";
+TNLErrorInfoKey TNLErrorHostKey = @"host";
+TNLErrorInfoKey TNLErrorRequestKey = @"request";
+TNLErrorInfoKey TNLErrorResponseKey = @"response";
+TNLErrorInfoKey TNLErrorProtectionSpaceHostKey = @"protectionSpaceHost";
+TNLErrorInfoKey TNLErrorCertificateChainDescriptionsKey = @"certificateChainDescriptions";
+TNLErrorInfoKey TNLErrorAuthenticationChallengeMethodKey = @"authChallengeMethod";
+TNLErrorInfoKey TNLErrorAuthenticationChallengeRealmKey = @"authChallengeRealm";
+TNLErrorInfoKey TNLErrorAuthenticationChallengeCancelContextKey = @"authChallengeCancelContext";
 
 NSString *TNLErrorCodeToString(TNLErrorCode code)
 {

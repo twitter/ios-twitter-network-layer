@@ -225,7 +225,7 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
 {
     TNLMutableRequestConfiguration *config = [TNLMutableRequestConfiguration defaultConfiguration];
     config.URLCache = nil;
-    config.cachePolicy = NSURLCacheStorageNotAllowed;
+    config.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
 #if RUN_TESTS_WITH_CANNED_RESPONSES
     config.protocolOptions = TNLRequestProtocolOptionPseudo;
 #endif // RUN_TESTS_WITH_CANNED_RESPONSES
@@ -355,8 +355,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertFalse(response.responseBodyWasInFile);
     }];
@@ -368,8 +368,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertTrue(response.responseBodyWasInFile);
     }];
@@ -395,8 +395,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertTrue(response.responseBodyWasInFile);
     }];
@@ -420,8 +420,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], [NSNull null]);
         XCTAssertFalse(response.responseBodyWasInFile);
@@ -434,8 +434,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], [NSNull null]);
         XCTAssertTrue(response.responseBodyWasInFile);
@@ -462,8 +462,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], [NSNull null]);
         XCTAssertTrue(response.responseBodyWasInFile);
@@ -490,8 +490,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)self.uploadData.length);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)self.uploadData.length);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], kBODY_DICTIONARY);
         XCTAssertFalse(response.responseBodyWasInFile);
@@ -548,8 +548,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqualObjects([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Transfer-Encoding"].firstObject lowercaseString], @"chunked");
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqualObjects([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Transfer-Encoding"] lowercaseString], @"chunked");
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], kBODY_DICTIONARY);
         XCTAssertFalse(response.responseBodyWasInFile);
@@ -634,8 +634,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)self.uploadData.length);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)self.uploadData.length);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], kBODY_DICTIONARY);
         XCTAssertFalse(response.responseBodyWasInFile);
@@ -670,8 +670,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], [NSNull null]);
         XCTAssertFalse(response.responseBodyWasInFile);
@@ -684,8 +684,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], [NSNull null]);
         XCTAssertTrue(response.responseBodyWasInFile);
@@ -712,8 +712,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], [NSNull null]);
         XCTAssertTrue(response.responseBodyWasInFile);
@@ -740,8 +740,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)self.uploadData.length);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)self.uploadData.length);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], kBODY_DICTIONARY);
         XCTAssertFalse(response.responseBodyWasInFile);
@@ -798,8 +798,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqualObjects([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Transfer-Encoding"].firstObject lowercaseString], @"chunked");
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqualObjects([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Transfer-Encoding"] lowercaseString], @"chunked");
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], kBODY_DICTIONARY);
         XCTAssertFalse(response.responseBodyWasInFile);
@@ -856,8 +856,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)self.uploadData.length);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)self.uploadData.length);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], kBODY_DICTIONARY);
         XCTAssertFalse(response.responseBodyWasInFile);
@@ -884,8 +884,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)self.uploadData.length);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)self.uploadData.length);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertEqualObjects(response.result[@"json"], kBODY_DICTIONARY);
         XCTAssertFalse(response.responseBodyWasInFile);
@@ -920,8 +920,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertFalse(response.responseBodyWasInFile);
     }];
@@ -933,8 +933,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result, @"Something happened: %@", response.operationError);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertTrue(response.responseBodyWasInFile);
     }];
@@ -960,8 +960,8 @@ typedef void(^TestCallbackBlock)(TestJSONResponse *response);
     [self performRequest:request config:config args:args callback:^(TestJSONResponse *response) {
         XCTAssertEqual(response.info.statusCode, 200);
         XCTAssertNotNil(response.result);
-        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"TNL-Version"].firstObject, TNLVersion());
-        XCTAssertEqual([[response.result[@"headers"] tnl_objectsForCaseInsensitiveKey:@"Content-Length"].firstObject integerValue], (NSInteger)0);
+        XCTAssertEqualObjects([response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"TNL-Version"], TNLVersion());
+        XCTAssertEqual([[response.result[@"headers"] tnl_objectForCaseInsensitiveKey:@"Content-Length"] integerValue], (NSInteger)0);
         XCTAssertEqualObjects(response.result[@"args"], args);
         XCTAssertTrue(response.responseBodyWasInFile);
     }];

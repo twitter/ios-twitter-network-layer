@@ -11,7 +11,6 @@
 
 #import "NSCachedURLResponse+TNLAdditions.h"
 #import "NSDictionary+TNLAdditions.h"
-#import "NSOperationQueue+TNLSafety.h"
 #import "NSURLAuthenticationChallenge+TNLAdditions.h"
 #import "NSURLResponse+TNLAdditions.h"
 #import "NSURLSessionConfiguration+TNLAdditions.h"
@@ -72,6 +71,7 @@ static id<TNLBackoffBehaviorProvider> sBackoffBehaviorProvider = nil;
 
 #pragma mark - Session Context
 
+TNL_OBJC_FINAL TNL_OBJC_DIRECT_MEMBERS
 @interface TNLURLSessionContext : NSObject
 
 @property (nonatomic, readonly) NSURLSession *URLSession;
@@ -93,12 +93,14 @@ static id<TNLBackoffBehaviorProvider> sBackoffBehaviorProvider = nil;
 
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLURLSessionContext () <TNLLRUEntry>
 - (instancetype)initWithURLSession:(NSURLSession *)URLSession
                            reuseId:(NSString *)reuseId
                      executionMode:(TNLRequestExecutionMode)mode NS_DESIGNATED_INITIALIZER;
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLURLSessionContextLRUCacheDelegate : NSObject <TNLLRUCacheDelegate>
 @end
 
@@ -108,83 +110,53 @@ static id<TNLBackoffBehaviorProvider> sBackoffBehaviorProvider = nil;
 + (instancetype)internalSharedInstance;
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLURLSessionManagerV1 (Delegate) <NSURLSessionDataDelegate, NSURLSessionDownloadDelegate>
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLURLSessionManagerV1 (Synchronize)
 
 // TODO: see if some of these don't actually need a `self` argument
 
-static void _synchronize_findURLSessionTaskOperation(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                     TNLRequestOperationQueue *requestOperationQueue,
-                                                     TNLRequestOperation *requestOperation,
-                                                     TNLRequestOperationQueueFindTaskOperationCompleteBlock complete);
-static NSURLSession *_synchronize_associateTaskOperationWithQueue(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                                  TNLURLSessionTaskOperation *taskOperation,
-                                                                  TNLRequestOperationQueue *requestOperationQueue,
-                                                                  BOOL supportsTaskMetrics);
-static void _synchronize_dissassociateURLSessionTaskOperation(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                              TNLURLSessionTaskOperation *op);
-static TNLURLSessionContext * __nullable _synchronize_getSessionContextWithQueue(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                                                 NSString * __nullable operationQueueId,
-                                                                                 TNLRequestConfiguration *requestConfiguration,
-                                                                                 TNLRequestExecutionMode executionMode,
-                                                                                 BOOL createIfNeeded);
-static TNLURLSessionContext * __nullable _synchronize_getSessionContext(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                                        NSURLSession *session);
-static TNLURLSessionContext * __nullable _synchronize_getSessionContextWithConfigurationIdentifier(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                                                                   NSString *identifier);
-static void _synchronize_removeContext(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                       TNLURLSessionContext *context);
-static void _synchronize_storeContext(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                      TNLURLSessionContext *context);
-static void _synchronize_applyBackoffDependencies(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                  NSOperation *op,
-                                                  NSURL *URL,
-                                                  NSString * __nullable host,
-                                                  BOOL isLongPoll);
-static void _synchronize_backoffSignalEncountered(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                  NSURL *URL,
-                                                  NSString * __nullable host,
-                                                  NSDictionary<NSString *, NSString *> * __nullable headers);
-static void _synchronize_pruneLimit(PRIVATE_SELF(TNLURLSessionManagerV1));
-static void _synchronize_pruneUnused(PRIVATE_SELF(TNLURLSessionManagerV1));
-static void _synchronize_pruneConfig(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                     TNLRequestConfiguration *config,
-                                     NSString * __nullable operationQueueId);
+- (void)_synchronize_findURLSessionTaskOperationForRequestOperationQueue:(TNLRequestOperationQueue *)requestOperationQueue
+                                                        requestOperation:(TNLRequestOperation *)requestOperation
+                                                              completion:(TNLRequestOperationQueueFindTaskOperationCompleteBlock)complete;
+- (NSURLSession *)_synchronize_associateTaskOperation:(TNLURLSessionTaskOperation *)taskOperation
+                                            withQueue:(TNLRequestOperationQueue *)requestOperationQueue
+                                  supportsTaskMetrics:(BOOL)supportsTaskMetrics;
+- (void)_synchronize_dissassociateTaskOperation:(TNLURLSessionTaskOperation *)op;
+- (nullable TNLURLSessionContext *)_synchronize_sessionContextWithQueueId:(nullable NSString *)operationQueueId
+                                                     requestConfiguration:(TNLRequestConfiguration *)requestConfiguration
+                                                            executionMode:(TNLRequestExecutionMode)executionMode
+                                                           createIfNeeded:(BOOL)createIfNeeded;
+- (nullable TNLURLSessionContext *)_synchronize_sessionContextFromURLSession:(NSURLSession *)session;
+- (nullable TNLURLSessionContext *)_synchronize_sessionContextWithConfigurationIdentifier:(NSString *)identifier;
+- (void)_synchronize_removeSessionContext:(TNLURLSessionContext *)context;
+- (void)_synchronize_storeSessionContext:(TNLURLSessionContext *)context;
+
+- (void)_synchronize_applyBackoffDependenciesToOperation:(NSOperation *)op
+                                             matchingURL:(NSURL *)URL
+                                                    host:(nullable NSString *)host
+                                              isLongPoll:(BOOL)isLongPoll;
+- (void)_synchronize_backoffSignalEncounteredForURL:(NSURL *)URL
+                                               host:(nullable NSString *)host
+                                            headers:(nullable NSDictionary<NSString *, NSString *> *)headers;
+- (void)_synchronize_pruneSessionsToLimit;
+- (void)_synchronize_pruneUnusedSessions;
+- (void)_synchronize_pruneSessionWithConfig:(TNLRequestConfiguration *)config
+                           operationQueueId:(nullable NSString *)operationQueueId;
 
 static void _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(dispatch_block_t block);
-
-static void _private_notifyAuthChallengeCanceled(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                 TNLURLSessionTaskOperation * __nullable operation,
-                                                 NSURLAuthenticationChallenge *challenge,
-                                                 id<TNLAuthenticationChallengeHandler> __nullable handler,
-                                                 NSURLSession *session,
-                                                 id __nullable cancelContext);
-static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                         NSURLAuthenticationChallenge *challenge,
-                                         NSURLSession *session,
-                                         TNLURLSessionTaskOperation * __nullable operation,
-                                         NSNumber * __nullable currentDisposition,
-                                         NSMutableArray<id<TNLAuthenticationChallengeHandler>> * remainingAuthChallengeHandlers,
-                                         TNLURLSessionAuthChallengeCompletionBlock completion);
 
 @end
 
 /**
  Subclass TNLURLSessionManagerV1
- Implement URLSession:dataTask:didReceiveResponse:completionHandler:
- Has bugs on older OS versions
- */
-@interface TNLURLSessionManagerV2 : TNLURLSessionManagerV1
-@end
-
-/**
- Subclass TNLURLSessionManagerV2
  Implement URLSession:task:didFinishCollectingMetrics:
  Has bugs on older OS versions
  */
-@interface TNLURLSessionManagerV3 : TNLURLSessionManagerV2
+@interface TNLURLSessionManagerV2 : TNLURLSessionManagerV1
 @end
 
 #pragma mark - Implementation
@@ -193,12 +165,10 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
 
 + (id<TNLURLSessionManager>)sharedInstance
 {
-    if (![NSURLSessionConfiguration tnl_URLSessionCanReceiveResponseViaDelegate]) {
+    if (![NSURLSessionConfiguration tnl_URLSessionCanUseTaskTransactionMetrics]) {
         return [TNLURLSessionManagerV1 internalSharedInstance];
-    } else if (![NSURLSessionConfiguration tnl_URLSessionCanUseTaskTransactionMetrics]) {
-        return [TNLURLSessionManagerV2 internalSharedInstance];
     } else {
-        return [TNLURLSessionManagerV3 internalSharedInstance];
+        return [TNLURLSessionManagerV2 internalSharedInstance];
     }
 }
 
@@ -249,10 +219,9 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
 {
     TNLAssert(op.URLSessionTaskOperation == nil);
     tnl_dispatch_async_autoreleasing(sSynchronizeQueue, ^{
-        _synchronize_findURLSessionTaskOperation(self,
-                                                 queue,
-                                                 op,
-                                                 complete);
+        [self _synchronize_findURLSessionTaskOperationForRequestOperationQueue:queue
+                                                              requestOperation:op
+                                                                    completion:complete];
     });
 }
 
@@ -291,7 +260,7 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
         // TODO:[nobrien] - this JUST handles the background task completing event.
         // Any other events (specifically, auth challenges) are not currently handled.
 
-        TNLURLSessionContext *context = _synchronize_getSessionContextWithConfigurationIdentifier(self, identifier);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextWithConfigurationIdentifier:identifier];
         TNLBackgroundURLSessionTaskOperationManager *bgManager = nil;
         if (!context) {
             bgManager = [[TNLBackgroundURLSessionTaskOperationManager alloc] init];
@@ -365,12 +334,11 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
         if ([TNLGlobalConfiguration sharedInstance].shouldBackoffUseOriginalRequestHost) {
             host = op.originalURLRequest.URL.host;
         }
-        _synchronize_applyBackoffDependencies(self,
-                                              op,
-                                              URL,
-                                              host,
-                                              isLongPollRequest);
-        [sURLSessionTaskOperationQueue tnl_safeAddOperation:op];
+        [self _synchronize_applyBackoffDependenciesToOperation:op
+                                                   matchingURL:URL
+                                                          host:host
+                                                    isLongPoll:isLongPollRequest];
+        [sURLSessionTaskOperationQueue addOperation:op];
     });
 }
 
@@ -380,11 +348,10 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
                           isLongPollRequest:(BOOL)isLongPoll
 {
     dispatch_sync(sSynchronizeQueue, ^{
-        _synchronize_applyBackoffDependencies(self,
-                                              op,
-                                              URL,
-                                              host,
-                                              isLongPoll);
+        [self _synchronize_applyBackoffDependenciesToOperation:op
+                                                   matchingURL:URL
+                                                          host:host
+                                                    isLongPoll:isLongPoll];
     });
 }
 
@@ -393,7 +360,7 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
                    responseHTTPHeaders:(nullable NSDictionary<NSString *, NSString *> *)headers
 {
     tnl_dispatch_async_autoreleasing(sSynchronizeQueue, ^{
-        _synchronize_backoffSignalEncountered(self, URL, host, headers);
+        [self _synchronize_backoffSignalEncounteredForURL:URL host:host headers:headers];
     });
 }
 
@@ -438,7 +405,7 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
 - (void)pruneUnusedURLSessions
 {
     tnl_dispatch_async_autoreleasing(sSynchronizeQueue, ^{
-        _synchronize_pruneUnused(self);
+        [self _synchronize_pruneUnusedSessions];
     });
 }
 
@@ -447,7 +414,7 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
 {
     config = [config copy]; // force immutable
     tnl_dispatch_async_autoreleasing(sSynchronizeQueue, ^{
-        _synchronize_pruneConfig(self, config, operationQueueId);
+        [self _synchronize_pruneSessionWithConfig:config operationQueueId:operationQueueId];
     });
 }
 
@@ -466,61 +433,48 @@ static void _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(dispatch_
     }
 }
 
-static void _synchronize_findURLSessionTaskOperation(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                     TNLRequestOperationQueue *requestOperationQueue,
-                                                     TNLRequestOperation *requestOperation,
-                                                     TNLRequestOperationQueueFindTaskOperationCompleteBlock complete)
+- (void)_synchronize_findURLSessionTaskOperationForRequestOperationQueue:(TNLRequestOperationQueue *)requestOperationQueue
+                                                        requestOperation:(TNLRequestOperation *)requestOperation
+                                                              completion:(TNLRequestOperationQueueFindTaskOperationCompleteBlock)complete
 {
-    if (!self) {
-        return;
-    }
-
     TNLAssert(requestOperation.URLSessionTaskOperation == nil);
-    TNLURLSessionTaskOperation *URLSessionTaskOperation = nil;
+    TNLURLSessionTaskOperation *taskOperation = nil;
 
     // This NEEDS to be the ONLY place we create a TNLURLSessionTaskOperation.
-    URLSessionTaskOperation = [[TNLURLSessionTaskOperation alloc] initWithRequestOperation:requestOperation
+    taskOperation = [[TNLURLSessionTaskOperation alloc] initWithRequestOperation:requestOperation
                                                                             sessionManager:self];
-    NSURLSession *URLSession = _synchronize_associateTaskOperationWithQueue(self,
-                                                                            URLSessionTaskOperation,
-                                                                            requestOperationQueue,
-                                                                            [self respondsToSelector:@selector(URLSession:task:didFinishCollectingMetrics:)]);
-    (void)URLSession;
-    TNLAssert(URLSession != nil);
+    NSURLSession *session = [self _synchronize_associateTaskOperation:taskOperation
+                                                            withQueue:requestOperationQueue
+                                                  supportsTaskMetrics:[self respondsToSelector:@selector(URLSession:task:didFinishCollectingMetrics:)]];
+    (void)session;
+    TNLAssert(session != nil);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-retain-cycles"
     // Completion block will be cleared when it is called
-    URLSessionTaskOperation.completionBlock = ^{
+    taskOperation.completionBlock = ^{
         tnl_dispatch_async_autoreleasing(sSynchronizeQueue, ^{
-            _synchronize_dissassociateURLSessionTaskOperation(self, URLSessionTaskOperation);
+            [self _synchronize_dissassociateTaskOperation:taskOperation];
         });
     };
 #pragma clang diagnostic pop
 
-    TNLAssert(URLSessionTaskOperation.URLSession != nil);
-    complete(URLSessionTaskOperation);
+    TNLAssert(taskOperation.URLSession != nil);
+    complete(taskOperation);
 }
 
-static NSURLSession *_synchronize_associateTaskOperationWithQueue(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                                  TNLURLSessionTaskOperation *taskOperation,
-                                                                  TNLRequestOperationQueue *requestOperationQueue,
-                                                                  BOOL supportsTaskMetrics)
+- (NSURLSession *)_synchronize_associateTaskOperation:(TNLURLSessionTaskOperation *)taskOperation
+                                            withQueue:(TNLRequestOperationQueue *)requestOperationQueue
+                                  supportsTaskMetrics:(BOOL)supportsTaskMetrics
 {
-    TNLAssert(self);
-    if (!self) {
-        return nil;
-    }
-
     TNLRequestConfiguration *requestConfig = taskOperation.requestConfiguration;
     TNLRequestExecutionMode mode = taskOperation.executionMode;
     TNLAssert(requestConfig);
 
-    TNLURLSessionContext *context = _synchronize_getSessionContextWithQueue(self,
-                                                                            requestOperationQueue.identifier,
-                                                                            requestConfig,
-                                                                            mode,
-                                                                            YES /*createIfNeeded*/);
+    TNLURLSessionContext *context = [self _synchronize_sessionContextWithQueueId:requestOperationQueue.identifier
+                                                            requestConfiguration:requestConfig
+                                                                   executionMode:mode
+                                                                  createIfNeeded:YES];
     TNLAssert(context != nil);
     TNLAssert(context.URLSession != nil);
     [taskOperation setURLSession:context.URLSession supportsTaskMetrics:supportsTaskMetrics];
@@ -530,13 +484,8 @@ static NSURLSession *_synchronize_associateTaskOperationWithQueue(PRIVATE_SELF(T
     return context.URLSession;
 }
 
-static void _synchronize_dissassociateURLSessionTaskOperation(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                              TNLURLSessionTaskOperation *op)
+- (void)_synchronize_dissassociateTaskOperation:(TNLURLSessionTaskOperation *)op
 {
-    if (!self) {
-        return;
-    }
-
     TNLRequestOperationQueue *queue = op.requestOperationQueue;
     TNLRequestConfiguration *requestConfig = op.requestConfiguration;
     TNLRequestExecutionMode mode = op.executionMode;
@@ -544,11 +493,10 @@ static void _synchronize_dissassociateURLSessionTaskOperation(PRIVATE_SELF(TNLUR
     TNLAssert(queue);
     TNLAssert(requestConfig);
     if (requestConfig) {
-        TNLURLSessionContext *context = _synchronize_getSessionContextWithQueue(self,
-                                                                                queue.identifier,
-                                                                                requestConfig,
-                                                                                mode,
-                                                                                NO /*createIfNeeded*/);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextWithQueueId:queue.identifier
+                                                                requestConfiguration:requestConfig
+                                                                       executionMode:mode
+                                                                      createIfNeeded:NO];
         if (context) {
             // remove the operation from the context
             [context removeOperation:op];
@@ -563,7 +511,7 @@ static void _synchronize_dissassociateURLSessionTaskOperation(PRIVATE_SELF(TNLUR
                 if (op.URLSession == context.URLSession) {
 
                     // context is not longer viable, remove it from our store
-                    _synchronize_removeContext(self, context);
+                    [self _synchronize_removeSessionContext:context];
                     TNLLogError(@"Encountered invalid NSURLSession, removing from TNL store of sessions");
                 }
             }
@@ -571,27 +519,21 @@ static void _synchronize_dissassociateURLSessionTaskOperation(PRIVATE_SELF(TNLUR
     }
 
     // prune
-    _synchronize_pruneLimit(self);
+    [self _synchronize_pruneSessionsToLimit];
     const TNLGlobalConfigurationURLSessionPruneOptions pruneOptions = [TNLGlobalConfiguration sharedInstance].URLSessionPruneOptions;
     if (TNL_BITMASK_INTERSECTS_FLAGS(pruneOptions, TNLGlobalConfigurationURLSessionPruneOptionAfterEveryTask)) {
-        _synchronize_pruneUnused(self);
+        [self _synchronize_pruneUnusedSessions];
     }
 
     [sActiveURLSessionTaskOperations removeObject:op];
 }
 
-static TNLURLSessionContext * __nullable _synchronize_getSessionContextWithQueue(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                                                 NSString * __nullable operationQueueId,
-                                                                                 TNLRequestConfiguration *requestConfiguration,
-                                                                                 TNLRequestExecutionMode executionMode,
-                                                                                 BOOL createIfNeeded)
+- (nullable TNLURLSessionContext *)_synchronize_sessionContextWithQueueId:(nullable NSString *)operationQueueId
+                                                     requestConfiguration:(TNLRequestConfiguration *)requestConfiguration
+                                                            executionMode:(TNLRequestExecutionMode)executionMode
+                                                           createIfNeeded:(BOOL)createIfNeeded
 {
-    if (!self) {
-        return nil;
-    }
-
     TNLAssert(requestConfiguration);
-
 
     NSURLCache *canonicalCache = nil;
     NSURLCredentialStorage *canonicalCredentialStorage = nil;
@@ -620,7 +562,7 @@ static TNLURLSessionContext * __nullable _synchronize_getSessionContextWithQueue
     }
     NSString *identificationString = [params stableURLEncodedStringValue];
     NSString *reuseId = _GenerateReuseIdentifier(operationQueueId, identificationString, executionMode);
-    TNLURLSessionContext *context = _synchronize_getSessionContextWithConfigurationIdentifier(self, reuseId);
+    TNLURLSessionContext *context = [self _synchronize_sessionContextWithConfigurationIdentifier:reuseId];
     if (!context && createIfNeeded) {
         NSURLSessionConfiguration *canonicalConfiguration;
         canonicalConfiguration = [requestConfiguration generateCanonicalSessionConfigurationWithExecutionMode:executionMode
@@ -646,7 +588,7 @@ static TNLURLSessionContext * __nullable _synchronize_getSessionContextWithQueue
         NSString *sessionDescription = [NSString stringWithFormat:@"%@#%lli", reuseId, sessionId];
         session.sessionDescription = sessionDescription;
         TNLAssert([context.URLSession.sessionDescription isEqualToString:sessionDescription]);
-        _synchronize_storeContext(self, context);
+        [self _synchronize_storeSessionContext:context];
     }
 
     return context;
@@ -661,50 +603,34 @@ static NSString *_stripSessionIdentifierFromSessionDescription(NSString *session
     return [sessionDescription substringToIndex:range.location];
 }
 
-static TNLURLSessionContext * __nullable _synchronize_getSessionContext(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                                        NSURLSession *session)
+- (nullable TNLURLSessionContext *)_synchronize_sessionContextFromURLSession:(NSURLSession *)session
 {
     if (!self) {
         return nil;
     }
 
     NSString *reuseId = _stripSessionIdentifierFromSessionDescription(session.sessionDescription);
-    return _synchronize_getSessionContextWithConfigurationIdentifier(self, reuseId);
+    return [self _synchronize_sessionContextWithConfigurationIdentifier:reuseId];
 }
 
-static TNLURLSessionContext * __nullable _synchronize_getSessionContextWithConfigurationIdentifier(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                                                                   NSString *identifier)
+- (nullable TNLURLSessionContext *)_synchronize_sessionContextWithConfigurationIdentifier:(NSString *)identifier
 {
-    if (!self) {
-        return nil;
-    }
-
     return [sAppSessionContexts entryWithIdentifier:identifier] ?: [sBackgroundSessionContexts entryWithIdentifier:identifier];
 }
 
-static void _synchronize_storeContext(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                      TNLURLSessionContext *context)
+- (void)_synchronize_storeSessionContext:(TNLURLSessionContext *)context
 {
-    if (!self) {
-        return;
-    }
-
     if (context.executionMode == TNLRequestExecutionModeBackground) {
         [sBackgroundSessionContexts addEntry:context];
         // We don't cap the number of background sessions
     } else {
         [sAppSessionContexts addEntry:context];
-        _synchronize_pruneLimit(self);
+        [self _synchronize_pruneSessionsToLimit];
     }
 }
 
-static void _synchronize_removeContext(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                       TNLURLSessionContext *context)
+- (void)_synchronize_removeSessionContext:(TNLURLSessionContext *)context
 {
-    if (!self) {
-        return;
-    }
-
     if (context.executionMode == TNLRequestExecutionModeBackground) {
         [sBackgroundSessionContexts removeEntry:context];
     } else {
@@ -712,12 +638,8 @@ static void _synchronize_removeContext(PRIVATE_SELF(TNLURLSessionManagerV1),
     }
 }
 
-static void _synchronize_pruneLimit(PRIVATE_SELF(TNLURLSessionManagerV1))
+- (void)_synchronize_pruneSessionsToLimit
 {
-    if (!self) {
-        return;
-    }
-
     if (sAppSessionContexts.numberOfEntries > kMaxURLSessionContextCount) {
 
         // Get the least recently used context that doesn't have an associated operation
@@ -734,12 +656,8 @@ static void _synchronize_pruneLimit(PRIVATE_SELF(TNLURLSessionManagerV1))
     }
 }
 
-static void _synchronize_pruneUnused(PRIVATE_SELF(TNLURLSessionManagerV1))
+- (void)_synchronize_pruneUnusedSessions
 {
-    if (!self) {
-        return;
-    }
-
     // Iterate through all entries (least recent to most recent)
     TNLURLSessionContext *currentEntry = sAppSessionContexts.tailEntry;
     while (currentEntry) {
@@ -761,36 +679,25 @@ static void _synchronize_pruneUnused(PRIVATE_SELF(TNLURLSessionManagerV1))
     }
 }
 
-static void _synchronize_pruneConfig(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                     TNLRequestConfiguration *config,
-                                     NSString * __nullable operationQueueId)
+- (void)_synchronize_pruneSessionWithConfig:(TNLRequestConfiguration *)config
+                           operationQueueId:(nullable NSString *)operationQueueId
 {
-    if (!self) {
-        return;
-    }
-
-    TNLURLSessionContext *context = _synchronize_getSessionContextWithQueue(self,
-                                                                            operationQueueId,
-                                                                            config,
-                                                                            config.executionMode,
-                                                                            NO);
+    TNLURLSessionContext *context = [self _synchronize_sessionContextWithQueueId:operationQueueId
+                                                            requestConfiguration:config
+                                                                   executionMode:config.executionMode
+                                                                  createIfNeeded:NO];
     if (context) {
         if (context.operationCount == 0) {
-            _synchronize_removeContext(self, context);
+            [self _synchronize_removeSessionContext:context];
         }
     }
 }
 
-static void _synchronize_applyBackoffDependencies(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                  NSOperation *op,
-                                                  NSURL *URL,
-                                                  NSString * __nullable host,
-                                                  BOOL isLongPoll)
+- (void)_synchronize_applyBackoffDependenciesToOperation:(NSOperation *)op
+                                             matchingURL:(NSURL *)URL
+                                                    host:(nullable NSString *)host
+                                              isLongPoll:(BOOL)isLongPoll
 {
-    if (!self) {
-        return;
-    }
-
     // get the key (depends on the mode)
     NSString *key = _BackoffKeyFromURL(sBackoffMode, URL, host);
     if (!key) {
@@ -844,7 +751,7 @@ static void _synchronize_applyBackoffDependencies(PRIVATE_SELF(TNLURLSessionMana
             [timeoutOperation addDependency:dep];
         }
         [backoffOps addObject:timeoutOperation];
-        [sURLSessionTaskOperationQueue tnl_safeAddOperation:timeoutOperation];
+        [sURLSessionTaskOperationQueue addOperation:timeoutOperation];
     }
 
     // store the op if not a long poll request AND we are still in a serialization mode
@@ -853,15 +760,10 @@ static void _synchronize_applyBackoffDependencies(PRIVATE_SELF(TNLURLSessionMana
     }
 }
 
-static void _synchronize_backoffSignalEncountered(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                  NSURL *URL,
-                                                  NSString * __nullable host,
-                                                  NSDictionary<NSString *, NSString *> * __nullable headers)
+- (void)_synchronize_backoffSignalEncounteredForURL:(NSURL *)URL
+                                               host:(nullable NSString *)host
+                                            headers:(nullable NSDictionary<NSString *, NSString *> *)headers
 {
-    if (!self) {
-        return;
-    }
-
     NSString *key = _BackoffKeyFromURL(sBackoffMode, URL, host);
     if (!key) {
         // no key, no backoff to apply
@@ -869,7 +771,7 @@ static void _synchronize_backoffSignalEncountered(PRIVATE_SELF(TNLURLSessionMana
     }
 
     const TNLBackoffBehavior backoffBehavior = [sBackoffBehaviorProvider tnl_backoffBehaviorForURL:URL
-                                                                                                     responseHeaders:headers];
+                                                                                   responseHeaders:headers];
 
     if (backoffBehavior.backoffDuration > 0) {
         NSOperation *timeoutOperation = [[TNLTimeoutOperation alloc] initWithTimeoutDuration:backoffBehavior.backoffDuration];
@@ -885,7 +787,7 @@ static void _synchronize_backoffSignalEncountered(PRIVATE_SELF(TNLURLSessionMana
         }
 
         [ops addObject:timeoutOperation];
-        [sURLSessionTaskOperationQueue tnl_safeAddOperation:timeoutOperation];
+        [sURLSessionTaskOperationQueue addOperation:timeoutOperation];
 
         // also add to the outstanding serialization ops
         NSHashTable<NSOperation *> *serialOps = sOutstandingSerializeOperations[key];
@@ -906,7 +808,7 @@ static void _synchronize_backoffSignalEncountered(PRIVATE_SELF(TNLURLSessionMana
 
         // track the new serialize timer
         [ops addObject:timeoutOperation];
-        [sURLSessionTaskOperationQueue tnl_safeAddOperation:timeoutOperation];
+        [sURLSessionTaskOperationQueue addOperation:timeoutOperation];
     }
 
     sSerialDelayDuration = backoffBehavior.serialDelayDuration;
@@ -926,7 +828,7 @@ static void _synchronize_backoffSignalEncountered(PRIVATE_SELF(TNLURLSessionMana
     // TODO: do we need to propogate this event to operations at all?
 
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
 
         for (TNLURLSessionTaskOperation *op in context.URLSessionTaskOperations) {
             [op URLSession:session didBecomeInvalidWithError:error];
@@ -941,26 +843,20 @@ static void _synchronize_backoffSignalEncountered(PRIVATE_SELF(TNLURLSessionMana
     METHOD_LOG();
 
     NSMutableArray<id<TNLAuthenticationChallengeHandler>> *handlers = [[[TNLGlobalConfiguration sharedInstance] internalAuthenticationChallengeHandlers] mutableCopy];
-    _private_handleAuthChallenge(self,
-                                 challenge,
-                                 session,
-                                 nil /*operation*/,
-                                 nil /*currentDisposition*/,
-                                 handlers,
-                                 completionHandler);
+    [self _private_handleAuthChallenge:challenge
+                            URLSession:session
+                             operation:nil
+                    currentDisposition:nil
+                              handlers:handlers
+                            completion:completionHandler];
 }
 
-static void _private_notifyAuthChallengeCanceled(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                                 TNLURLSessionTaskOperation * __nullable operation,
-                                                 NSURLAuthenticationChallenge *challenge,
-                                                 id<TNLAuthenticationChallengeHandler> __nullable handler,
-                                                 NSURLSession *session,
-                                                 id __nullable cancelContext)
+- (void)_private_notifyAuthChallengeCanceled:(NSURLAuthenticationChallenge *)challenge
+                                  URLSession:(NSURLSession *)session
+                                   operation:(nullable TNLURLSessionTaskOperation *)operation
+                                     handler:(nullable id<TNLAuthenticationChallengeHandler>)handler
+                                     context:(nullable id)cancelContext TNL_OBJC_DIRECT
 {
-    if (!self) {
-        return;
-    }
-
     if (operation) {
         // just the provided operation
          if ((id)[NSNull null] != operation) {
@@ -974,7 +870,7 @@ static void _private_notifyAuthChallengeCanceled(PRIVATE_SELF(TNLURLSessionManag
 
      // all the downstream operations
      _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-         TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+         TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
          for (TNLURLSessionTaskOperation *op in context.URLSessionTaskOperations) {
              [op handler:handler
                  didCancelAuthenticationChallenge:challenge
@@ -984,18 +880,13 @@ static void _private_notifyAuthChallengeCanceled(PRIVATE_SELF(TNLURLSessionManag
      });
 }
 
-static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
-                                         NSURLAuthenticationChallenge *challenge,
-                                         NSURLSession *session,
-                                         TNLURLSessionTaskOperation * __nullable operation,
-                                         NSNumber * __nullable currentDisposition,
-                                         NSMutableArray<id<TNLAuthenticationChallengeHandler>> * handlers,
-                                         TNLURLSessionAuthChallengeCompletionBlock completion)
+- (void)_private_handleAuthChallenge:(NSURLAuthenticationChallenge *)challenge
+                          URLSession:(NSURLSession *)session
+                           operation:(nullable TNLURLSessionTaskOperation *)operation
+                  currentDisposition:(nullable NSNumber *)currentDisposition
+                            handlers:(NSMutableArray<id<TNLAuthenticationChallengeHandler>> *)handlers
+                          completion:(TNLURLSessionAuthChallengeCompletionBlock)completion TNL_OBJC_DIRECT
 {
-    if (!self) {
-        return;
-    }
-
     void (^challengeBlock)(id<TNLAuthenticationChallengeHandler> handler, NSURLSessionAuthChallengeDisposition disposition, id credentialOrContext);
     challengeBlock = ^(id<TNLAuthenticationChallengeHandler> handler, NSURLSessionAuthChallengeDisposition disposition, id credentialOrContext) {
         NSNumber *newDisposition = currentDisposition;
@@ -1012,12 +903,11 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
                 // The challenge is forced to cancel!
 
                 // 1) notify downstream request operations
-                _private_notifyAuthChallengeCanceled(self,
-                                                     operation,
-                                                     challenge,
-                                                     handler,
-                                                     session,
-                                                     credentialOrContext);
+                [self _private_notifyAuthChallengeCanceled:challenge
+                                                URLSession:session
+                                                 operation:operation
+                                                   handler:handler
+                                                   context:credentialOrContext];
 
                 // 2) complete
                 completion(disposition, nil);
@@ -1036,13 +926,12 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
             }
             // default: keep the disposition unchanged
         }
-        _private_handleAuthChallenge(self,
-                                     challenge,
-                                     session,
-                                     operation,
-                                     newDisposition,
-                                     handlers,
-                                     completion);
+        [self _private_handleAuthChallenge:challenge
+                                URLSession:session
+                                 operation:operation
+                        currentDisposition:newDisposition
+                                  handlers:handlers
+                                completion:completion];
     };
 
     if (currentDisposition) {
@@ -1081,7 +970,7 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
 {
     METHOD_LOG();
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         TNLURLSessionTaskOperation *op = [context operationForTask:task];
 
         if (op) {
@@ -1100,7 +989,7 @@ static void _private_handleAuthChallenge(PRIVATE_SELF(TNLURLSessionManagerV1),
 {
     METHOD_LOG();
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         TNLURLSessionTaskOperation *op = [context operationForTask:task];
 
         if (op) {
@@ -1124,7 +1013,7 @@ willPerformHTTPRedirection:response
 
     __block TNLURLSessionTaskOperation *op = nil;
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         op = [context operationForTask:task];
     });
 
@@ -1141,13 +1030,12 @@ willPerformHTTPRedirection:response
         }
     }
 
-    _private_handleAuthChallenge(self,
-                                 challenge,
-                                 session,
-                                 op ?: (id)[NSNull null],
-                                 nil /*currentDisposition*/,
-                                 handlers,
-                                 completionHandler);
+    [self _private_handleAuthChallenge:challenge
+                            URLSession:session
+                             operation:op ?: (id)[NSNull null]
+                    currentDisposition:nil
+                              handlers:handlers
+                            completion:completionHandler];
 }
 
 - (void)URLSession:(NSURLSession *)session
@@ -1156,7 +1044,7 @@ willPerformHTTPRedirection:response
 {
     METHOD_LOG();
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         TNLURLSessionTaskOperation *op = [context operationForTask:task];
 
         if (op) {
@@ -1176,7 +1064,7 @@ willPerformHTTPRedirection:response
         totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend
 {
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         TNLURLSessionTaskOperation *op = [context operationForTask:task];
 
         if (op) {
@@ -1195,7 +1083,7 @@ willPerformHTTPRedirection:response
         didCompleteWithError:(nullable NSError *)error
 {
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         TNLURLSessionTaskOperation *op = [context operationForTask:task];
 
         if (op) {
@@ -1206,18 +1094,32 @@ willPerformHTTPRedirection:response
 }
 
 // Not implemented due to crash IOS-31427
-// See TNLURLSessionManagerV3
+// See TNLURLSessionManagerV2
 //- (void)URLSession:(NSURLSession *)session
 //        task:(NSURLSessionTask *)task
 //        didFinishCollectingMetrics:(NSURLSessionTaskMetrics *)metrics;
 
 #pragma mark NSURLSessionDataTaskDelegate
 
-// Not implemented due to IDYN-339, implemented in TNLURLSessionManagerV2
-//- (void)URLSession:(NSURLSession *)session
-//          dataTask:(NSURLSessionDataTask *)dataTask
-//didReceiveResponse:(NSURLResponse *)response
-// completionHandler:(void (^)(NSURLSessionResponseDisposition disposition))completionHandler
+- (void)URLSession:(NSURLSession *)session
+          dataTask:(NSURLSessionDataTask *)dataTask
+didReceiveResponse:(NSURLResponse *)response
+ completionHandler:(void (^)(NSURLSessionResponseDisposition disposition))completionHandler
+{
+    _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
+        TNLURLSessionTaskOperation *op = [context operationForTask:dataTask];
+
+        if (op) {
+            [op URLSession:session
+                  dataTask:dataTask
+        didReceiveResponse:response
+         completionHandler:completionHandler];
+        } else {
+            completionHandler(NSURLSessionResponseAllow);
+        }
+    });
+}
 
 // NYI
 //- (void)URLSession:(NSURLSession *)session
@@ -1229,7 +1131,7 @@ willPerformHTTPRedirection:response
     didReceiveData:(NSData *)data
 {
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         TNLURLSessionTaskOperation *op = [context operationForTask:dataTask];
 
         if (op) {
@@ -1244,7 +1146,7 @@ willPerformHTTPRedirection:response
  completionHandler:(void (^)(NSCachedURLResponse *cachedResponse))completionHandler
 {
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         TNLURLSessionTaskOperation *op = [context operationForTask:dataTask];
         NSCachedURLResponse *flaggedResponse = [proposedResponse tnl_flaggedCachedResponse];
 
@@ -1266,7 +1168,7 @@ willPerformHTTPRedirection:response
 didFinishDownloadingToURL:(NSURL *)location
 {
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         TNLURLSessionTaskOperation *op = [context operationForTask:downloadTask];
 
         if (op) {
@@ -1284,7 +1186,7 @@ didFinishDownloadingToURL:(NSURL *)location
         totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite
 {
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         TNLURLSessionTaskOperation *op = [context operationForTask:downloadTask];
 
         if (op) {
@@ -1303,7 +1205,7 @@ didFinishDownloadingToURL:(NSURL *)location
 expectedTotalBytes:(int64_t)expectedTotalBytes
 {
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         TNLURLSessionTaskOperation *op = [context operationForTask:downloadTask];
 
         if (op) {
@@ -1496,9 +1398,7 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
             _ivars.multipathServiceType = config.multipathServiceType;
         }
 #endif
-        if (tnl_available_ios_9) {
-            _ivars.shouldUseExtendedBackgroundIdleMode = (config.shouldUseExtendedBackgroundIdleMode != NO);
-        }
+        _ivars.shouldUseExtendedBackgroundIdleMode = (config.shouldUseExtendedBackgroundIdleMode != NO);
     }
     return self;
 }
@@ -1634,9 +1534,7 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
     config.HTTPCookieStorage = nil;
     config.HTTPCookieAcceptPolicy = NSHTTPCookieAcceptPolicyNever;
     config.HTTPShouldSetCookies = NO;
-    if (tnl_available_ios_9) {
-        config.shouldUseExtendedBackgroundIdleMode = NO;
-    }
+    config.shouldUseExtendedBackgroundIdleMode = NO;
     return config;
 }
 
@@ -1660,50 +1558,11 @@ static volatile atomic_int_fast32_t sSessionContextCount = ATOMIC_VAR_INIT(0);
 }
 
 - (void)URLSession:(NSURLSession *)session
-          dataTask:(NSURLSessionDataTask *)dataTask
-didReceiveResponse:(NSURLResponse *)response
- completionHandler:(void (^)(NSURLSessionResponseDisposition disposition))completionHandler
-{
-    _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
-        TNLURLSessionTaskOperation *op = [context operationForTask:dataTask];
-
-        if (op) {
-            [op URLSession:session
-                  dataTask:dataTask
-        didReceiveResponse:response
-         completionHandler:completionHandler];
-        } else {
-            completionHandler(NSURLSessionResponseAllow);
-        }
-    });
-}
-
-@end
-
-@implementation TNLURLSessionManagerV3
-
-+ (NSInteger)version
-{
-    return 3;
-}
-
-+ (instancetype)internalSharedInstance
-{
-    static TNLURLSessionManagerV3 *sInstance;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sInstance = [[TNLURLSessionManagerV3 alloc] initInternal];
-    });
-    return sInstance;
-}
-
-- (void)URLSession:(NSURLSession *)session
         task:(NSURLSessionTask *)task
         didFinishCollectingMetrics:(NSURLSessionTaskMetrics *)metrics
 {
     _executeOnSynchronizeGCDQueueFromSynchronizeOperationQueue(^{
-        TNLURLSessionContext *context = _synchronize_getSessionContext(self, session);
+        TNLURLSessionContext *context = [self _synchronize_sessionContextFromURLSession:session];
         TNLURLSessionTaskOperation *op = [context operationForTask:task];
 
         if (op) {
@@ -1746,9 +1605,7 @@ TNLMutableParameterCollection *TNLMutableParametersFromURLSessionConfiguration(N
 #if TARGET_OS_IPHONE // == IOS + WATCH + TV
     params[TNLSessionConfigurationPropertyKeySessionSendsLaunchEvents] = @(config.sessionSendsLaunchEvents);
 #endif
-    if (tnl_available_ios_9) {
-        params[TNLSessionConfigurationPropertyKeyShouldUseExtendedBackgroundIdleMode] = @(config.shouldUseExtendedBackgroundIdleMode);
-    }
+    params[TNLSessionConfigurationPropertyKeyShouldUseExtendedBackgroundIdleMode] = @(config.shouldUseExtendedBackgroundIdleMode);
 
     tempValue = config.connectionProxyDictionary;
     if ([(NSDictionary *)tempValue count] > 0) {
@@ -1941,9 +1798,7 @@ static void _ConfigureSessionConfigurationWithRequestConfiguration(NSURLSessionC
         sessionConfig.multipathServiceType = requestConfig.multipathServiceType;
     }
 #endif
-    if (tnl_available_ios_9) {
-        sessionConfig.shouldUseExtendedBackgroundIdleMode = requestConfig.shouldUseExtendedBackgroundIdleMode;
-    }
+    sessionConfig.shouldUseExtendedBackgroundIdleMode = requestConfig.shouldUseExtendedBackgroundIdleMode;
 
     // Transfer protocols
     NSArray<Class> *additionalClasses = TNLProtocolClassesForProtocolOptions(requestConfig.protocolOptions);

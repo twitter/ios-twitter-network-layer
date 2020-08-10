@@ -18,7 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 @class TNLCommunicationAgent;
 #endif
 
-@interface TNLAttemptMetrics (Project)
+TNL_OBJC_DIRECT_MEMBERS
+@interface TNLAttemptMetrics ()
 
 - (void)setMetaData:(nullable TNLAttemptMetaData *)metaData;
 - (void)setEndDate:(nonnull NSDate *)endDate machTime:(uint64_t)time;

@@ -2,13 +2,40 @@
 
 ## Info
 
-**Document version:** 2.14.0
+**Document version:** 2.17.0
 
-**Last updated:** 04/30/2020
+**Last updated:** 08/06/2020
 
 **Author:** Nolan O'Brien
 
 ## History
+
+### 2.17.0
+
+- Drop support for iOS 8 & 9
+
+### 2.16.0
+
+- Replace `TNLRequest` class methods with C functions
+  - Swift does not like having an `@interface` have the same name as an `@protocol`
+  - It can work, but gets very messy
+  - Best to avoid it and replace the convenient class method interfaces in Objective-C with C functions
+  - Though this is a minor version bump, it is API breaking
+    - There isn't a way to deprecated the old APIs and introduce new ones, we just have to remove the old ones to fix usages in Swift
+    - _Apologies for the inconvenience!_
+- Also, update `TNLHTTP.h` to be much more Swift friendly
+
+### 2.15.5
+
+- Adopt `direct` support for Objective-C code and eliminate `PRIVATE_SELF` C function pattern
+  - Preserves Objective-C calling syntax for better code legibility (less C-style calls interleaving ObjC)
+  - Safer than `PRIVATE_SELF` C functions (don't need to check `self != nil`)
+  - Avoids awkward `self->_ivar` access in the direct methods (can stick with just using `_ivar`)
+  - Same low binary overhead as private C functions
+
+### 2.15.0
+
+- Make `TNLError.h` much more Swift compatible
 
 ### 2.14.0
 

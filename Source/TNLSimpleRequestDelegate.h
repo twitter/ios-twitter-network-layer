@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
  * NOTE: this header is private to TNL
  */
 
+TNL_OBJC_FINAL TNL_OBJC_DIRECT_MEMBERS
 @interface TNLSimpleRequestDelegate : NSObject <TNLRequestDelegate>
 
 @property (nonatomic, readonly) TNLRequestDidCompleteBlock didCompleteBlock;

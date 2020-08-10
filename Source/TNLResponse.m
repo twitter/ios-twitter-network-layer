@@ -213,7 +213,7 @@
                 return NO;
             }
         } else {
-            if (![TNLRequest isRequest:self.originalRequest equalTo:other.originalRequest quickBodyComparison:YES]) {
+            if (!TNLRequestEqualToRequest(self.originalRequest, other.originalRequest, YES /*quickBodyCheck*/)) {
                 return NO;
             }
         }
@@ -410,10 +410,10 @@
 - (instancetype)initWithSourceRequest:(id<TNLRequest>)request
 {
     if (self = [super init]) {
-        _encodedSourceRequestHadBody = [TNLRequest requestHasBody:request];
+        _encodedSourceRequestHadBody = TNLRequestHasBody(request);
         _encodedSourceRequestClassName = [NSStringFromClass([request class]) copy];
         _URL = request.URL;
-        _HTTPMethodValue = [TNLRequest HTTPMethodValueForRequest:request];
+        _HTTPMethodValue = TNLRequestGetHTTPMethodValue(request);
         _allHTTPHeaderFields = [request respondsToSelector:@selector(allHTTPHeaderFields)] ? [request.allHTTPHeaderFields copy] : nil;
     }
     return self;
@@ -544,7 +544,9 @@
     }
     _final = YES;
     _attemptMetrics = [_attemptMetrics copy];
-    [_attemptMetrics makeObjectsPerformSelector:@selector(finalizeMetrics)];
+    [_attemptMetrics enumerateObjectsUsingBlock:^(TNLAttemptMetrics * _Nonnull metricObj, NSUInteger idx, BOOL * _Nonnull stop) {
+        [metricObj finalizeMetrics]; // direct method, so we cannot use `makeObjectsPerformSelector:`
+    }];
 }
 
 + (BOOL)supportsSecureCoding
@@ -647,37 +649,32 @@
 - (void)addInitialStartWithDate:(NSDate *)date machTime:(uint64_t)machTime request:(NSURLRequest *)request
 {
     TNLAssert(_attemptMetrics.count == 0);
-    _addAttemptStart(self, TNLAttemptTypeInitial, date, machTime, request);
+    [self _addAttemptStart:TNLAttemptTypeInitial date:date machTime:machTime request:request];
 }
 
 - (void)addRetryStartWithDate:(NSDate *)date machTime:(uint64_t)machTime request:(NSURLRequest *)request
 {
-    _addAttemptStart(self, TNLAttemptTypeRetry, date, machTime, request);
+    [self _addAttemptStart:TNLAttemptTypeRetry date:date machTime:machTime request:request];
 }
 
 - (void)addRedirectStartWithDate:(NSDate *)date machTime:(uint64_t)machTime request:(NSURLRequest *)request
 {
-    _addAttemptStart(self, TNLAttemptTypeRedirect, date, machTime, request);
+    [self _addAttemptStart:TNLAttemptTypeRedirect date:date machTime:machTime request:request];
 }
 
-static void _addAttemptStart(PRIVATE_SELF(TNLResponseMetrics),
-                             TNLAttemptType type,
-                             NSDate *date,
-                             uint64_t machTime,
-                             NSURLRequest *request)
+- (void)_addAttemptStart:(TNLAttemptType)type
+                    date:(NSDate *)date
+                machTime:(uint64_t)machTime
+                 request:(NSURLRequest *)request
 {
-    if (!self) {
-        return;
-    }
-
-    if (self->_final) {
+    if (_final) {
         return;
     }
 
     TNLAssert(request != nil);
-    TNLAssert(self->_attemptMetrics != nil);
+    TNLAssert(_attemptMetrics != nil);
     TNLAssert(date != nil);
-    TNLAttemptMetrics *lastMetrics = self->_attemptMetrics.lastObject;
+    TNLAttemptMetrics *lastMetrics = _attemptMetrics.lastObject;
     if (TNLAttemptTypeInitial == type) {
         TNLAssert(lastMetrics == nil);
     } else {
@@ -697,7 +694,7 @@ static void _addAttemptStart(PRIVATE_SELF(TNLResponseMetrics),
                                                               URLRequest:request
                                                              URLResponse:nil
                                                           operationError:nil];
-    [(NSMutableArray *)self->_attemptMetrics addObject:metrics];
+    [(NSMutableArray *)_attemptMetrics addObject:metrics];
 }
 
 - (void)updateCurrentRequest:(NSURLRequest *)request

@@ -14,7 +14,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 static struct {
-    BOOL URLSessionCanReceiveResponseViaDelegate:1;
     BOOL URLSessionCanUseTaskTransactionMetrics:1;
     BOOL URLSessionSupportsDecodingBrotliContentEncoding:1;
     BOOL URLSessionCanUseWaitsForConnectivity:1;
@@ -28,20 +27,10 @@ static void _EnsureFlags()
 
         memset(&sFlags, 0, sizeof(sFlags)); // clear the flags before we set them
 
-        /// URLSessionCanReceiveResponseViaDelegate
-
-        if (tnl_available_ios_9) {
-            // ok
-            sFlags.URLSessionCanReceiveResponseViaDelegate = YES;
-        } else {
-            // iOS 8 only has this bug (TNL does not support iOS 7 or below)
-        }
-
         /// URLSessionCanUseTaskTransactionMetrics
 
-        if (tnl_available_ios_10) {
-            // task metrics added as an API in iOS 10
-
+        // task metrics added as an API in iOS 10
+        {
             if (tnl_available_ios_11) {
 
                 // The crashers of iOS 10 continue into iOS 11 betas.
@@ -97,12 +86,6 @@ static void _EnsureFlags()
 }
 
 @implementation NSURLSessionConfiguration (TNLAdditions)
-
-+ (BOOL)tnl_URLSessionCanReceiveResponseViaDelegate
-{
-    _EnsureFlags();
-    return sFlags.URLSessionCanReceiveResponseViaDelegate;
-}
 
 + (BOOL)tnl_URLSessionCanUseTaskTransactionMetrics
 {

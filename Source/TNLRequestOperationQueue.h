@@ -62,7 +62,7 @@ FOUNDATION_EXTERN NSString * const TNLBackgroundRequestURLSessionSharedContainer
      - The `NSURLSessionConfiguration`'s _identifier_ as an `NSString`
    - `TNLBackgroundRequestURLSessionTaskIdentifierKey`
      - An unsigned integer (wrapped in an `NSNumber`) that matches the _taskIdentifier_ of the underlying `NSURLSessionTask` that completed
-   - `TNLBackgroundRequestURLSessionSharedContainerIdentifierKey` (iOS 8+ only)
+   - `TNLBackgroundRequestURLSessionSharedContainerIdentifierKey`
      - The `NSString` _sharedContainerIdentifier_ of the `NSURLSessionConfiguration`
  - __TODO:[nobrien]__ - Change this from specifically being a _background_ request notification to a _headless_ request notification.
 

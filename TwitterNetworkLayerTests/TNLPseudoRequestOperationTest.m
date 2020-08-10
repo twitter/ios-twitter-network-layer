@@ -986,7 +986,7 @@ static NSData *sData;
 
 - (NSTimeInterval)tnl_delayBeforeRetryForRequestOperation:(TNLRequestOperation *)op withResponse:(TNLResponse *)response
 {
-    return [[[op.originalRequest.allHTTPHeaderFields tnl_objectsForCaseInsensitiveKey:@"RETRY_DELAY"] firstObject] integerValue];
+    return [[op.originalRequest.allHTTPHeaderFields tnl_objectForCaseInsensitiveKey:@"RETRY_DELAY"] integerValue];
 }
 
 #pragma mark TNLRequestDelegate

@@ -37,6 +37,7 @@ NSString * const TNLHTTPContentTypeTextPlain = @"text/plain";
 NSString * const TNLHTTPContentTypeMultipartFormData = @"multipart/form-data";
 NSString * const TNLHTTPContentTypeOctetStream = @"application/octet-stream";
 NSString * const TNLHTTPContentTypeURLEncodedString = @"application/x-www-form-urlencoded";
+NSString * const TNLHTTPContentTypeThriftBinary = @"application/vnd.apache.thrift.binary";
 
 static BOOL TNLHTTPContentTypeIsTextualInternal(NSString * __nonnull contentType)
 {

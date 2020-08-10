@@ -113,7 +113,7 @@ typedef void(^TNLRequestOperationEnqueueNetworkingOperationBlock)(NSArray<NSOper
  The operation is waiting for connnectivity.
  Only called if `[TNLRequestConfiguration connectivityOptions]` is set to yield waiting for connectivity.
  */
-- (void)tnl_requestOperartionIsWaitingForConnectivity:(TNLRequestOperation *)op;
+- (void)tnl_requestOperationIsWaitingForConnectivity:(TNLRequestOperation *)op;
 
 /**
  The operation did complete.

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1140"
+   LastUpgradeVersion = "1150"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -129,6 +129,14 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "https://google.com"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "https://api.twitter.com"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "https://httpbin.org/status/401"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

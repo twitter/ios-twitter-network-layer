@@ -99,14 +99,14 @@
     mURLRequest.HTTPMethod = @"POST";
     mURLRequest.allHTTPHeaderFields = @{ @"Header1" : @"Value1", @"Header2" : @"Value2" };
     mRequest = [[TNLMutableHTTPRequest alloc] initWithURLRequest:mURLRequest];
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:mRequest]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, mRequest, NO /*quickBodyCheck*/));
 
-    XCTAssertTrue([TNLRequest validateRequest:mURLRequest againstConfiguration:config error:&error]);
+    XCTAssertTrue(TNLRequestValidate(mURLRequest, config, &error));
     XCTAssertNil(error);
     if (error) {
         NSLog(@"%@", error);
     }
-    XCTAssertTrue([TNLRequest validateRequest:mRequest againstConfiguration:config error:&error]);
+    XCTAssertTrue(TNLRequestValidate(mRequest, config, &error));
     XCTAssertNil(error);
     if (error) {
         NSLog(@"%@", error);
@@ -115,36 +115,36 @@
     // IDYN-357, POSTs and PUTs support the body being optional
     mURLRequest.HTTPBody = nil;
     mRequest.HTTPBody = nil;
-    XCTAssertTrue([TNLRequest validateRequest:mURLRequest againstConfiguration:config error:&error]);
+    XCTAssertTrue(TNLRequestValidate(mURLRequest, config, &error));
     XCTAssertNil(error);
     error = nil;
-    XCTAssertTrue([TNLRequest validateRequest:mRequest againstConfiguration:config error:&error]);
+    XCTAssertTrue(TNLRequestValidate(mRequest, config, &error));
     XCTAssertNil(error);
     error = nil;
 
     mURLRequest.HTTPBody = data;
     mRequest.HTTPBody = data;
-    XCTAssertTrue([TNLRequest validateRequest:mURLRequest againstConfiguration:config error:NULL]);
-    XCTAssertTrue([TNLRequest validateRequest:mRequest againstConfiguration:config error:NULL]);
+    XCTAssertTrue(TNLRequestValidate(mURLRequest, config, NULL /*errorOut*/));
+    XCTAssertTrue(TNLRequestValidate(mRequest, config, NULL /*errorOut*/));
 
     mURLRequest.URL = nil;
     mRequest.URL = nil;
-    XCTAssertFalse([TNLRequest validateRequest:mURLRequest againstConfiguration:config error:&error]);
+    XCTAssertFalse(TNLRequestValidate(mURLRequest, config, &error));
     XCTAssertEqualObjects(error.domain, TNLErrorDomain);
     error = nil;
-    XCTAssertFalse([TNLRequest validateRequest:mRequest againstConfiguration:config error:&error]);
+    XCTAssertFalse(TNLRequestValidate(mRequest, config, &error));
     XCTAssertEqualObjects(error.domain, TNLErrorDomain);
     error = nil;
 
     mURLRequest.URL = url;
     mRequest.URL = url;
-    XCTAssertTrue([TNLRequest validateRequest:mURLRequest againstConfiguration:config error:NULL]);
-    XCTAssertTrue([TNLRequest validateRequest:mRequest againstConfiguration:config error:NULL]);
+    XCTAssertTrue(TNLRequestValidate(mURLRequest, config, NULL /*errorOut*/));
+    XCTAssertTrue(TNLRequestValidate(mRequest, config, NULL /*errorOut*/));
 
     mURLRequest.HTTPMethod = @"GET";
     mRequest.HTTPMethodValue = TNLHTTPMethodGET;
-    XCTAssertTrue([TNLRequest validateRequest:mURLRequest againstConfiguration:config error:NULL]);
-    XCTAssertTrue([TNLRequest validateRequest:mRequest againstConfiguration:config error:NULL]);
+    XCTAssertTrue(TNLRequestValidate(mURLRequest, config, NULL /*errorOut*/));
+    XCTAssertTrue(TNLRequestValidate(mRequest, config, NULL /*errorOut*/));
 }
 
 - (void)testRequestConversion
@@ -160,37 +160,37 @@
     mURLRequest.HTTPMethod = @"POST";
     mURLRequest.allHTTPHeaderFields = @{ @"Header1" : @"Value1", @"Header2" : @"Value2" };
     mRequest = [[TNLMutableHTTPRequest alloc] initWithURLRequest:mURLRequest];
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:mRequest]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, mRequest, NO /*quickBodyCheck*/));
 
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:[TNLRequest URLRequestForRequest:mRequest error:&error]]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, TNLRequestToNSURLRequest(mRequest, nil, &error), NO /*quickBodyCheck*/));
 
     mRequest.HTTPBody = [@"Body2" dataUsingEncoding:NSUTF8StringEncoding];
-    XCTAssertFalse([TNLRequest isRequest:mURLRequest equalTo:[TNLRequest URLRequestForRequest:mRequest error:&error]]);
+    XCTAssertFalse(TNLRequestEqualToRequest(mURLRequest, TNLRequestToNSURLRequest(mRequest, nil, &error), NO /*quickBodyCheck*/));
     mURLRequest.HTTPBody = mRequest.HTTPBody;
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:[TNLRequest URLRequestForRequest:mRequest error:&error]]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, TNLRequestToNSURLRequest(mRequest, nil, &error), NO /*quickBodyCheck*/));
 
     mRequest.HTTPBody = nil;
-    XCTAssertFalse([TNLRequest isRequest:mURLRequest equalTo:[TNLRequest URLRequestForRequest:mRequest error:&error]]);
+    XCTAssertFalse(TNLRequestEqualToRequest(mURLRequest, TNLRequestToNSURLRequest(mRequest, nil, &error), NO /*quickBodyCheck*/));
     mURLRequest.HTTPBody = nil;
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:[TNLRequest URLRequestForRequest:mRequest error:&error]]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, TNLRequestToNSURLRequest(mRequest, nil, &error), NO /*quickBodyCheck*/));
 
     mRequest.HTTPBody = data;
     mURLRequest.HTTPBody = data;
 
     mRequest.HTTPMethodValue = TNLHTTPMethodGET;
-    XCTAssertFalse([TNLRequest isRequest:mURLRequest equalTo:[TNLRequest URLRequestForRequest:mRequest error:&error]]);
+    XCTAssertFalse(TNLRequestEqualToRequest(mURLRequest, TNLRequestToNSURLRequest(mRequest, nil, &error), NO /*quickBodyCheck*/));
     mURLRequest.HTTPMethod = @"GET";
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:[TNLRequest URLRequestForRequest:mRequest error:&error]]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, TNLRequestToNSURLRequest(mRequest, nil, &error), NO /*quickBodyCheck*/));
 
     mRequest.HTTPBody = nil;
-    XCTAssertFalse([TNLRequest isRequest:mURLRequest equalTo:[TNLRequest URLRequestForRequest:mRequest error:&error]]);
+    XCTAssertFalse(TNLRequestEqualToRequest(mURLRequest, TNLRequestToNSURLRequest(mRequest, nil, &error), NO /*quickBodyCheck*/));
     mURLRequest.HTTPBody = nil;
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:[TNLRequest URLRequestForRequest:mRequest error:&error]]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, TNLRequestToNSURLRequest(mRequest, nil, &error), NO /*quickBodyCheck*/));
 
     mRequest.URL = [NSURL URLWithString:@"http://www.dummy.com/path"];
-    XCTAssertFalse([TNLRequest isRequest:mURLRequest equalTo:[TNLRequest URLRequestForRequest:mRequest error:&error]]);
+    XCTAssertFalse(TNLRequestEqualToRequest(mURLRequest, TNLRequestToNSURLRequest(mRequest, nil, &error), NO /*quickBodyCheck*/));
     mURLRequest.URL = mRequest.URL;
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:[TNLRequest URLRequestForRequest:mRequest error:&error]]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, TNLRequestToNSURLRequest(mRequest, nil, &error), NO /*quickBodyCheck*/));
 }
 
 - (void)testMethodConversion
@@ -221,10 +221,10 @@
         mURLRequest.HTTPMethod = [strings[i] mutableCopy]; // the mutation will ensure the string is different than the global @"TERM" reference
         mRequest.HTTPMethodValue = [enums[i] integerValue];
 
-        XCTAssertEqualObjects(strings[i], [TNLRequest HTTPMethodForRequest:mURLRequest]);
-        XCTAssertEqualObjects(strings[i], [TNLRequest HTTPMethodForRequest:mRequest]);
-        XCTAssertEqual([enums[i] integerValue], [TNLRequest HTTPMethodValueForRequest:mURLRequest]);
-        XCTAssertEqual([enums[i] integerValue], [TNLRequest HTTPMethodValueForRequest:mURLRequest]);
+        XCTAssertEqualObjects(strings[i], TNLRequestGetHTTPMethod(mURLRequest));
+        XCTAssertEqualObjects(strings[i], TNLRequestGetHTTPMethod(mRequest));
+        XCTAssertEqual([enums[i] integerValue], TNLRequestGetHTTPMethodValue(mURLRequest));
+        XCTAssertEqual([enums[i] integerValue], TNLRequestGetHTTPMethodValue(mRequest));
     }
 }
 
@@ -246,27 +246,27 @@
     XCTAssertNotEqualObjects(mURLRequest, mRequest);
     XCTAssertEqualObjects(mURLRequest, [mURLRequest copy]);
     XCTAssertEqualObjects(mRequest, [mRequest copy]);
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:mRequest]);
-    XCTAssertTrue([TNLRequest isRequest:[mURLRequest copy] equalTo:mRequest]);
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:[mRequest copy]]);
-    XCTAssertTrue([TNLRequest isRequest:[mURLRequest copy] equalTo:[mRequest copy]]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, mRequest, NO /*quickBodyCheck*/));
+    XCTAssertTrue(TNLRequestEqualToRequest([mURLRequest copy], mRequest, NO /*quickBodyCheck*/));
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, [mRequest copy], NO /*quickBodyCheck*/));
+    XCTAssertTrue(TNLRequestEqualToRequest([mURLRequest copy], [mRequest copy], NO /*quickBodyCheck*/));
 
     mURLRequest.HTTPBody = [@"Body2" dataUsingEncoding:NSUTF8StringEncoding];
-    XCTAssertFalse([TNLRequest isRequest:mURLRequest equalTo:mRequest]);
+    XCTAssertFalse(TNLRequestEqualToRequest(mURLRequest, mRequest, NO /*quickBodyCheck*/));
     mRequest.HTTPBody = mURLRequest.HTTPBody;
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:mRequest]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, mRequest, NO /*quickBodyCheck*/));
     mURLRequest.HTTPMethod = @"GET";
-    XCTAssertFalse([TNLRequest isRequest:mURLRequest equalTo:mRequest]);
+    XCTAssertFalse(TNLRequestEqualToRequest(mURLRequest, mRequest, NO /*quickBodyCheck*/));
     mRequest.HTTPMethodValue = TNLHTTPMethodGET;
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:mRequest]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, mRequest, NO /*quickBodyCheck*/));
     mRequest.HTTPBody = nil;
-    XCTAssertFalse([TNLRequest isRequest:mURLRequest equalTo:mRequest]);
+    XCTAssertFalse(TNLRequestEqualToRequest(mURLRequest, mRequest, NO /*quickBodyCheck*/));
     mURLRequest.HTTPBody = nil;
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:mRequest]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, mRequest, NO /*quickBodyCheck*/));
     mRequest.URL = [NSURL URLWithString:@"http://www.dummy.com/path"];
-    XCTAssertFalse([TNLRequest isRequest:mURLRequest equalTo:mRequest]);
+    XCTAssertFalse(TNLRequestEqualToRequest(mURLRequest, mRequest, NO /*quickBodyCheck*/));
     mURLRequest.URL = mRequest.URL;
-    XCTAssertTrue([TNLRequest isRequest:mURLRequest equalTo:mRequest]);
+    XCTAssertTrue(TNLRequestEqualToRequest(mURLRequest, mRequest, NO /*quickBodyCheck*/));
 }
 
 @end

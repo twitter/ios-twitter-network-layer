@@ -25,8 +25,16 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSArray *)tnl_objectsForCaseInsensitiveKey:(NSString *)key;
 
 /**
+ Return the first matching value for a given case-insensitive _key_.
+ @param key the key to look up (case-insensitive)
+ @return the first matching value
+ @note will try to lookup via the key directly before performing an O(n) lookup.
+ */
+- (nullable id)tnl_objectForCaseInsensitiveKey:(NSString *)key;
+
+/**
  Find all keys in the receiver that match the given case-insensitive `key`
- @param key the key to lookup
+ @param key the key to look up
  @return a set of the matching keys if found, otherwise `nil`
  @note this method runs in O(n) time
  */

@@ -19,8 +19,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-#define SELF_ARG PRIVATE_SELF(TNLBackgroundURLSessionTaskOperationManager)
-
+TNL_OBJC_FINAL TNL_OBJC_DIRECT_MEMBERS
 @interface TNLBackgroundRequestContext : NSObject
 @property (nonatomic, nullable) NSURLSessionTask *URLSessionTask;
 @property (nonatomic, nullable) NSHTTPURLResponse *URLResponse;
@@ -28,10 +27,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, nullable) TNLTemporaryFile *tempFile;
 @end
 
+TNL_OBJC_DIRECT_MEMBERS
 @interface TNLBackgroundURLSessionTaskOperationManager () <NSURLSessionDownloadDelegate, NSURLSessionDataDelegate>
-static TNLBackgroundRequestContext * __nullable _getBackgroundRequestContext(SELF_ARG,
-                                                                             NSURLSessionTask *task,
-                                                                             BOOL createIfNecessary);
+- (nullable TNLBackgroundRequestContext *)_backgroundRequestContextForTask:(NSURLSessionTask *)task
+                                                         createIfNecessary:(BOOL)createIfNecessary;
 @end
 
 @implementation TNLBackgroundURLSessionTaskOperationManager
@@ -58,20 +57,15 @@ static TNLBackgroundRequestContext * __nullable _getBackgroundRequestContext(SEL
                                            delegateQueue:[NSOperationQueue mainQueue]];
 }
 
-static TNLBackgroundRequestContext * __nullable _getBackgroundRequestContext(SELF_ARG,
-                                                                             NSURLSessionTask *task,
-                                                                             BOOL createIfNecessary)
+- (nullable TNLBackgroundRequestContext *)_backgroundRequestContextForTask:(NSURLSessionTask *)task
+                                                         createIfNecessary:(BOOL)createIfNecessary
 {
-    if (!self) {
-        return nil;
-    }
-
     NSNumber *taskIdNumber = @(task.taskIdentifier);
-    TNLBackgroundRequestContext *context = self->_contexts[taskIdNumber];
+    TNLBackgroundRequestContext *context = _contexts[taskIdNumber];
     if (!context && createIfNecessary) {
         context = [[TNLBackgroundRequestContext alloc] init];
         context.URLSessionTask = task;
-        self->_contexts[taskIdNumber] = context;
+        _contexts[taskIdNumber] = context;
     }
     return context;
 }
@@ -90,7 +84,8 @@ static TNLBackgroundRequestContext * __nullable _getBackgroundRequestContext(SEL
         task:(NSURLSessionTask *)task
         didCompleteWithError:(nullable NSError *)error
 {
-    TNLBackgroundRequestContext *context = _getBackgroundRequestContext(self, task, YES /*createIfNecessary*/);
+    TNLBackgroundRequestContext *context = [self _backgroundRequestContextForTask:task
+                                                                createIfNecessary:YES];
     TNLAssert(context != nil);
     TNLAssert(context.URLSessionTask.taskIdentifier == task.taskIdentifier);
 
@@ -131,7 +126,8 @@ static TNLBackgroundRequestContext * __nullable _getBackgroundRequestContext(SEL
         downloadTask:(NSURLSessionDownloadTask *)downloadTask
         didFinishDownloadingToURL:(NSURL *)location
 {
-    TNLBackgroundRequestContext *context = _getBackgroundRequestContext(self, downloadTask, YES /*createIfNecessary*/);
+    TNLBackgroundRequestContext *context = [self _backgroundRequestContextForTask:downloadTask
+                                                                createIfNecessary:YES];
     TNLAssert(context != nil);
     TNLAssert(context.URLSessionTask.taskIdentifier == downloadTask.taskIdentifier);
 
