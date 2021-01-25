@@ -224,7 +224,7 @@ The high level concept of how to use __TNL__ is rather straightforward:
 
  __TNLHTTPRequest:__
 
-```
+```objc
 NSString *URLString = [NSString stringWithFormat:@"http://api.myapp.com/blob/%tu", blobIdentifier];
 NSURL *URL = [NSURL URLWithString:URLString];
 TNLHTTPRequest *request = [TNLHTTPRequest GETRequestWithURL:URL
@@ -233,7 +233,7 @@ TNLHTTPRequest *request = [TNLHTTPRequest GETRequestWithURL:URL
 
  __TNLMutableHTTPRequest:__
 
-```
+```objc
 NSString *URLString = [NSString stringWithFormat:@"http://api.myapp.com/blob/%tu", blobIdentifier];
 NSURL *URL = [NSURL URLWithString:URLString];
 TNLMutableHTTPRequest *mRequest = [[TNLMutableHTTPRequest alloc] init];
@@ -244,7 +244,7 @@ mRequest.URL = URL;
 
 ### NSURLRequest
 
-```
+```objc
 NSString *URLString = [NSString stringWithFormat:@"http://api.myapp.com/blob/%tu", blobIdentifier];
 NSURL *URL = [NSURL URLWithString:URLString];
 NSMutableURLRequest *mRequest = [[NSMutableURLRequest alloc] init];
@@ -257,7 +257,7 @@ mRequest.URL = URL;
 
  __1) Request Hydration__
 
-```
+```objc
 APPRetrieveBlobRequest *request = [[APPRetrieveBlobRequest alloc] initWithBlobIdentifier:blobIdentifier];
 
 // ... elsewhere ...
@@ -276,7 +276,7 @@ APPRetrieveBlobRequest *request = [[APPRetrieveBlobRequest alloc] initWithBlobId
 
  __2) Request with HTTP support__
 
-```
+```objc
 APPRetrieveBlobRequest *request = [[APPRetrieveBlobRequest alloc] initWithBlobIdentifier:blobIdentifier];
 
 // ... elsewhere ...
@@ -362,7 +362,7 @@ APPRetrieveBlobRequest *request = [[APPRetrieveBlobRequest alloc] initWithBlobId
  execute an _operation_ and need things to be as simple as possible.  __Twitter Network Layer__
  provides all the convenience necessary for getting what needs to be done as simply as possible.
 
-```
+```objc
  NSString *URLString = [NSURL URLWithString:@"http://api.myapp.com/settings"];
  NSURLRequest *request = [NSURLRequest requestWithURL:URLString];
  [[TNLRequestOperationQueue defaultOperationQueue] enqueueRequest:request
@@ -386,7 +386,7 @@ APPRetrieveBlobRequest *request = [[APPRetrieveBlobRequest alloc] initWithBlobId
  _network operation_ when a specific metric is hit.  In this case, we don't care about storing the
  _response_ body and we also want to avoid having a cache that could get in the way.
 
-```
+```objc
  NSURL *URL = [NSURL URLWithString:@"http://api.myapp.com/recordMetric?hit=true"];
  TNLHTTPRequest *request = [TNLHTTPRequest GETRequestWithURL:URL HTTPHeaderFields:nil];
  TNLMutableRequestConfiguration *config = [TNLMutableRequestConfiguration defaultConfiguration];
@@ -405,7 +405,7 @@ APPRetrieveBlobRequest *request = [[APPRetrieveBlobRequest alloc] initWithBlobId
  Now, sometimes, you may want to have the same defaults for certain kinds of _operations_.  That can
  easily be accomplished with a category or some other shared accessor.
 
-```
+```objc
  @interface TNLRequestConfiguration (APPAdditions)
  + (instancetype)configurationForMetricsFiring;
  @end
@@ -472,7 +472,7 @@ APPRetrieveBlobRequest *request = [[APPRetrieveBlobRequest alloc] initWithBlobId
  with things just the objects they care about.  No converting or validating.  No configuring.  The
  power of __TNL__ is completely utilized by _API client_ freeing the caller of any burden.
 
-```
+```objc
  APISendMessageRequest *request = [[APISendMessageRequest alloc] init];
  request.sender = self.user;
  request.receiver = otherUser;
